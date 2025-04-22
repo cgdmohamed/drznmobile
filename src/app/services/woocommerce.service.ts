@@ -1,3 +1,11 @@
+// TypeScript declarations for runtime environment variables
+declare global {
+  const WC_CONSUMER_KEY: string | undefined;
+  const WC_CONSUMER_SECRET: string | undefined;
+  const WC_STORE_URL: string | undefined;
+  const MOYASAR_PUBLISHABLE_KEY: string | undefined;
+}
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, of } from 'rxjs';
@@ -15,18 +23,54 @@ import { demoCategories } from '../demo/demo-categories';
   providedIn: 'root'
 })
 export class WoocommerceService {
-  private apiUrl = environment.apiUrl;
-  private consumerKey = environment.consumerKey;
-  private consumerSecret = environment.consumerSecret;
+  // Get credentials from environment secrets
+  private apiUrl = 'https://YOUR_STORE_DOMAIN.COM/wp-json/wc/v3';
+  private consumerKey = '';
+  private consumerSecret = '';
   
-  // For demo purposes, if the API fails to connect
-  private useDemo = environment.useDemoData || false;
+  // For demo purposes, if the API fails to connect or credentials are empty
+  private useDemo = true; // Start with demo mode until we verify credentials
   
   constructor(
     private http: HttpClient,
     private authService: AuthService,
     private toastController: ToastController
-  ) {}
+  ) {
+    // Initialize WooCommerce API connection
+    this.initializeApiConnection();
+  }
+
+  /**
+   * Initialize API connection with environment variables
+   */
+  private initializeApiConnection() {
+    try {
+      // Get WooCommerce credentials from environment variables
+      if (typeof WC_STORE_URL !== 'undefined' && WC_STORE_URL) {
+        this.apiUrl = `https://${WC_STORE_URL}/wp-json/wc/v3`;
+        console.log('WooCommerce API URL set:', this.apiUrl);
+      }
+      
+      if (typeof WC_CONSUMER_KEY !== 'undefined' && WC_CONSUMER_KEY) {
+        this.consumerKey = WC_CONSUMER_KEY;
+        console.log('WooCommerce Consumer Key set');
+      }
+      
+      if (typeof WC_CONSUMER_SECRET !== 'undefined' && WC_CONSUMER_SECRET) {
+        this.consumerSecret = WC_CONSUMER_SECRET;
+        console.log('WooCommerce Consumer Secret set');
+      }
+      
+      // Check if we have valid credentials
+      this.useDemo = !this.consumerKey || !this.consumerSecret || 
+                    this.consumerKey === '' || this.consumerSecret === '';
+      
+      console.log('WooCommerce API using demo mode:', this.useDemo);
+    } catch (error) {
+      console.error('Error initializing WooCommerce API:', error);
+      this.useDemo = true;
+    }
+  }
 
   /**
    * Get all products with optional filters
