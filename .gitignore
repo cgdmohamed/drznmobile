@@ -1,0 +1,65 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Ionic
+.ionic/
+.sass-cache/
+www/
+platforms/
+plugins/
+resources/android/
+
+# Angular
+.angular/
+.angular-cache/
+.nx/
+dist/
+tmp/
+out-tsc/
+coverage/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# System Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build
+*.tgz
+.package.tmp.json
+
+# Capacitor
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+android/app/src/main/assets/public
+android/app/capacitor.build.gradle
+
+# Production build files
+/www
+/plugins
+/platforms
+
+# Replit specific
+.replit
+replit.nix
+.cache/
