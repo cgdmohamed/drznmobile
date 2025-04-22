@@ -4,16 +4,16 @@
 
 export const environment = {
   production: false,
-  // Set your store URL here - retrieve from environment variable during build in production
-  storeUrl: 'yourwoostore.com', 
-  apiUrl: 'https://yourwoostore.com/wp-json/wc/v3',
-  consumerKey: '', // Will be populated at runtime from the secret
-  consumerSecret: '', // Will be populated at runtime from the secret
+  // Use local proxy to avoid CORS issues
+  storeUrl: 'app.drzn.sa', 
+  apiUrl: '/wp-json/wc/v3',
+  consumerKey: 'ck_6255526889b609ea53066560b71fdc41da7b866f',
+  consumerSecret: 'cs_bf2088d5f696a0b9f364d6090c48e9b4343c11a3',
   moyasarPublishableKey: 'pk_test_RU3BN2JEMDqyMGS6HcEiKcCw2bGhgR9tQnU6ihmY',
   taqnyatApiKey: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
   oneSignalAppId: 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX',
   // JWT Authentication
-  jwtAuthUrl: 'https://yourwoostore.com/wp-json/jwt-auth/v1/token',
+  jwtAuthUrl: '/wp-json/jwt-auth/v1/token',
   
   // Fallback to demo mode if API connection fails
   useDemoData: false

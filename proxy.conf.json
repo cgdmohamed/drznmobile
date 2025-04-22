@@ -1,0 +1,8 @@
+{
+  "/wp-json": {
+    "target": "https://app.drzn.sa",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

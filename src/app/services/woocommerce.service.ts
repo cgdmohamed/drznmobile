@@ -17,58 +17,22 @@ import { demoCategories } from '../demo/demo-categories';
   providedIn: 'root'
 })
 export class WoocommerceService {
-  // Get credentials from environment secrets
-  private apiUrl = 'https://YOUR_STORE_DOMAIN.COM/wp-json/wc/v3';
-  private consumerKey = '';
-  private consumerSecret = '';
+  // Use local proxy to prevent CORS issues
+  private apiUrl = '/wp-json/wc/v3';
+  private consumerKey = 'ck_6255526889b609ea53066560b71fdc41da7b866f';
+  private consumerSecret = 'cs_bf2088d5f696a0b9f364d6090c48e9b4343c11a3';
   
   // For demo purposes, if the API fails to connect or credentials are empty
-  private useDemo = true; // Start with demo mode until we verify credentials
+  private useDemo = false; // We have credentials, try to use the real API
   
   constructor(
     private http: HttpClient,
     private authService: AuthService,
     private toastController: ToastController
   ) {
-    // Initialize WooCommerce API connection
-    this.initializeApiConnection();
-  }
-
-  /**
-   * Initialize API connection with environment variables
-   */
-  private initializeApiConnection() {
-    try {
-      // Get WooCommerce credentials from environment variables
-      if (typeof WC_STORE_URL !== 'undefined' && WC_STORE_URL) {
-        // Handle both formats of URL (with or without https://)
-        const storeUrl = WC_STORE_URL.startsWith('http')
-          ? WC_STORE_URL
-          : `https://${WC_STORE_URL}`;
-          
-        this.apiUrl = `${storeUrl}/wp-json/wc/v3`;
-        console.log('WooCommerce API URL set:', this.apiUrl);
-      }
-      
-      if (typeof WC_CONSUMER_KEY !== 'undefined' && WC_CONSUMER_KEY) {
-        this.consumerKey = WC_CONSUMER_KEY;
-        console.log('WooCommerce Consumer Key set');
-      }
-      
-      if (typeof WC_CONSUMER_SECRET !== 'undefined' && WC_CONSUMER_SECRET) {
-        this.consumerSecret = WC_CONSUMER_SECRET;
-        console.log('WooCommerce Consumer Secret set');
-      }
-      
-      // Check if we have valid credentials
-      this.useDemo = !this.consumerKey || !this.consumerSecret || 
-                    this.consumerKey === '' || this.consumerSecret === '';
-      
-      console.log('WooCommerce API using demo mode:', this.useDemo);
-    } catch (error) {
-      console.error('Error initializing WooCommerce API:', error);
-      this.useDemo = true;
-    }
+    console.log('WooCommerce service initialized');
+    console.log('API URL:', this.apiUrl);
+    console.log('Using demo mode:', this.useDemo);
   }
 
   /**
