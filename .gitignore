@@ -63,3 +63,6 @@ android/app/capacitor.build.gradle
 .replit
 replit.nix
 .cache/
+
+# etc
+attached_assets/

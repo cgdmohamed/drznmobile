@@ -1,3 +1,7 @@
+.branding{
+  padding-top: 10px;
+  height: 40px;
+}
 // Banner slides
 .banner-slides {
   margin: 16px 0;
@@ -62,7 +66,7 @@
       img {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
       }
     }
     
@@ -109,18 +113,20 @@
     img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      padding: 0.5rem;
     }
     
     .product-badge {
       position: absolute;
       top: 10px;
       right: 10px;
-      background-color: var(--ion-color-danger);
-      color: white;
+      background-color: #ffc409;
+      color: rgb(0, 0, 0);
       padding: 4px 8px;
-      border-radius: 4px;
+      border-radius: 8px;
       font-size: 12px;
+      width: fit-content;
     }
   }
   
@@ -131,7 +137,7 @@
       font-size: 14px;
       font-weight: 500;
       margin: 0 0 8px;
-      height: 40px;
+      height: 48px;
       overflow: hidden;
       display: -webkit-box;
       -webkit-line-clamp: 2;

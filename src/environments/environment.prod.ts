@@ -7,7 +7,7 @@ export const environment = {
   taqnyatApiKey: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
   oneSignalAppId: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
   // JWT Authentication
-  jwtAuthUrl: "https://example.com/wp-json/jwt-auth/v1/token",
+  jwtAuthUrl: "https://app.drzn.sa/wp-json/jwt-auth/v1/token",
 };
 
 // IMPORTANT: Replace the placeholder values above with your actual API keys before building for production
