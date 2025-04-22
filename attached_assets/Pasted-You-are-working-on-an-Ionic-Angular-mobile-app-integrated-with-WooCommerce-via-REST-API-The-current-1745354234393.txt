@@ -1,0 +1,57 @@
+You are working on an Ionic Angular mobile app integrated with WooCommerce via REST API. The current implementation is incomplete and missing key parts.
+
+**Objective: Complete and fix the WooCommerce integration and core app functionalities.**
+
+### Tasks:
+
+1. **WooCommerce API Service:**
+   - Create `woocommerce.service.ts` in `src/app/services/`.
+   - Add methods for:
+     - Fetching products (`GET /wp-json/wc/v3/products`).
+     - Fetching product details (`GET /wp-json/wc/v3/products/:id`).
+     - Fetching categories (`GET /wp-json/wc/v3/products/categories`).
+     - Add to cart (locally using Ionic Storage).
+     - Checkout (create WooCommerce order via `POST /wp-json/wc/v3/orders`).
+   - Use the WooCommerce REST API credentials (Consumer Key & Secret) from `environment.ts`.
+
+2. **Authentication:**
+   - Implement JWT-based login and registration using WooCommerce's JWT Authentication plugin (`/wp-json/jwt-auth/v1/token`).
+   - Secure token storage with Ionic Storage.
+
+3. **Cart & Checkout:**
+   - Create `cart.service.ts`.
+   - Store cart items locally using Ionic Storage.
+   - Implement cart logic:
+     - Add/remove items.
+     - Update quantities.
+   - Integrate checkout:
+     - Collect billing/shipping info.
+     - Create order via WooCommerce REST API.
+
+4. **Payment Gateway:**
+   - Integrate **Moyasar** payment gateway (use Ionic Angular).
+   - Ensure payment status is updated in WooCommerce order.
+
+5. **Push Notifications:**
+   - Configure OneSignal for push notifications in `app.module.ts` and initialize it in `app.component.ts`.
+
+6. **Multilingual Support:**
+   - Add `@ngx-translate/core` and `@ngx-translate/http-loader`.
+   - Configure i18n for English and Arabic.
+
+7. **Error Handling:**
+   - Add centralized error handling in WooCommerce service:
+     - Handle common API errors (e.g., 401 unauthorized, 404 not found).
+     - Retry logic for network errors.
+
+8. **UI Enhancements:**
+   - Ensure product listing, product details, cart, and checkout pages are fully functional.
+   - Add a bottom navigation bar with Home, Categories, Cart, Orders, Profile.
+   - Add loading spinners and error messages in the UI.
+
+**Environment Variables:**
+- WooCommerce API URL: `https://example.com/wp-json/wc/v3/`
+- Consumer Key: `ck_xxxxxxxx`
+- Consumer Secret: `cs_xxxxxxxx`
+
+Make sure the app runs smoothly on Replit and resolves the `Invalid Host header` issue (use `--disable-host-check` if needed).
