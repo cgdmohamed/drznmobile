@@ -4,14 +4,17 @@
 
 export const environment = {
   production: false,
-  apiUrl: 'https://example.com/wp-json/wc/v3',
-  consumerKey: 'ck_xxxxxxxx',
-  consumerSecret: 'cs_xxxxxxxx',
+  apiUrl: 'https://woocommerce.github.io/woocommerce-rest-api-docs/wp-json/wc/v3',
+  consumerKey: 'ck_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+  consumerSecret: 'cs_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
   moyasarPublishableKey: 'pk_test_RU3BN2JEMDqyMGS6HcEiKcCw2bGhgR9tQnU6ihmY',
   taqnyatApiKey: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
   oneSignalAppId: 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX',
   // JWT Authentication
-  jwtAuthUrl: 'https://example.com/wp-json/jwt-auth/v1/token'
+  jwtAuthUrl: 'https://woocommerce.github.io/woocommerce-rest-api-docs/wp-json/jwt-auth/v1/token',
+  
+  // Enable demo mode if API is not configured
+  useDemoData: true
 };
 
 // IMPORTANT: Replace the placeholder values above with your actual API keys
