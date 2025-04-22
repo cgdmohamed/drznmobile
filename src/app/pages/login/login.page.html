@@ -1,0 +1,108 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text=""></ion-back-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="login-container">
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="assets/images/logo.svg" alt="DARZN" />
+    </div>
+    
+    <h1 class="ion-text-center">تسجيل الدخول</h1>
+    <p class="ion-text-center ion-padding-horizontal">قم بتسجيل الدخول للوصول إلى حسابك ومتابعة تسوقك</p>
+    
+    <!-- Error message -->
+    <ion-text color="danger" *ngIf="loginError" class="error-message ion-text-center">
+      <p>{{ loginError }}</p>
+    </ion-text>
+    
+    <!-- Login Type Segment -->
+    <ion-segment [(ngModel)]="loginType" (ionChange)="onLoginTypeChange()">
+      <ion-segment-button value="email">
+        <ion-label>البريد الإلكتروني</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="mobile">
+        <ion-label>رقم الجوال</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+    
+    <!-- Email Login Form -->
+    <form [formGroup]="emailLoginForm" (ngSubmit)="login()" *ngIf="loginType === 'email'">
+      <ion-list class="ion-no-padding">
+        <ion-item>
+          <ion-label position="floating">البريد الإلكتروني أو اسم المستخدم</ion-label>
+          <ion-input type="text" formControlName="username" autocomplete="username"></ion-input>
+        </ion-item>
+        <div class="validation-error" *ngIf="emailLoginForm.get('username')?.touched && emailLoginForm.get('username')?.invalid">
+          <div *ngIf="emailLoginForm.get('username')?.errors?.required">يرجى إدخال اسم المستخدم</div>
+          <div *ngIf="emailLoginForm.get('username')?.errors?.minlength">يجب أن يتكون اسم المستخدم من 3 أحرف على الأقل</div>
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">كلمة المرور</ion-label>
+          <ion-input [type]="passwordVisible ? 'text' : 'password'" formControlName="password" autocomplete="current-password"></ion-input>
+          <ion-button slot="end" fill="clear" (click)="togglePasswordVisibility()">
+            <ion-icon [name]="passwordVisible ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+          </ion-button>
+        </ion-item>
+        <div class="validation-error" *ngIf="emailLoginForm.get('password')?.touched && emailLoginForm.get('password')?.invalid">
+          <div *ngIf="emailLoginForm.get('password')?.errors?.required">يرجى إدخال كلمة المرور</div>
+          <div *ngIf="emailLoginForm.get('password')?.errors?.minlength">يجب أن تتكون كلمة المرور من 6 أحرف على الأقل</div>
+        </div>
+        
+        <div class="form-options">
+          <ion-item lines="none">
+            <ion-checkbox formControlName="rememberMe"></ion-checkbox>
+            <ion-label>تذكرني</ion-label>
+          </ion-item>
+          
+          <ion-button fill="clear" size="small" (click)="goToForgotPassword()">
+            نسيت كلمة المرور؟
+          </ion-button>
+        </div>
+      </ion-list>
+      
+      <div class="form-buttons">
+        <ion-button expand="block" type="submit" [disabled]="emailLoginForm.invalid">
+          تسجيل الدخول
+        </ion-button>
+      </div>
+    </form>
+    
+    <!-- Mobile Login Form -->
+    <form [formGroup]="mobileLoginForm" (ngSubmit)="loginWithMobile()" *ngIf="loginType === 'mobile'">
+      <ion-list class="ion-no-padding">
+        <ion-item>
+          <ion-label position="floating">رقم الجوال</ion-label>
+          <ion-input type="tel" formControlName="mobile" placeholder="05xxxxxxxx"></ion-input>
+        </ion-item>
+        <div class="validation-error" *ngIf="mobileLoginForm.get('mobile')?.touched && mobileLoginForm.get('mobile')?.invalid">
+          <div *ngIf="mobileLoginForm.get('mobile')?.errors?.required">يرجى إدخال رقم الجوال</div>
+          <div *ngIf="mobileLoginForm.get('mobile')?.errors?.pattern">يرجى إدخال رقم جوال صحيح</div>
+        </div>
+      </ion-list>
+      
+      <div class="form-buttons">
+        <ion-button expand="block" type="submit" [disabled]="mobileLoginForm.invalid">
+          إرسال رمز التحقق
+        </ion-button>
+      </div>
+    </form>
+    
+    <!-- Guest Login Button -->
+    <div class="form-buttons">
+      <ion-button expand="block" fill="outline" (click)="guestLogin()">
+        الدخول كضيف
+      </ion-button>
+    </div>
+    
+    <div class="register-link ion-text-center">
+      <p>ليس لديك حساب؟ <ion-button fill="clear" size="small" (click)="goToRegister()">إنشاء حساب</ion-button></p>
+    </div>
+  </div>
+</ion-content>

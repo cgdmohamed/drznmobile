@@ -1,0 +1,207 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/categories" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ categoryName }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="toggleFilterPanel()" class="filter-toggle-button">
+        <ion-icon name="options-outline" size="small"></ion-icon>
+        <span>فلترة</span>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Subcategories slider -->
+  <div class="subcategories-container" *ngIf="subcategories.length > 0">
+    <swiper-container slides-per-view="auto" space-between="10" class="subcategories-slider">
+      <swiper-slide *ngFor="let subcategory of subcategories">
+        <div class="subcategory-item" [routerLink]="['/category', subcategory.id]">
+          <div class="subcategory-image">
+            <img [src]="subcategory.image?.src || 'assets/placeholder.png'" [alt]="subcategory.name">
+          </div>
+          <div class="subcategory-name">{{ subcategory.name }}</div>
+        </div>
+      </swiper-slide>
+    </swiper-container>
+  </div>
+
+  <!-- Filter Modal -->
+  <ion-modal
+    #filterModal
+    [isOpen]="isFilterVisible"
+    [backdropDismiss]="true"
+    [initialBreakpoint]="0.75"
+    [breakpoints]="[0, 0.25, 0.5, 0.75]"
+    (willDismiss)="onModalDismiss()"
+    handle="true">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-buttons slot="start">
+            <ion-button fill="clear" color="medium" (click)="resetFilters()">
+              <ion-icon name="refresh" slot="start"></ion-icon>
+              إعادة تعيين
+            </ion-button>
+          </ion-buttons>
+          <ion-title>خيارات التصفية</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="applyFilters()" strong="true">
+              <ion-icon name="checkmark" slot="start"></ion-icon>
+              تطبيق
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="ion-padding filter-content">
+        <!-- Price Filter Section (Accordion) -->
+        <ion-accordion-group [multiple]="true" [value]="['price']">
+          <ion-accordion value="price">
+            <ion-item slot="header" class="filter-header">
+              <ion-label>السعر</ion-label>
+              <ion-note slot="end" *ngIf="filters.maxPrice < 5000">{{ filters.maxPrice }} ر.س</ion-note>
+            </ion-item>
+            <div slot="content" class="filter-section-content">
+              <ion-range [(ngModel)]="filters.maxPrice" min="0" max="5000" step="10">
+                <ion-label slot="start">0 ر.س</ion-label>
+                <ion-label slot="end">{{ filters.maxPrice }} ر.س</ion-label>
+              </ion-range>
+            </div>
+          </ion-accordion>
+
+          <!-- Sort By Filter Section (Accordion) -->
+          <ion-accordion value="sort">
+            <ion-item slot="header" class="filter-header">
+              <ion-label>الترتيب حسب</ion-label>
+              <ion-note slot="end">
+                {{ filters.orderby === 'date' ? 'الأحدث' : 
+                   filters.orderby === 'price' ? 'السعر' : 'الشائع' }}
+              </ion-note>
+            </ion-item>
+            <div slot="content" class="filter-section-content">
+              <ion-segment [(ngModel)]="filters.orderby">
+                <ion-segment-button value="date">
+                  <ion-label>الأحدث</ion-label>
+                </ion-segment-button>
+                <ion-segment-button value="price">
+                  <ion-label>السعر</ion-label>
+                </ion-segment-button>
+                <ion-segment-button value="popularity">
+                  <ion-label>الشائع</ion-label>
+                </ion-segment-button>
+              </ion-segment>
+              
+              <div class="order-direction" *ngIf="filters.orderby === 'price'">
+                <ion-segment [(ngModel)]="filters.order">
+                  <ion-segment-button value="asc">
+                    <ion-label>من الأقل للأعلى</ion-label>
+                  </ion-segment-button>
+                  <ion-segment-button value="desc">
+                    <ion-label>من الأعلى للأقل</ion-label>
+                  </ion-segment-button>
+                </ion-segment>
+              </div>
+            </div>
+          </ion-accordion>
+
+          <!-- Brands Filter Section (Accordion) -->
+          <ion-accordion value="brands">
+            <ion-item slot="header" class="filter-header">
+              <ion-label>الماركات</ion-label>
+              <ion-note slot="end" *ngIf="filters.brands && filters.brands.length > 0">
+                {{ filters.brands.length }} محدد
+              </ion-note>
+            </ion-item>
+            <div slot="content" class="filter-section-content">
+              <ion-list lines="full" class="brand-list">
+                <ion-item *ngFor="let brand of availableBrands">
+                  <ion-label>{{ brand.name }}</ion-label>
+                  <ion-checkbox slot="end" [(ngModel)]="brand.selected" (ionChange)="updateBrandFilters()"></ion-checkbox>
+                </ion-item>
+              </ion-list>
+            </div>
+          </ion-accordion>
+
+          <!-- Other Options Filter Section (Accordion) -->
+          <ion-accordion value="other">
+            <ion-item slot="header" class="filter-header">
+              <ion-label>خيارات أخرى</ion-label>
+              <ion-note slot="end" *ngIf="filters.onSale || filters.inStock">تم التحديد</ion-note>
+            </ion-item>
+            <div slot="content" class="filter-section-content">
+              <ion-list lines="full">
+                <ion-item>
+                  <ion-label>العروض فقط</ion-label>
+                  <ion-toggle slot="end" [(ngModel)]="filters.onSale"></ion-toggle>
+                </ion-item>
+                <ion-item>
+                  <ion-label>متوفر في المخزون</ion-label>
+                  <ion-toggle slot="end" [(ngModel)]="filters.inStock"></ion-toggle>
+                </ion-item>
+              </ion-list>
+            </div>
+          </ion-accordion>
+        </ion-accordion-group>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <div class="ion-padding">
+    <div class="filter-summary" *ngIf="!isLoading">
+      <span class="product-count">{{ products.length }} منتج</span>
+      <div class="active-filters" *ngIf="filters.onSale || filters.inStock || filters.brands?.length > 0">
+        <ion-chip *ngIf="filters.onSale" outline color="primary">العروض <ion-icon name="close-circle" (click)="filters.onSale = false; applyFilters()"></ion-icon></ion-chip>
+        <ion-chip *ngIf="filters.inStock" outline color="primary">متوفر <ion-icon name="close-circle" (click)="filters.inStock = false; applyFilters()"></ion-icon></ion-chip>
+        
+        <!-- Display selected brands -->
+        <ng-container *ngFor="let brandId of filters.brands">
+          <ion-chip *ngIf="getBrandName(brandId)" outline color="primary">
+            {{ getBrandName(brandId) }}
+            <ion-icon name="close-circle" (click)="removeBrandFilter(brandId)"></ion-icon>
+          </ion-chip>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="products-grid" *ngIf="!isLoading">
+      <div class="product-card" *ngFor="let product of products">
+        <div class="product-image" [routerLink]="['/product', product.id]">
+          <img [src]="product.images[0]?.src || 'assets/placeholder.png'" [alt]="product.name">
+          <div class="product-badge" *ngIf="product.on_sale">خصم</div>
+        </div>
+        <div class="product-info">
+          <h3 class="product-title" [routerLink]="['/product', product.id]">{{ product.name }}</h3>
+          <div class="product-price">
+            <span class="current-price">{{ product.price }} ر.س</span>
+            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} ر.س</span>
+          </div>
+          <div class="product-actions">
+            <ion-button fill="clear" class="favorite-button" (click)="onFavoriteChange(product.id)">
+              <ion-icon [name]="isProductInWishlist(product.id) ? 'heart' : 'heart-outline'"></ion-icon>
+            </ion-button>
+            <ion-button fill="solid" class="add-to-cart-button" (click)="addToCart(product)">
+              <ion-icon name="cart"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+      </div>
+
+      <div class="no-products" *ngIf="products.length === 0">
+        <ion-icon name="basket-outline"></ion-icon>
+        <h4>لا توجد منتجات في هذا القسم</h4>
+      </div>
+    </div>
+
+    <!-- Skeleton screens for loading state -->
+    <div *ngIf="isLoading" class="products-grid">
+      <app-skeleton *ngFor="let i of [1,2,3,4]" type="product-card"></app-skeleton>
+    </div>
+  </div>
+</ion-content>

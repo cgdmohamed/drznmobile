@@ -1,0 +1,60 @@
+<section class="recommendation-section">
+  <div class="section-header">
+    <h2>{{ title }}</h2>
+    <p>{{ description }}</p>
+  </div>
+
+  <!-- Loader -->
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>جاري تحميل المنتجات المقترحة...</p>
+  </div>
+
+  <!-- Error state -->
+  <div *ngIf="!isLoading && error" class="error-container">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!isLoading && !error && recommendations.length === 0" class="empty-container">
+    <ion-icon name="basket-outline"></ion-icon>
+    <p>لا توجد منتجات مقترحة حاليًا</p>
+    <p class="subtext">تصفح المزيد من المنتجات لمساعدتنا في توفير اقتراحات أفضل لك</p>
+  </div>
+
+  <!-- Recommendations carousel -->
+  <swiper-container *ngIf="!isLoading && !error && recommendations.length > 0" 
+              slides-per-view="2.3" 
+              space-between="10"
+              free-mode="true"
+              class="recommendations-slider">
+    <swiper-slide *ngFor="let product of recommendations" (click)="goToProduct(product)" class="product-slide">
+      <div class="product-card">
+        <div class="product-image-container">
+          <img [src]="product.images && product.images.length > 0 ? product.images[0].src : '../assets/images/product-placeholder.svg'" 
+               [alt]="product.name" 
+               class="product-image">
+          
+          <!-- Sale badge -->
+          <div *ngIf="product.on_sale" class="sale-badge">
+            <span>تخفيض</span>
+          </div>
+        </div>
+        
+        <div class="product-details">
+          <h3 class="product-name">{{ product.name }}</h3>
+          
+          <div class="price-container">
+            <span *ngIf="product.on_sale" class="sale-price">{{ product.sale_price }} ر.س</span>
+            <span [class.original-price]="product.on_sale">{{ product.regular_price }} ر.س</span>
+          </div>
+          
+          <ion-button fill="clear" (click)="addToCart($event, product)" class="add-to-cart-btn">
+            <ion-icon slot="icon-only" name="cart-outline"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    </swiper-slide>
+  </swiper-container>
+</section>

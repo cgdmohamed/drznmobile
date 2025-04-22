@@ -1,0 +1,75 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title class="ion-text-center">فلتر</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="cancel()">
+        <ion-icon name="close-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="filter-section">
+    <h4>السعر</h4>
+    <ion-range
+      [min]="0"
+      [max]="maxPrice"
+      [(ngModel)]="priceRange.upper"
+      color="danger">
+      <ion-label slot="start">0 ريال</ion-label>
+      <ion-label slot="end">{{priceRange.upper}} ريال</ion-label>
+    </ion-range>
+  </div>
+
+  <div class="filter-section">
+    <h4>العلامة التجارية</h4>
+    <div class="brand-grid">
+      <div 
+        *ngFor="let brand of brands" 
+        class="brand-item"
+        [class.selected]="selectedBrands.includes(brand)"
+        (click)="toggleBrand(brand)">
+        <div class="brand-logo">
+          <img [src]="'assets/brands/' + brand.toLowerCase() + '.png'" [alt]="brand" 
+            onerror="this.onerror=null;this.src='assets/placeholder-image.png';">
+        </div>
+        <div class="brand-name">{{brand}}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filter-section">
+    <h4>المخزون</h4>
+    <ion-item lines="none">
+      <ion-label>متوفر في المخزون</ion-label>
+      <ion-checkbox [(ngModel)]="inStockOnly" (ionChange)="toggleInStock()"></ion-checkbox>
+    </ion-item>
+    <ion-item lines="none">
+      <ion-label>تضمين المنتجات غير المتوفرة</ion-label>
+      <ion-checkbox [checked]="!inStockOnly" (ionChange)="toggleInStock()"></ion-checkbox>
+    </ion-item>
+  </div>
+
+  <div class="filter-section">
+    <h4>الفئات</h4>
+    <ion-list lines="none">
+      <ion-item *ngFor="let category of categories">
+        <ion-label>{{category.name}}</ion-label>
+        <ion-checkbox 
+          [checked]="selectedCategories.includes(category.id)"
+          (ionChange)="toggleCategory(category.id)">
+        </ion-checkbox>
+      </ion-item>
+    </ion-list>
+  </div>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <div class="footer-buttons">
+      <ion-button fill="outline" (click)="resetFilters()">إعادة ضبط</ion-button>
+      <ion-button color="danger" (click)="applyFilters()">تطبيق</ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

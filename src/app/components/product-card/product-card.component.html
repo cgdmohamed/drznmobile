@@ -1,0 +1,38 @@
+<div class="product-card">
+  <div class="product-image-container">
+    <a [routerLink]="['/product', product.id]">
+      <img [src]="getPrimaryImage()" [alt]="product.name" class="product-image">
+    </a>
+    
+    <div class="favorite-button" (click)="toggleFavorite()" [class.active]="isFavorite">
+      <ion-icon name="heart"></ion-icon>
+    </div>
+    
+    <div class="discount-badge" *ngIf="product.on_sale">
+      {{ getDiscountPercentage() }}%
+    </div>
+  </div>
+  
+  <div class="product-details">
+    <a [routerLink]="['/product', product.id]" class="product-name">{{ product.name }}</a>
+    
+    <div class="product-price">
+      <span class="current-price" [class.sale-price]="product.on_sale">
+        {{ product.on_sale ? product.sale_price : product.regular_price }} ر.س
+      </span>
+      <span class="original-price" *ngIf="product.on_sale">
+        {{ product.regular_price }} ر.س
+      </span>
+    </div>
+    
+    <div class="product-rating" *ngIf="product.average_rating !== '0'">
+      <ion-icon name="star"></ion-icon>
+      <span>{{ product.average_rating }}</span>
+    </div>
+    
+    <button class="add-to-cart-button" (click)="addToCart()" *ngIf="showAddToCart">
+      <ion-icon name="cart-outline"></ion-icon>
+      إضافة للسلة
+    </button>
+  </div>
+</div>

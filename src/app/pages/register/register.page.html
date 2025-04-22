@@ -1,0 +1,162 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/login" text=""></ion-back-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="register-container">
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="assets/images/logo.svg" alt="DARZN" />
+    </div>
+    
+    <h1 class="ion-text-center">إنشاء حساب</h1>
+    <p class="ion-text-center ion-padding-horizontal">قم بإنشاء حساب للاستمتاع بتجربة تسوق متميزة</p>
+    
+    <!-- Registration Type Selection -->
+    <div class="registration-type-toggle">
+      <ion-segment [(ngModel)]="registrationType" (ionChange)="registrationTypeChanged()">
+        <ion-segment-button value="email">
+          <ion-label>البريد الإلكتروني</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="mobile">
+          <ion-label>رقم الهاتف</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+    </div>
+    
+    <!-- Error message -->
+    <ion-text color="danger" *ngIf="registerError" class="error-message ion-text-center">
+      <p>{{ registerError }}</p>
+    </ion-text>
+    
+    <!-- Email Registration Form -->
+    <form [formGroup]="registerForm" (ngSubmit)="register()" *ngIf="registrationType === 'email'">
+      <ion-list class="ion-no-padding">
+        <ion-item>
+          <ion-label position="floating">الاسم الأول</ion-label>
+          <ion-input type="text" formControlName="firstName"></ion-input>
+        </ion-item>
+        <div class="validation-error" *ngIf="registerForm.get('firstName')?.touched && registerForm.get('firstName')?.invalid">
+          <div *ngIf="registerForm.get('firstName')?.errors?.required">يرجى إدخال الاسم الأول</div>
+          <div *ngIf="registerForm.get('firstName')?.errors?.minlength">يجب أن يتكون الاسم الأول من حرفين على الأقل</div>
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">الاسم الأخير</ion-label>
+          <ion-input type="text" formControlName="lastName"></ion-input>
+        </ion-item>
+        <div class="validation-error" *ngIf="registerForm.get('lastName')?.touched && registerForm.get('lastName')?.invalid">
+          <div *ngIf="registerForm.get('lastName')?.errors?.required">يرجى إدخال الاسم الأخير</div>
+          <div *ngIf="registerForm.get('lastName')?.errors?.minlength">يجب أن يتكون الاسم الأخير من حرفين على الأقل</div>
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">البريد الإلكتروني</ion-label>
+          <ion-input type="email" formControlName="email" autocomplete="email"></ion-input>
+        </ion-item>
+        <div class="validation-error" *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.invalid">
+          <div *ngIf="registerForm.get('email')?.errors?.required">يرجى إدخال البريد الإلكتروني</div>
+          <div *ngIf="registerForm.get('email')?.errors?.email">يرجى إدخال بريد إلكتروني صحيح</div>
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">رقم الهاتف</ion-label>
+          <ion-input type="tel" formControlName="phone" autocomplete="tel"></ion-input>
+        </ion-item>
+        <div class="validation-error" *ngIf="registerForm.get('phone')?.touched && registerForm.get('phone')?.invalid">
+          <div *ngIf="registerForm.get('phone')?.errors?.required">يرجى إدخال رقم الهاتف</div>
+          <div *ngIf="registerForm.get('phone')?.errors?.pattern">يرجى إدخال أرقام فقط</div>
+          <div *ngIf="registerForm.get('phone')?.errors?.minlength">يجب أن يتكون رقم الهاتف من 9 أرقام على الأقل</div>
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">كلمة المرور</ion-label>
+          <ion-input [type]="passwordVisible ? 'text' : 'password'" formControlName="password" autocomplete="new-password"></ion-input>
+          <ion-button slot="end" fill="clear" (click)="togglePasswordVisibility()">
+            <ion-icon [name]="passwordVisible ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+          </ion-button>
+        </ion-item>
+        <div class="validation-error" *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid">
+          <div *ngIf="registerForm.get('password')?.errors?.required">يرجى إدخال كلمة المرور</div>
+          <div *ngIf="registerForm.get('password')?.errors?.minlength">يجب أن تتكون كلمة المرور من 6 أحرف على الأقل</div>
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">تأكيد كلمة المرور</ion-label>
+          <ion-input [type]="confirmPasswordVisible ? 'text' : 'password'" formControlName="confirmPassword" autocomplete="new-password"></ion-input>
+          <ion-button slot="end" fill="clear" (click)="toggleConfirmPasswordVisibility()">
+            <ion-icon [name]="confirmPasswordVisible ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+          </ion-button>
+        </ion-item>
+        <div class="validation-error" *ngIf="registerForm.get('confirmPassword')?.touched && registerForm.get('confirmPassword')?.invalid">
+          <div *ngIf="registerForm.get('confirmPassword')?.errors?.required">يرجى تأكيد كلمة المرور</div>
+          <div *ngIf="registerForm.get('confirmPassword')?.errors?.passwordMismatch">كلمات المرور غير متطابقة</div>
+        </div>
+      </ion-list>
+      
+      <div class="form-buttons">
+        <ion-button expand="block" type="submit" [disabled]="registerForm.invalid">
+          إنشاء حساب
+        </ion-button>
+      </div>
+    </form>
+    
+    <!-- Mobile Registration Form -->
+    <form [formGroup]="mobileForm" (ngSubmit)="registerWithMobile()" *ngIf="registrationType === 'mobile'">
+      <ion-list class="ion-no-padding">
+        <ion-item>
+          <ion-label position="floating">الاسم الأول</ion-label>
+          <ion-input type="text" formControlName="firstName"></ion-input>
+        </ion-item>
+        <div class="validation-error" *ngIf="mobileForm.get('firstName')?.touched && mobileForm.get('firstName')?.invalid">
+          <div *ngIf="mobileForm.get('firstName')?.errors?.required">يرجى إدخال الاسم الأول</div>
+          <div *ngIf="mobileForm.get('firstName')?.errors?.minlength">يجب أن يتكون الاسم الأول من حرفين على الأقل</div>
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">الاسم الأخير</ion-label>
+          <ion-input type="text" formControlName="lastName"></ion-input>
+        </ion-item>
+        <div class="validation-error" *ngIf="mobileForm.get('lastName')?.touched && mobileForm.get('lastName')?.invalid">
+          <div *ngIf="mobileForm.get('lastName')?.errors?.required">يرجى إدخال الاسم الأخير</div>
+          <div *ngIf="mobileForm.get('lastName')?.errors?.minlength">يجب أن يتكون الاسم الأخير من حرفين على الأقل</div>
+        </div>
+        
+        <div class="phone-input-container">
+          <ion-item class="mobile-input">
+            <ion-label position="floating">رقم الهاتف</ion-label>
+            <div class="country-code">+966</div>
+            <ion-input type="tel" formControlName="phone" autocomplete="tel"></ion-input>
+          </ion-item>
+        </div>
+        <div class="validation-error" *ngIf="mobileForm.get('phone')?.touched && mobileForm.get('phone')?.invalid">
+          <div *ngIf="mobileForm.get('phone')?.errors?.required">يرجى إدخال رقم الهاتف</div>
+          <div *ngIf="mobileForm.get('phone')?.errors?.pattern">يرجى إدخال أرقام فقط</div>
+          <div *ngIf="mobileForm.get('phone')?.errors?.minlength">يجب أن يتكون رقم الهاتف من 9 أرقام على الأقل</div>
+        </div>
+        
+        <ion-item lines="none" class="terms-checkbox">
+          <ion-checkbox formControlName="acceptTerms"></ion-checkbox>
+          <ion-label>أوافق على <a href="#">الشروط والأحكام</a> و <a href="#">سياسة الخصوصية</a></ion-label>
+        </ion-item>
+        <div class="validation-error" *ngIf="mobileForm.get('acceptTerms')?.touched && mobileForm.get('acceptTerms')?.invalid">
+          <div *ngIf="mobileForm.get('acceptTerms')?.errors?.requiredTrue">يجب الموافقة على الشروط والأحكام</div>
+        </div>
+      </ion-list>
+      
+      <div class="form-buttons">
+        <ion-button expand="block" type="submit" [disabled]="mobileForm.invalid">
+          إرسال رمز التحقق
+        </ion-button>
+      </div>
+    </form>
+    
+    <div class="login-link ion-text-center">
+      <p>لديك حساب بالفعل؟ <ion-button fill="clear" size="small" (click)="goToLogin()">تسجيل الدخول</ion-button></p>
+    </div>
+  </div>
+</ion-content>

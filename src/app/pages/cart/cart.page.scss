@@ -1,0 +1,431 @@
+:host {
+  --page-padding: 16px;
+}
+
+ion-content {
+  --padding-bottom: 32px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--ion-color-medium);
+  
+  ion-spinner {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+  }
+  
+  p {
+    font-size: 14px;
+  }
+}
+
+.empty-cart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 70vh;
+  padding: 24px;
+  text-align: center;
+  
+  ion-icon {
+    font-size: 64px;
+    color: var(--ion-color-medium);
+    margin-bottom: 16px;
+  }
+  
+  h3 {
+    margin-bottom: 8px;
+    font-size: 20px;
+    color: var(--ion-color-dark);
+  }
+  
+  p {
+    color: var(--ion-color-medium);
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+  
+  ion-button {
+    max-width: 300px;
+    margin-top: 16px;
+  }
+}
+
+.cart-container {
+  padding: var(--page-padding);
+  
+  ion-list {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 24px;
+  }
+  
+  .cart-item {
+    display: flex;
+    width: 100%;
+    
+    .product-image {
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      overflow: hidden;
+      background-color: #f8f8f8;
+      flex-shrink: 0;
+      margin-left: 16px;
+      
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+    
+    .product-details {
+      flex: 1;
+      min-width: 0;
+      
+      .product-name {
+        font-size: 16px;
+        font-weight: 500;
+        margin-bottom: 8px;
+        color: var(--ion-color-dark);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .price-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        
+        .unit-price {
+          font-size: 14px;
+          color: var(--ion-color-medium-shade);
+        }
+        
+        .quantity-selector {
+          display: flex;
+          align-items: center;
+          
+          ion-button {
+            --padding-start: 4px;
+            --padding-end: 4px;
+            margin: 0;
+            height: 32px;
+          }
+          
+          .quantity {
+            width: 32px;
+            text-align: center;
+            font-weight: 500;
+          }
+        }
+      }
+      
+      .item-total {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        
+        span {
+          font-size: 14px;
+          color: var(--ion-color-dark);
+        }
+        
+        strong {
+          font-weight: 600;
+          color: var(--ion-color-primary);
+        }
+      }
+    }
+  }
+}
+
+.promo-code-section {
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  
+  h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--ion-color-dark);
+  }
+  
+  .promo-input {
+    display: flex;
+    
+    ion-input {
+      --background: #ffffff;
+      --padding-start: 12px;
+      --padding-end: 12px;
+      border-radius: 8px;
+      border: 1px solid #eaeaea;
+      height: 44px;
+      flex: 1;
+      margin-left: 12px;
+    }
+    
+    ion-button {
+      height: 44px;
+      --border-radius: 8px;
+    }
+  }
+}
+
+.order-summary {
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  
+  h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--ion-color-dark);
+  }
+  
+  .summary-line {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    position: relative;
+    
+    .label {
+      font-size: 14px;
+      color: var(--ion-color-medium-shade);
+    }
+    
+    .value {
+      font-size: 14px;
+      font-weight: 500;
+      
+      &.discount {
+        color: var(--ion-color-danger);
+      }
+    }
+    
+    &.tax-line {
+      position: relative;
+      
+      .tax-info {
+        position: absolute;
+        left: -20px;
+        top: 0;
+        display: flex;
+        align-items: center;
+        
+        ion-icon {
+          font-size: 18px;
+          color: var(--ion-color-medium);
+          cursor: pointer;
+        }
+        
+        .tax-tooltip {
+          position: absolute;
+          width: 250px;
+          background-color: rgba(0, 0, 0, 0.8);
+          color: white;
+          padding: 10px;
+          border-radius: 6px;
+          font-size: 12px;
+          line-height: 1.4;
+          top: -5px;
+          left: 25px;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.3s, visibility 0.3s;
+          z-index: 1000;
+        }
+        
+        &:hover {
+          .tax-tooltip {
+            opacity: 1;
+            visibility: visible;
+          }
+        }
+      }
+    }
+    
+    &.total {
+      margin-top: 16px;
+      border-top: 1px solid #eaeaea;
+      padding-top: 16px;
+      
+      .label {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--ion-color-dark);
+      }
+      
+      .value {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--ion-color-primary);
+      }
+    }
+  }
+}
+
+.action-buttons {
+  ion-button {
+    margin-bottom: 12px;
+    height: 48px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// Recommendations section
+.recommendations-section {
+  margin-top: 32px;
+  
+  h4 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--ion-color-dark);
+  }
+  
+  .product-slider {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 16px;
+    gap: 12px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none; // Hide scrollbar for Firefox
+    
+    &::-webkit-scrollbar {
+      display: none; // Hide scrollbar for Chrome and Safari
+    }
+    
+    .product-slide {
+      flex: 0 0 auto;
+      width: 150px;
+      scroll-snap-align: start;
+    }
+  }
+  
+  .product-card {
+    position: relative;
+    background-color: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    height: 100%;
+    
+    .sale-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background-color: var(--ion-color-danger);
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+      z-index: 1;
+    }
+    
+    .product-image {
+      width: 100%;
+      height: 150px;
+      background-color: #f8f8f8;
+      
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+    
+    .product-info {
+      padding: 10px;
+      position: relative;
+      
+      .product-name {
+        font-size: 14px;
+        font-weight: 500;
+        margin: 0 0 6px;
+        color: var(--ion-color-dark);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .product-price {
+        display: flex;
+        flex-direction: column;
+        
+        .current-price {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--ion-color-danger);
+        }
+        
+        .original-price {
+          font-size: 12px;
+          color: var(--ion-color-medium);
+          text-decoration: line-through;
+        }
+      }
+      
+      .add-to-cart-btn {
+        position: absolute;
+        right: 4px;
+        bottom: 4px;
+        --padding-start: 4px;
+        --padding-end: 4px;
+        margin: 0;
+        
+        ion-icon {
+          font-size: 24px;
+          color: var(--ion-color-danger);
+        }
+      }
+    }
+  }
+}
+
+// RTL specific styles
+:host-context([dir="rtl"]) {
+  .cart-item {
+    .product-image {
+      margin-left: 0;
+      margin-right: 16px;
+    }
+  }
+  
+  .promo-input {
+    ion-input {
+      margin-left: 0;
+      margin-right: 12px;
+    }
+  }
+  
+  .summary-line.tax-line {
+    .tax-info {
+      left: auto;
+      right: -20px;
+      
+      .tax-tooltip {
+        left: auto;
+        right: 25px;
+      }
+    }
+  }
+}

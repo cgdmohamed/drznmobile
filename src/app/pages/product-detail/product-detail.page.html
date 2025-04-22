@@ -1,0 +1,308 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>تفاصيل المنتج</ion-title>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/cart">
+        <ion-icon name="cart-outline"></ion-icon>
+      </ion-button>
+      <ion-button (click)="presentShareOptions()">
+        <ion-icon name="share-social-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding-top">
+  <!-- Loading indicator -->
+  <div class="loading-container" *ngIf="isLoading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>جاري تحميل المنتج...</p>
+  </div>
+  
+  <!-- Product content -->
+  <div class="product-container" *ngIf="!isLoading && product">
+    <!-- Product image slider -->
+    <div class="image-slider-container">
+      <div class="main-image">
+        <img [src]="selectedImage" alt="{{ product.name }}" />
+      </div>
+      
+      <div class="thumbnails" *ngIf="product.images && product.images.length > 1">
+        <div class="thumbnail-scroll">
+          <div 
+            class="thumbnail" 
+            *ngFor="let image of product.images" 
+            [class.active]="selectedImage === image.src"
+            (click)="selectImage(image.src)">
+            <img [src]="image.src" alt="{{ product.name }}" />
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Product details -->
+    <div class="product-details">
+      <h2 class="product-title">{{ product.name }}</h2>
+      
+      <!-- Ratings -->
+      <div class="ratings-container">
+        <div class="stars">
+          <ion-icon name="star" *ngFor="let num of [1,2,3,4,5]" 
+            [color]="num <= product.average_rating ? 'warning' : 'medium'"></ion-icon>
+        </div>
+        <span class="rating-count">
+          ({{ product.rating_count }})
+        </span>
+      </div>
+      
+      <!-- Price -->
+      <div class="price-container">
+        <span class="current-price" [class.sale]="product.on_sale">
+          {{ product.price }} ر.س
+        </span>
+        <span class="original-price" *ngIf="product.on_sale">
+          {{ product.regular_price }} ر.س
+        </span>
+        <span class="discount-badge" *ngIf="product.on_sale">
+          خصم {{ calculateDiscount(product.regular_price, product.sale_price) }}%
+        </span>
+      </div>
+      
+      <!-- Description -->
+      <div class="description">
+        <h4>الوصف</h4>
+        <!-- The safe pipe ensures HTML is properly rendered -->
+        <div class="description-content" [innerHTML]="product.description"></div>
+      </div>
+      
+      <!-- Attributes and variations -->
+      <div class="attributes" *ngIf="product.attributes && product.attributes.length > 0">
+        <div class="attribute" *ngFor="let attribute of product.attributes">
+          <h4>{{ attribute.name }}</h4>
+          <div class="attribute-options">
+            <div 
+              class="attribute-option" 
+              *ngFor="let option of attribute.options"
+              [class.selected]="selectedAttributes[attribute.id] === option"
+              (click)="onAttributeSelect(attribute.id, option)">
+              {{ option }}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quantity selector -->
+      <div class="quantity-container">
+        <h4>الكمية</h4>
+        <div class="quantity-selector">
+          <ion-button fill="solid" color="light" class="quantity-btn" (click)="decrementQuantity()">
+            <ion-icon name="remove-outline"></ion-icon>
+          </ion-button>
+          <div class="quantity-display">
+            <span class="quantity-value">{{ quantity }}</span>
+          </div>
+          <ion-button fill="solid" color="light" class="quantity-btn" (click)="incrementQuantity()">
+            <ion-icon name="add-outline"></ion-icon>
+          </ion-button>
+        </div>
+        <div class="stock-info" *ngIf="product.stock_quantity !== null">
+          <ion-icon name="checkmark-circle" color="success" *ngIf="product.stock_status === 'instock'"></ion-icon>
+          <ion-icon name="alert-circle" color="danger" *ngIf="product.stock_status !== 'instock'"></ion-icon>
+          <span *ngIf="product.stock_status === 'instock'" class="in-stock">متوفر في المخزون ({{ product.stock_quantity }})</span>
+          <span *ngIf="product.stock_status !== 'instock'" class="out-of-stock">غير متوفر حالياً</span>
+        </div>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="action-buttons">
+        <ion-button expand="block" (click)="addToCart()">
+          <ion-icon name="cart-outline" slot="start"></ion-icon>
+          إضافة للسلة
+        </ion-button>
+        
+        <ion-button expand="block" color="success" (click)="buyNow()">
+          <ion-icon name="flash-outline" slot="start"></ion-icon>
+          شراء الآن
+        </ion-button>
+        
+        <ion-button 
+          expand="block" 
+          fill="outline"
+          (click)="toggleWishlist()"
+          [color]="isInWishlist ? 'danger' : 'medium'">
+          <ion-icon 
+            [name]="isInWishlist ? 'heart' : 'heart-outline'" 
+            slot="start"></ion-icon>
+          {{ isInWishlist ? 'إزالة من المفضلة' : 'إضافة للمفضلة' }}
+        </ion-button>
+      </div>
+    </div>
+    
+    <!-- Reviews section -->
+    <div class="reviews-section">
+      <h3>التقييمات والمراجعات</h3>
+      
+      <!-- Rating summary -->
+      <div class="rating-summary">
+        <div class="rating-overview">
+          <div class="average-rating-large">
+            <div class="large-rating">{{ averageRating | number:'1.1-1' }}</div>
+            <div class="out-of-five">من 5</div>
+          </div>
+          
+          <div class="rating-bars">
+            <div class="rating-bar-item" *ngFor="let star of [5, 4, 3, 2, 1]">
+              <div class="star-count">{{ star }}</div>
+              <div class="bar-container">
+                <div class="bar-fill" [style.width]="getRatingPercentage(star) + '%'"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Tap to rate section -->
+        <div class="tap-to-rate">
+          <div class="tap-rate-label">اضغط للتقييم:</div>
+          <div class="tap-rate-stars">
+            <ion-icon 
+              *ngFor="let num of [1, 2, 3, 4, 5]" 
+              name="star-outline"
+              (click)="openReviewModalWithRating(num)"
+              color="warning">
+            </ion-icon>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Review list -->
+      <div class="review-list" *ngIf="reviews && reviews.length > 0">
+        <div class="review-item" *ngFor="let review of reviews">
+          <div class="review-header">
+            <div class="reviewer-info">
+              <div class="reviewer-avatar">
+                <ion-icon name="person-circle-outline"></ion-icon>
+              </div>
+              <div class="reviewer-name">
+                {{ review.reviewer }}
+              </div>
+            </div>
+            <div class="review-date">
+              {{ review.date_created | date:'mediumDate' }}
+            </div>
+          </div>
+          
+          <div class="rating-stars">
+            <ion-icon name="star" *ngFor="let num of [1,2,3,4,5]" 
+              [color]="num <= review.rating ? 'warning' : 'medium'"></ion-icon>
+          </div>
+          
+          <div class="review-content">
+            {{ review.review }}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Empty state -->
+      <div class="no-reviews" *ngIf="!reviews || reviews.length === 0">
+        <p>لا توجد تقييمات بعد. كن أول من يقيم هذا المنتج!</p>
+      </div>
+      
+      <ion-button expand="block" fill="outline" class="write-review-btn" (click)="openReviewModal()">
+        <ion-icon name="create-outline" slot="start"></ion-icon>
+        كتابة تقييم
+      </ion-button>
+    </div>
+    
+    <!-- Related products section -->
+    <app-recommendation-carousel 
+      *ngIf="!isLoading"
+      title="منتجات مشابهة"
+      description="قد تعجبك هذه المنتجات أيضاً"
+      [maxItems]="6">
+    </app-recommendation-carousel>
+  </div>
+  
+  <!-- Error message if product not loaded -->
+  <div class="error-container" *ngIf="!isLoading && !product">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    <h3>حدث خطأ</h3>
+    <p>لم يتم العثور على المنتج. الرجاء المحاولة مرة أخرى.</p>
+    <ion-button routerLink="/home">العودة للرئيسية</ion-button>
+  </div>
+</ion-content>
+
+<!-- Review Form Slide Up Panel -->
+<div class="review-overlay" *ngIf="isReviewModalOpen" (click)="closeReviewModal()"></div>
+
+<div class="review-panel" [class.open]="isReviewModalOpen">
+  <div class="review-panel-header">
+    <div class="header-left">
+      <ion-button fill="clear" size="small" (click)="closeReviewModal()" class="back-button">
+        <ion-icon [name]="isRTL ? 'arrow-forward' : 'arrow-back'" slot="icon-only"></ion-icon>
+      </ion-button>
+      <h3>كتابة تقييم</h3>
+    </div>
+    <ion-button fill="clear" (click)="closeReviewModal()" class="close-button">
+      <ion-icon name="close-outline" slot="icon-only"></ion-icon>
+    </ion-button>
+  </div>
+  
+  <div class="review-panel-content">
+    <form [formGroup]="reviewForm" (ngSubmit)="submitReview()">
+      <!-- Show name field only if not logged in -->
+      <div class="form-group" *ngIf="!isUserLoggedIn()">
+        <ion-label class="dark-label">الاسم <ion-text color="danger">*</ion-text></ion-label>
+        <ion-input type="text" formControlName="reviewer" placeholder="أدخل اسمك" required></ion-input>
+      </div>
+      
+      <!-- Show email field only if not logged in -->
+      <div class="form-group" *ngIf="!isUserLoggedIn()">
+        <ion-label class="dark-label">البريد الإلكتروني <ion-text color="danger">*</ion-text></ion-label>
+        <ion-input type="email" formControlName="email" placeholder="أدخل بريدك الإلكتروني" required></ion-input>
+      </div>
+      
+      <!-- Show 'commenting as' message for logged in users -->
+      <div class="commenting-as" *ngIf="isUserLoggedIn()">
+        <p>التعليق كـ <strong>{{ getUserName() }}</strong></p>
+      </div>
+      
+      <div class="form-group">
+        <ion-label class="dark-label">التقييم <ion-text color="danger">*</ion-text></ion-label>
+        <div class="tap-to-rate">
+          <span>اضغط للتقييم:</span>
+          <div class="star-rating">
+            <ion-icon 
+              *ngFor="let num of [1, 2, 3, 4, 5]" 
+              [name]="num <= reviewRating ? 'star' : 'star-outline'"
+              (click)="setRating(num)"
+              color="warning">
+            </ion-icon>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <ion-label class="dark-label">التعليق <ion-text color="danger">*</ion-text></ion-label>
+        <ion-textarea 
+          rows="3" 
+          formControlName="review" 
+          placeholder="اكتب تعليقك هنا..." 
+          required>
+        </ion-textarea>
+      </div>
+      
+      <div class="submit-button-container">
+        <ion-button 
+          expand="block" 
+          type="submit" 
+          [disabled]="reviewForm.invalid || reviewRating === 0 || isSubmittingReview">
+          <ion-spinner name="crescent" *ngIf="isSubmittingReview"></ion-spinner>
+          <span *ngIf="!isSubmittingReview">إرسال التقييم</span>
+        </ion-button>
+      </div>
+    </form>
+  </div>
+</div>

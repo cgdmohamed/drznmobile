@@ -1,0 +1,159 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar color="danger">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/orders"></ion-back-button>
+    </ion-buttons>
+    <ion-title>تفاصيل الطلب</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content
+      pullingIcon="chevron-down-circle-outline"
+      pullingText="اسحب للتحديث"
+      refreshingSpinner="circles"
+      refreshingText="جاري التحديث...">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Loading Skeleton -->
+  <div class="skeleton-container" *ngIf="isLoading">
+    <div class="skeleton-header">
+      <div class="skeleton-title"></div>
+      <div class="skeleton-badge"></div>
+    </div>
+    
+    <div class="skeleton-section">
+      <div class="skeleton-subtitle"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    </div>
+    
+    <div class="skeleton-section">
+      <div class="skeleton-subtitle"></div>
+      <div class="skeleton-product" *ngFor="let i of [1,2,3]">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-product-details">
+          <div class="skeleton-product-title"></div>
+          <div class="skeleton-product-price"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="skeleton-section">
+      <div class="skeleton-subtitle"></div>
+      <div class="skeleton-summary-row" *ngFor="let i of [1,2,3,4]">
+        <div class="skeleton-label"></div>
+        <div class="skeleton-value"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Details -->
+  <div class="order-details-container" *ngIf="!isLoading && order">
+    <!-- Order Header -->
+    <div class="order-header">
+      <div class="order-info">
+        <h2>طلب #{{ order.number }}</h2>
+        <p class="order-date">{{ getFormattedDate(order.date_created) }}</p>
+      </div>
+      <div class="order-status" [ngClass]="getOrderStatusClass(order.status)">
+        {{ getOrderStatusText(order.status) }}
+      </div>
+    </div>
+    
+    <!-- Shipping Information -->
+    <div class="order-section">
+      <h3>عنوان الشحن</h3>
+      <div class="shipping-info">
+        <p class="customer-name">{{ order.shipping.first_name }} {{ order.shipping.last_name }}</p>
+        <p class="address">{{ order.shipping.address_1 }}</p>
+        <p *ngIf="order.shipping.address_2" class="address">{{ order.shipping.address_2 }}</p>
+        <p class="city-state">{{ order.shipping.city }}، {{ order.shipping.state }}</p>
+        <p class="country-postcode">{{ order.shipping.country }} {{ order.shipping.postcode }}</p>
+        <p class="contact">{{ order.billing.phone }}</p>
+        <p class="email">{{ order.billing.email }}</p>
+      </div>
+    </div>
+    
+    <!-- Order Items -->
+    <div class="order-section">
+      <h3>المنتجات</h3>
+      <div class="product-list">
+        <div class="product-item" *ngFor="let item of order.line_items">
+          <div class="product-image">
+            <img [src]="item.image?.src || 'assets/images/placeholder.png'" alt="{{ item.name }}">
+          </div>
+          <div class="product-details">
+            <h4 class="product-name">{{ item.name }}</h4>
+            <div class="product-meta">
+              <span class="product-quantity">{{ item.quantity }} × </span>
+              <span class="product-price">{{ item.price }} ر.س</span>
+            </div>
+            <div class="product-total">
+              <span>الإجمالي: </span>
+              <span class="product-total-price">{{ item.total }} ر.س</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Order Summary -->
+    <div class="order-section">
+      <h3>ملخص الطلب</h3>
+      <div class="order-summary">
+        <div class="summary-row">
+          <div class="summary-label">المجموع الفرعي</div>
+          <div class="summary-value">{{ order.subtotal }} ر.س</div>
+        </div>
+        
+        <div class="summary-row" *ngIf="parseFloat(order.discount_total) > 0">
+          <div class="summary-label">الخصم</div>
+          <div class="summary-value discount">- {{ order.discount_total }} ر.س</div>
+        </div>
+        
+        <div class="summary-row">
+          <div class="summary-label">الشحن</div>
+          <div class="summary-value">{{ order.shipping_total }} ر.س</div>
+        </div>
+        
+        <div class="summary-row">
+          <div class="summary-label">ضريبة القيمة المضافة</div>
+          <div class="summary-value">{{ order.total_tax }} ر.س</div>
+        </div>
+        
+        <div class="summary-row total">
+          <div class="summary-label">الإجمالي</div>
+          <div class="summary-value">{{ order.total }} ر.س</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Payment Information -->
+    <div class="order-section">
+      <h3>معلومات الدفع</h3>
+      <div class="payment-info">
+        <div class="payment-method">
+          <ion-icon name="card-outline"></ion-icon>
+          <span>{{ order.payment_method_title }}</span>
+        </div>
+        
+        <div class="payment-status" *ngIf="order.date_paid">
+          <ion-icon name="checkmark-circle"></ion-icon>
+          <span>تم الدفع: {{ getFormattedDate(order.date_paid) }}</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="order-actions" *ngIf="!statusUpdating && (order.status === 'pending' || order.status === 'processing' || order.status === 'on-hold')">
+      <ion-button expand="block" color="danger" (click)="requestCancellation()">
+        <ion-icon name="close-circle-outline" slot="start"></ion-icon>
+        إلغاء الطلب
+      </ion-button>
+    </div>
+  </div>
+</ion-content>

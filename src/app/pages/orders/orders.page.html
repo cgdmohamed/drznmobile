@@ -1,0 +1,101 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar color="danger">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/profile"></ion-back-button>
+    </ion-buttons>
+    <ion-title>طلباتي</ion-title>
+  </ion-toolbar>
+  
+  <ion-toolbar>
+    <ion-segment [value]="activeFilter" (ionChange)="filterOrders($event.detail.value)" mode="md" scrollable>
+      <ion-segment-button value="all">
+        <ion-label>الكل</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="processing">
+        <ion-label>قيد التنفيذ</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="completed">
+        <ion-label>مكتملة</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="cancelled">
+        <ion-label>ملغية</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content
+      pullingIcon="chevron-down-circle-outline"
+      pullingText="اسحب للتحديث"
+      refreshingSpinner="circles"
+      refreshingText="جاري التحديث...">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Orders List -->
+  <div class="orders-container" *ngIf="!isLoading && filteredOrders.length > 0">
+    <div class="order-card" *ngFor="let order of filteredOrders" [routerLink]="['/order', order.id]">
+      <div class="order-header">
+        <div class="order-info">
+          <div class="order-number">
+            <span>طلب #</span>{{ order.number }}
+          </div>
+          <div class="order-date">
+            {{ order.date_created | date:'dd/MM/yyyy' }}
+          </div>
+        </div>
+        <div class="order-status" [ngClass]="getOrderStatusClass(order.status)">
+          {{ getOrderStatusText(order.status) }}
+        </div>
+      </div>
+      
+      <div class="order-items">
+        <div class="order-items-count">
+          <ion-icon name="bag-outline"></ion-icon>
+          <span>{{ order.line_items.length }} منتج</span>
+        </div>
+        
+        <div class="order-total">
+          <span>المجموع:</span>
+          <span class="total-price">{{ order.total }} ر.س</span>
+        </div>
+      </div>
+      
+      <div class="order-footer">
+        <ion-button fill="clear" size="small">
+          <ion-icon name="arrow-forward-outline" slot="end"></ion-icon>
+          عرض التفاصيل
+        </ion-button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading && filteredOrders.length === 0">
+    <ion-icon name="bag-handle-outline"></ion-icon>
+    <h3>لا توجد طلبات</h3>
+    <p>لم تقم بإجراء أي طلبات بعد أو لا توجد طلبات تطابق تصفيتك الحالية.</p>
+    <ion-button expand="block" routerLink="/home">
+      تصفح المنتجات
+    </ion-button>
+  </div>
+  
+  <!-- Loading Skeleton -->
+  <div class="skeleton-container" *ngIf="isLoading">
+    <div class="skeleton-order" *ngFor="let i of [1,2,3,4,5]">
+      <div class="skeleton-header">
+        <div class="skeleton-text"></div>
+        <div class="skeleton-badge"></div>
+      </div>
+      <div class="skeleton-content">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+      <div class="skeleton-footer">
+        <div class="skeleton-button"></div>
+      </div>
+    </div>
+  </div>
+</ion-content>

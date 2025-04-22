@@ -1,0 +1,255 @@
+/*
+ * App Global CSS
+ * ----------------------------------------------------------------------------
+ * Put style rules here that you want to apply globally. These styles are for
+ * the entire app and not just one component. Additionally, this file can be
+ * used as an entry point to import other CSS/Sass files to be included in the
+ * output CSS.
+ * For more information on global stylesheets, visit the documentation:
+ * https://ionicframework.com/docs/layout/global-stylesheets
+ */
+
+/* Core CSS required for Ionic components to work properly */
+@import "@ionic/angular/css/core.css";
+
+/* Basic CSS for apps built with Ionic */
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import '@ionic/angular/css/display.css';
+
+/* Optional CSS utils that can be commented out */
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+
+/* Custom styles for our app */
+
+/* Content padding for bottom tabs */
+ion-content {
+  --padding-bottom: 70px; /* Add padding for bottom tabs */
+}
+
+/* RTL Direction support */
+[dir="rtl"] {
+  .swiper-button-next {
+    left: 10px;
+    right: auto;
+  }
+
+  .swiper-button-prev {
+    right: 10px;
+    left: auto;
+  }
+}
+
+/* Dark theme support */
+.dark-theme {
+  --ion-color-primary: #ff6b78;
+  --ion-color-primary-rgb: 255, 107, 120;
+}
+
+/* Professional loading progress indicator */
+ion-progress-bar {
+  --background: transparent;
+  --progress-background: var(--ion-color-primary);
+  height: 3px;
+  border-radius: 3px;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  
+  /* Add slight blur effect below */
+  box-shadow: 0 1px 3px rgba(236, 28, 36, 0.2);
+}
+
+/* Add subtle animation to make it more professional */
+@keyframes progressPulse {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+ion-progress-bar.animate {
+  animation: progressPulse 1.5s infinite ease-in-out;
+}
+
+/* Dark mode additional properties */
+.dark-theme {
+  --ion-background-color: #121212;
+  --ion-background-color-rgb: 18, 18, 18;
+  --ion-text-color: #ffffff;
+  --ion-text-color-rgb: 255, 255, 255;
+  --ion-border-color: #222222;
+  --ion-item-background: #1e1e1e;
+  --ion-toolbar-background: #1e1e1e;
+  --ion-tab-bar-background: #1f1f1f;
+  --ion-card-background: #1e1e1e;
+  
+  ion-content {
+    --background: #121212;
+  }
+  
+  .product-card {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+  }
+  
+  .section-header h2 {
+    color: #fff;
+  }
+}
+
+/* Text sizes */
+.text-size-small {
+  --ion-font-size-root: 14px;
+  
+  h1 { font-size: 20px; }
+  h2 { font-size: 18px; }
+  h3 { font-size: 16px; }
+  p { font-size: 14px; }
+}
+
+.text-size-medium {
+  --ion-font-size-root: 16px;
+  
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 18px; }
+  p { font-size: 16px; }
+}
+
+.text-size-large {
+  --ion-font-size-root: 18px;
+  
+  h1 { font-size: 28px; }
+  h2 { font-size: 24px; }
+  h3 { font-size: 20px; }
+  p { font-size: 18px; }
+}
+
+/* Primary brand color */
+:root {
+  --ion-color-primary: #E9324A;
+  --ion-color-primary-rgb: 233, 50, 74;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #cd2c41;
+  --ion-color-primary-tint: #eb475c;
+}
+
+/* Font Family (for Arabic support) */
+:root {
+  --ion-font-family: 'Cairo', sans-serif;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 400;
+  src: url('https://fonts.gstatic.com/s/cairo/v10/SLXGc1nY6HkvalIkTpu0xg.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FBC1, U+FBD3-FD3D, U+FD50-FD8F, U+FD92-FDC7, U+FDF0-FDFB, U+FE70-FE74, U+FE76-FEFC;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 400;
+  src: url('https://fonts.gstatic.com/s/cairo/v10/SLXGc1nY6HkvalIvTpu0xg.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 700;
+  src: url('https://fonts.gstatic.com/s/cairo/v10/SLXLc1nY6Hkvalqaa46O59ZMaA.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FBC1, U+FBD3-FD3D, U+FD50-FD8F, U+FD92-FDC7, U+FDF0-FDFB, U+FE70-FE74, U+FE76-FEFC;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 700;
+  src: url('https://fonts.gstatic.com/s/cairo/v10/SLXLc1nY6Hkvalqaa46O59ZMaA.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* 
+* Custom Pull-to-Refresh Animation Styles
+* These styles enhance the default Ionic pull-to-refresh animations
+*/
+.custom-refresher {
+  transition: all 0.3s ease-out !important;
+}
+
+.custom-refresher.refreshing-animation .refresher-refreshing-icon {
+  color: var(--ion-color-primary);
+  transform-origin: center center;
+}
+
+.custom-refresher.pulling-animation .refresher-pulling-icon {
+  color: var(--ion-color-primary);
+  transition: transform 0.2s ease-out !important;
+}
+
+.custom-refresher .refresher-pulling-text,
+.custom-refresher .refresher-refreshing-text {
+  color: var(--ion-color-primary);
+  font-weight: 500;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+ion-refresher.custom-refresher {
+  z-index: 100;
+}
+
+ion-refresher.custom-refresher .custom-spinner {
+  position: relative;
+}
+
+ion-refresher.custom-refresher .custom-spinner::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(236, 28, 36, 0.2);
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+}

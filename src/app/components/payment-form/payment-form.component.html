@@ -1,0 +1,24 @@
+<div class="payment-form-container">
+  <div class="loading-container" *ngIf="isProcessing">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>جاري تهيئة نموذج الدفع...</p>
+  </div>
+  
+  <div class="error-container" *ngIf="!isInitialized && !isProcessing">
+    <p class="error-message">حدث خطأ أثناء تهيئة نموذج الدفع</p>
+    <ion-button expand="block" size="small" (click)="retry()">
+      إعادة المحاولة
+    </ion-button>
+  </div>
+  
+  <!-- Apple Pay Button (only for iOS devices) -->
+  <div class="apple-pay-container" *ngIf="isApplePayAvailable">
+    <ion-button expand="block" class="apple-pay-button" (click)="processApplePay()">
+      <ion-icon name="logo-apple"></ion-icon>
+      الدفع باستخدام Apple Pay
+    </ion-button>
+  </div>
+  
+  <!-- Moyasar Payment Form Container -->
+  <div [id]="paymentFormId" class="moyasar-form"></div>
+</div>

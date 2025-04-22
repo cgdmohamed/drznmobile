@@ -1,0 +1,212 @@
+{
+  "id": 25417,
+  "name": "مطهر داك مع حماية كاملة (يقتل 99.9% من الجراثيم)، وردي، عبوة ثلاثية، 3 × 4.5 لتر",
+  "slug": "%d9%85%d8%b7%d9%87%d8%b1-%d8%af%d8%a7%d9%83-%d9%85%d8%b9-%d8%ad%d9%85%d8%a7%d9%8a%d8%a9-%d9%83%d8%a7%d9%85%d9%84%d8%a9-%d9%8a%d9%82%d8%aa%d9%84-99-9-%d9%85%d9%86-%d8%a7%d9%84%d8%ac%d8%b1%d8%a7%d8%ab",
+  "permalink": "https://app.drzn.sa/product/%d9%85%d8%b7%d9%87%d8%b1-%d8%af%d8%a7%d9%83-%d9%85%d8%b9-%d8%ad%d9%85%d8%a7%d9%8a%d8%a9-%d9%83%d8%a7%d9%85%d9%84%d8%a9-%d9%8a%d9%82%d8%aa%d9%84-99-9-%d9%85%d9%86-%d8%a7%d9%84%d8%ac%d8%b1%d8%a7%d8%ab/",
+  "date_created": "2025-04-13T14:04:14",
+  "date_created_gmt": "2025-04-13T11:04:14",
+  "date_modified": "2025-04-13T14:37:31",
+  "date_modified_gmt": "2025-04-13T11:37:31",
+  "type": "simple",
+  "status": "publish",
+  "featured": false,
+  "catalog_visibility": "visible",
+  "description": "<p>مطهر داك مع حماية كاملة (يقتل 99.9% من الجراثيم)، وردي، عبوة ثلاثية، 3 × 4.5 لتر</p>\n",
+  "short_description": "",
+  "sku": "",
+  "price": "71.95",
+  "regular_price": "71.95",
+  "sale_price": "",
+  "date_on_sale_from": null,
+  "date_on_sale_from_gmt": null,
+  "date_on_sale_to": null,
+  "date_on_sale_to_gmt": null,
+  "on_sale": false,
+  "purchasable": true,
+  "total_sales": 0,
+  "virtual": false,
+  "downloadable": false,
+  "downloads": [],
+  "download_limit": -1,
+  "download_expiry": -1,
+  "external_url": "",
+  "button_text": "",
+  "tax_status": "taxable",
+  "tax_class": "",
+  "manage_stock": false,
+  "stock_quantity": null,
+  "backorders": "no",
+  "backorders_allowed": false,
+  "backordered": false,
+  "low_stock_amount": null,
+  "sold_individually": false,
+  "weight": "",
+  "dimensions": {
+    "length": "",
+    "width": "",
+    "height": ""
+  },
+  "shipping_required": true,
+  "shipping_taxable": true,
+  "shipping_class": "",
+  "shipping_class_id": 0,
+  "reviews_allowed": true,
+  "average_rating": "0.00",
+  "rating_count": 0,
+  "upsell_ids": [],
+  "cross_sell_ids": [],
+  "parent_id": 0,
+  "purchase_note": "",
+  "categories": [
+    {
+      "id": 833,
+      "name": "المعقمات والمطهرات",
+      "slug": "%d8%a7%d9%84%d9%85%d8%b9%d9%82%d9%85%d8%a7%d8%aa-%d9%88%d8%a7%d9%84%d9%85%d8%b7%d9%87%d8%b1%d8%a7%d8%aa"
+    },
+    {
+      "id": 1380,
+      "name": "العناية بالمنزل",
+      "slug": "%d8%a7%d9%84%d8%b9%d9%86%d8%a7%d9%8a%d8%a9-%d8%a8%d8%a7%d9%84%d9%85%d9%86%d8%b2%d9%84"
+    },
+    {
+      "id": 1381,
+      "name": "منظفات الأرضيات",
+      "slug": "%d9%85%d9%86%d8%b8%d9%81%d8%a7%d8%aa-%d8%a7%d9%84%d8%a3%d8%b1%d8%b6%d9%8a%d8%a7%d8%aa"
+    }
+  ],
+  "tags": [],
+  "images": [
+    {
+      "id": 25491,
+      "date_created": "2025-04-13T17:30:24",
+      "date_created_gmt": "2025-04-13T11:30:24",
+      "date_modified": "2025-04-13T17:37:31",
+      "date_modified_gmt": "2025-04-13T11:37:31",
+      "src": "https://app.drzn.sa/wp-content/uploads/2025/04/مطهر-داك-مع-حماية-كاملة-يقتل-99.9-من-الجراثيم،-وردي،-عبوة-ثلاثية،-3-×-4.5-لتر.jpg",
+      "name": "مطهر داك مع حماية كاملة (يقتل 99.9% من الجراثيم)، وردي، عبوة ثلاثية، 3 × 4.5 لتر",
+      "alt": "",
+      "1536x1536": "https://app.drzn.sa/wp-content/uploads/2025/04/مطهر-داك-مع-حماية-كاملة-يقتل-99.9-من-الجراثيم،-وردي،-عبوة-ثلاثية،-3-×-4.5-لتر.jpg",
+      "2048x2048": "https://app.drzn.sa/wp-content/uploads/2025/04/مطهر-داك-مع-حماية-كاملة-يقتل-99.9-من-الجراثيم،-وردي،-عبوة-ثلاثية،-3-×-4.5-لتر.jpg",
+      "woocommerce_thumbnail": "https://app.drzn.sa/wp-content/uploads/2025/04/مطهر-داك-مع-حماية-كاملة-يقتل-99.9-من-الجراثيم،-وردي،-عبوة-ثلاثية،-3-×-4.5-لتر-300x300.jpg",
+      "woocommerce_single": "https://app.drzn.sa/wp-content/uploads/2025/04/مطهر-داك-مع-حماية-كاملة-يقتل-99.9-من-الجراثيم،-وردي،-عبوة-ثلاثية،-3-×-4.5-لتر-600x600.jpg",
+      "woocommerce_gallery_thumbnail": "https://app.drzn.sa/wp-content/uploads/2025/04/مطهر-داك-مع-حماية-كاملة-يقتل-99.9-من-الجراثيم،-وردي،-عبوة-ثلاثية،-3-×-4.5-لتر-150x150.jpg"
+    },
+    {
+      "id": 25418,
+      "date_created": "2025-04-13T17:04:15",
+      "date_created_gmt": "2025-04-13T11:04:15",
+      "date_modified": "2025-04-13T17:04:15",
+      "date_modified_gmt": "2025-04-13T11:04:15",
+      "src": "https://app.drzn.sa/wp-content/uploads/2025/04/71Y5Ql6nCHL._AC_SL1500_.jpg",
+      "name": "71Y5Ql6nCHL._AC_SL1500_.jpg",
+      "alt": "",
+      "1536x1536": "https://app.drzn.sa/wp-content/uploads/2025/04/71Y5Ql6nCHL._AC_SL1500_.jpg",
+      "2048x2048": "https://app.drzn.sa/wp-content/uploads/2025/04/71Y5Ql6nCHL._AC_SL1500_.jpg",
+      "woocommerce_thumbnail": "https://app.drzn.sa/wp-content/uploads/2025/04/71Y5Ql6nCHL._AC_SL1500_-300x300.jpg",
+      "woocommerce_single": "https://app.drzn.sa/wp-content/uploads/2025/04/71Y5Ql6nCHL._AC_SL1500_-600x600.jpg",
+      "woocommerce_gallery_thumbnail": "https://app.drzn.sa/wp-content/uploads/2025/04/71Y5Ql6nCHL._AC_SL1500_-150x150.jpg"
+    },
+    {
+      "id": 25419,
+      "date_created": "2025-04-13T17:04:16",
+      "date_created_gmt": "2025-04-13T11:04:16",
+      "date_modified": "2025-04-13T17:04:16",
+      "date_modified_gmt": "2025-04-13T11:04:16",
+      "src": "https://app.drzn.sa/wp-content/uploads/2025/04/71V6yYadObL._AC_SL1500_.jpg",
+      "name": "71V6yYadObL._AC_SL1500_.jpg",
+      "alt": "",
+      "1536x1536": "https://app.drzn.sa/wp-content/uploads/2025/04/71V6yYadObL._AC_SL1500_.jpg",
+      "2048x2048": "https://app.drzn.sa/wp-content/uploads/2025/04/71V6yYadObL._AC_SL1500_.jpg",
+      "woocommerce_thumbnail": "https://app.drzn.sa/wp-content/uploads/2025/04/71V6yYadObL._AC_SL1500_-300x300.jpg",
+      "woocommerce_single": "https://app.drzn.sa/wp-content/uploads/2025/04/71V6yYadObL._AC_SL1500_-600x600.jpg",
+      "woocommerce_gallery_thumbnail": "https://app.drzn.sa/wp-content/uploads/2025/04/71V6yYadObL._AC_SL1500_-150x150.jpg"
+    },
+    {
+      "id": 25403,
+      "date_created": "2025-04-13T17:03:59",
+      "date_created_gmt": "2025-04-13T11:03:59",
+      "date_modified": "2025-04-13T17:03:59",
+      "date_modified_gmt": "2025-04-13T11:03:59",
+      "src": "https://app.drzn.sa/wp-content/uploads/2025/04/81Y8OJbAqRL._AC_SL1500_.jpg",
+      "name": "81Y8OJbAqRL._AC_SL1500_.jpg",
+      "alt": "",
+      "1536x1536": "https://app.drzn.sa/wp-content/uploads/2025/04/81Y8OJbAqRL._AC_SL1500_.jpg",
+      "2048x2048": "https://app.drzn.sa/wp-content/uploads/2025/04/81Y8OJbAqRL._AC_SL1500_.jpg",
+      "woocommerce_thumbnail": "https://app.drzn.sa/wp-content/uploads/2025/04/81Y8OJbAqRL._AC_SL1500_-300x300.jpg",
+      "woocommerce_single": "https://app.drzn.sa/wp-content/uploads/2025/04/81Y8OJbAqRL._AC_SL1500_-600x600.jpg",
+      "woocommerce_gallery_thumbnail": "https://app.drzn.sa/wp-content/uploads/2025/04/81Y8OJbAqRL._AC_SL1500_-150x150.jpg"
+    }
+  ],
+  "attributes": [
+    {
+      "id": 2,
+      "name": "الماركة",
+      "slug": "pa_brand",
+      "position": 0,
+      "visible": true,
+      "variation": false,
+      "options": [
+        "داك"
+      ]
+    }
+  ],
+  "default_attributes": [],
+  "variations": [],
+  "grouped_products": [],
+  "menu_order": 0,
+  "price_html": "<span class=\"woocommerce-Price-amount amount\"><bdi>71.95&nbsp;<span class=\"woocommerce-Price-currencySymbol\">&#x631;.&#x633;</span></bdi></span>",
+  "related_ids": [
+    20326,
+    20325,
+    25446,
+    21727,
+    24141
+  ],
+  "meta_data": [
+    {
+      "id": 615676,
+      "key": "_wc_gla_sync_status",
+      "value": "has-errors"
+    },
+    {
+      "id": 616030,
+      "key": "_wc_gla_errors",
+      "value": [
+        "[imageLink] Product image \"مطهر-داك-مع-حماية-كاملة-يقتل-99.9-من-الجراثيم،-وردي،-عبوة-ثلاثية،-3-×-4.5-لتر.jpg\" is not a valid name.",
+        "[gtin] This value is not valid."
+      ]
+    },
+    {
+      "id": 616031,
+      "key": "_wc_gla_visibility",
+      "value": "sync-and-show"
+    },
+    {
+      "id": 616533,
+      "key": "woodmart_history_of_visits",
+      "value": [
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122,
+        1745014122
+      ]
+    }
+  ],
+  "stock_status": "instock",
+  "has_options": false,
+  "post_password": "",
+}

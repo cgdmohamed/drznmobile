@@ -1,0 +1,126 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <img src="assets/icon/darzn-logo.svg" alt="DARZN" class="header-logo">
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/search">
+        <ion-icon slot="icon-only" name="search-outline"></ion-icon>
+      </ion-button>
+      <ion-button class="cart-button" routerLink="/cart">
+        <ion-icon slot="icon-only" name="cart-outline"></ion-icon>
+        <span class="cart-badge" *ngIf="(cartService.cart | async)?.itemCount > 0">
+          {{ (cartService.cart | async)?.itemCount }}
+        </span>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Hero Banner -->
+  <div class="hero-banner darzn-yellow-background">
+    <div class="hero-content">
+      <h1 class="hero-title">شحن مجاني على الطلبات</h1>
+      <h2 class="hero-subtitle">أكثر من 200 ريال</h2>
+    </div>
+    <div class="hero-image">
+      <!-- Image would be better served as an SVG for web -->
+      <img src="assets/icon/delivery-illustration.svg" alt="Free Delivery">
+    </div>
+  </div>
+
+  <!-- Categories Slider -->
+  <div class="section">
+    <ion-slides [options]="categoryOptions" pager="false">
+      <ion-slide *ngFor="let category of mainCategories">
+        <app-category-item [category]="category"></app-category-item>
+      </ion-slide>
+    </ion-slides>
+  </div>
+
+  <!-- Bestsellers Section -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">الأكثر مبيعاً</h2>
+      <ion-button fill="clear" size="small" routerLink="/products">عرض الكل</ion-button>
+    </div>
+    
+    <ion-slides [options]="sliderOptions" pager="false">
+      <ion-slide *ngFor="let product of bestsellerProducts">
+        <app-product-card 
+          [product]="product"
+          (favoriteChanged)="onFavoriteChange($event)">
+        </app-product-card>
+      </ion-slide>
+    </ion-slides>
+  </div>
+
+  <!-- On Sale Section -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">العروض</h2>
+      <ion-button fill="clear" size="small" routerLink="/products" [queryParams]="{on_sale: true}">عرض الكل</ion-button>
+    </div>
+    
+    <ion-slides [options]="sliderOptions" pager="false">
+      <ion-slide *ngFor="let product of onSaleProducts">
+        <app-product-card 
+          [product]="product"
+          (favoriteChanged)="onFavoriteChange($event)">
+        </app-product-card>
+      </ion-slide>
+    </ion-slides>
+  </div>
+
+  <!-- Featured Products Section -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">منتجات مميزة</h2>
+      <ion-button fill="clear" size="small" routerLink="/products" [queryParams]="{featured: true}">عرض الكل</ion-button>
+    </div>
+    
+    <ion-slides [options]="sliderOptions" pager="false">
+      <ion-slide *ngFor="let product of featuredProducts">
+        <app-product-card 
+          [product]="product"
+          (favoriteChanged)="onFavoriteChange($event)">
+        </app-product-card>
+      </ion-slide>
+    </ion-slides>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div class="loading-container" *ngIf="isLoading">
+    <ion-spinner name="crescent" color="primary"></ion-spinner>
+    <p>جاري التحميل...</p>
+  </div>
+
+  <!-- Tab Bar -->
+  <ion-tab-bar slot="bottom">
+    <ion-tab-button tab="home" selected>
+      <ion-icon name="home"></ion-icon>
+      <ion-label>الرئيسية</ion-label>
+    </ion-tab-button>
+    
+    <ion-tab-button tab="categories" routerLink="/categories">
+      <ion-icon name="grid"></ion-icon>
+      <ion-label>الأقسام</ion-label>
+    </ion-tab-button>
+    
+    <ion-tab-button tab="account" routerLink="/account">
+      <ion-icon name="person"></ion-icon>
+      <ion-label>حسابي</ion-label>
+    </ion-tab-button>
+    
+    <ion-tab-button tab="cart" routerLink="/cart">
+      <ion-icon name="cart"></ion-icon>
+      <ion-label>السلة</ion-label>
+      <ion-badge *ngIf="(cartService.cart | async)?.itemCount > 0">{{ (cartService.cart | async)?.itemCount }}</ion-badge>
+    </ion-tab-button>
+  </ion-tab-bar>
+</ion-content>

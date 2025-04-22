@@ -1,0 +1,76 @@
+<ion-content>
+  <div class="otp-container">
+    <div class="back-button" (click)="goBack()">
+      <ion-icon name="arrow-back-outline"></ion-icon>
+      <span>رجوع</span>
+    </div>
+    
+    <!-- Phone Input Screen -->
+    <div *ngIf="!otpSent" class="phone-container">
+      <div class="phone-icon">
+        <ion-icon name="phone-portrait-outline"></ion-icon>
+      </div>
+      
+      <h2>تسجيل الدخول برقم الهاتف</h2>
+      <p>سيتم إرسال رمز التحقق إلى رقم هاتفك</p>
+      
+      <div class="phone-input-container">
+        <div class="country-code">+966</div>
+        <ion-input 
+          type="tel" 
+          placeholder="أدخل رقم الهاتف"
+          [(ngModel)]="phoneNumber"
+          maxlength="10">
+        </ion-input>
+      </div>
+      
+      <ion-button 
+        expand="block" 
+        class="send-otp-button" 
+        [disabled]="isSubmitting || !phoneNumber" 
+        (click)="sendOtp()">
+        إرسال رمز التحقق
+      </ion-button>
+    </div>
+    
+    <!-- OTP Verification Screen -->
+    <div *ngIf="otpSent" class="otp-verification-container">
+      <div class="otp-icon">
+        <ion-icon name="key-outline"></ion-icon>
+      </div>
+      
+      <h2>أدخل رمز التحقق</h2>
+      <p>تم إرسال رمز التحقق إلى رقم {{ phoneNumber }}</p>
+      
+      <!-- Testing message -->
+      <div class="test-message">
+        <ion-note color="medium">للاختبار: يمكنك إدخال أي رمز مكون من 4 أرقام</ion-note>
+      </div>
+      
+      <div class="otp-input-container">
+        <ion-input 
+          #otpDigitInput
+          *ngFor="let digit of otpCode; let i = index" 
+          type="tel" 
+          maxlength="1" 
+          [(ngModel)]="otpCode[i]"
+          (ionInput)="otpDigitInputChanged(i, $event)"
+          (keydown)="onKeyDown(i, $event)">
+        </ion-input>
+      </div>
+      
+      <ion-button 
+        expand="block" 
+        class="verify-button" 
+        [disabled]="isSubmitting || otpCode.includes('')" 
+        (click)="verifyOtp()">
+        تحقق
+      </ion-button>
+      
+      <div class="resend-code">
+        <span>لم تستلم الرمز؟</span>
+        <a (click)="sendOtp()">إرسال مرة أخرى</a>
+      </div>
+    </div>
+  </div>
+</ion-content>

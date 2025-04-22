@@ -1,0 +1,38 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>التصنيفات</ion-title>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/cart">
+        <ion-icon slot="icon-only" name="cart-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="ion-padding">
+    <div class="categories-container" *ngIf="!isLoading">
+      <div class="category-card" *ngFor="let category of categories" (click)="viewCategory(category.id)">
+        <div class="category-image">
+          <img [src]="category.image?.src || 'assets/placeholder.png'" [alt]="category.name">
+        </div>
+        <div class="category-info">
+          <h3>{{ category.name }}</h3>
+          <p>{{ category.count }} منتج</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skeleton screens for loading state -->
+    <div *ngIf="isLoading" class="categories-container">
+      <app-skeleton *ngFor="let i of [1,2,3,4,5,6]" type="category"></app-skeleton>
+    </div>
+  </div>
+</ion-content>

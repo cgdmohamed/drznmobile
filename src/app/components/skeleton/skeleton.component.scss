@@ -1,0 +1,369 @@
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+// Common styles for all skeleton elements
+.skeleton-animated {
+  position: relative;
+  background: #f0f0f0;
+  background-image: linear-gradient(to right, #f0f0f0 0%, #e0e0e0 20%, #f0f0f0 40%, #f0f0f0 100%);
+  background-repeat: no-repeat;
+  background-size: 800px 100%;
+  animation-duration: 1.5s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: infinite;
+  animation-name: shimmer;
+  animation-timing-function: linear;
+}
+
+// Product Card Skeleton
+.skeleton-card {
+  width: 100%;
+  height: 270px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: #f7f7f7;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  
+  .skeleton-image {
+    height: 150px;
+    background-color: #e7e7e7;
+    border-radius: 8px 8px 0 0;
+  }
+  
+  .skeleton-content {
+    padding: 12px;
+    
+    .skeleton-title {
+      height: 16px;
+      margin-bottom: 8px;
+      width: 80%;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+    }
+    
+    .skeleton-price {
+      height: 20px;
+      width: 50%;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+    
+    .skeleton-actions {
+      height: 36px;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+    }
+  }
+}
+
+// List Item Skeleton
+.skeleton-list-item {
+  display: flex;
+  width: 100%;
+  height: 80px;
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: #f7f7f7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  
+  .skeleton-list-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    background-color: #e7e7e7;
+    margin-right: 12px;
+  }
+  
+  .skeleton-list-content {
+    flex: 1;
+    padding: 4px 0;
+    
+    .skeleton-list-title {
+      height: 16px;
+      width: 70%;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    
+    .skeleton-list-subtitle {
+      height: 14px;
+      width: 40%;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+    }
+  }
+}
+
+// Category Skeleton
+.skeleton-categories {
+  display: flex;
+  overflow-x: auto;
+  padding: 8px 0;
+  
+  .skeleton-category {
+    min-width: 80px;
+    margin-right: 16px;
+    text-align: center;
+    
+    .skeleton-category-image {
+      width: 70px;
+      height: 70px;
+      border-radius: 35px;
+      background-color: #e7e7e7;
+      margin: 0 auto 8px;
+    }
+    
+    .skeleton-category-title {
+      height: 12px;
+      width: 80%;
+      margin: 0 auto;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+    }
+  }
+}
+
+// Banner Skeleton
+.skeleton-banner {
+  width: 100%;
+  height: 180px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  background-color: #e7e7e7;
+}
+
+// Product Detail Skeleton
+.skeleton-detail {
+  width: 100%;
+  
+  .skeleton-detail-gallery {
+    height: 300px;
+    margin-bottom: 16px;
+    background-color: #e7e7e7;
+    border-radius: 8px;
+  }
+  
+  .skeleton-detail-title {
+    height: 24px;
+    width: 90%;
+    margin-bottom: 12px;
+    background-color: #e7e7e7;
+    border-radius: 4px;
+  }
+  
+  .skeleton-detail-price {
+    height: 30px;
+    width: 40%;
+    margin-bottom: 16px;
+    background-color: #e7e7e7;
+    border-radius: 4px;
+  }
+  
+  .skeleton-detail-description {
+    height: 100px;
+    margin-bottom: 16px;
+    background-color: #e7e7e7;
+    border-radius: 4px;
+  }
+  
+  .skeleton-detail-actions {
+    height: 50px;
+    background-color: #e7e7e7;
+    border-radius: 4px;
+  }
+}
+
+// List Item Simple Skeleton (for menus and settings)
+.skeleton-list-item-simple {
+  display: flex;
+  width: 100%;
+  height: 50px;
+  padding: 12px 16px;
+  margin-bottom: 1px;
+  background: #f7f7f7;
+  align-items: center;
+  
+  .skeleton-list-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background-color: #e7e7e7;
+    margin-right: 16px;
+  }
+  
+  .skeleton-list-content {
+    flex: 1;
+    
+    .skeleton-list-title {
+      height: 16px;
+      width: 70%;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+    }
+  }
+}
+
+// Profile Skeleton
+.skeleton-profile {
+  display: flex;
+  width: 100%;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: #f7f7f7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  
+  .skeleton-profile-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 30px;
+    background-color: #e7e7e7;
+    margin-right: 16px;
+  }
+  
+  .skeleton-profile-content {
+    flex: 1;
+    
+    .skeleton-profile-name {
+      height: 20px;
+      width: 60%;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    
+    .skeleton-profile-info {
+      height: 14px;
+      width: 80%;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      
+      &:last-child {
+        width: 50%;
+      }
+    }
+  }
+}
+
+// Wishlist Item Skeleton
+.skeleton-wishlist-item {
+  display: flex;
+  width: 100%;
+  height: 100px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f7f7f7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  
+  .skeleton-wishlist-image {
+    width: 120px;
+    height: 100px;
+    background-color: #e7e7e7;
+  }
+  
+  .skeleton-wishlist-content {
+    flex: 1;
+    padding: 12px;
+    
+    .skeleton-wishlist-title {
+      height: 16px;
+      width: 70%;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    
+    .skeleton-wishlist-price {
+      height: 14px;
+      width: 30%;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    
+    .skeleton-wishlist-actions {
+      height: 20px;
+      width: 50%;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+  }
+}
+
+// Category Skeleton
+.skeleton-category {
+  width: 100%;
+  height: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: #f7f7f7;
+  
+  .skeleton-category-image {
+    height: 80px;
+    background-color: #e7e7e7;
+  }
+  
+  .skeleton-category-title {
+    height: 16px;
+    width: 60%;
+    margin: 12px auto 0;
+    background-color: #e7e7e7;
+    border-radius: 4px;
+  }
+}
+
+/* RTL support */
+:host-context([dir="rtl"]) {
+  .skeleton-list-item {
+    .skeleton-list-image {
+      margin-right: 0;
+      margin-left: 12px;
+    }
+  }
+  
+  .skeleton-list-item-simple {
+    .skeleton-list-icon {
+      margin-right: 0;
+      margin-left: 16px;
+    }
+  }
+  
+  .skeleton-profile {
+    .skeleton-profile-avatar {
+      margin-right: 0;
+      margin-left: 16px;
+    }
+  }
+  
+  .skeleton-categories {
+    .skeleton-category {
+      margin-right: 0;
+      margin-left: 16px;
+    }
+  }
+  
+  .skeleton-wishlist-item {
+    .skeleton-wishlist-content {
+      .skeleton-wishlist-actions {
+        margin-left: 0;
+        margin-right: auto;
+      }
+    }
+  }
+}

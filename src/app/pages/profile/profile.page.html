@@ -1,0 +1,204 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar color="danger">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>الحساب</ion-title>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/cart">
+        <ion-icon name="cart-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <!-- User Profile Header -->
+  <div class="profile-header">
+    <div class="user-avatar">
+      <ion-avatar>
+        <img src="assets/avatar-placeholder.png" alt="User Avatar" 
+             *ngIf="!user?.avatar_url">
+        <img [src]="user?.avatar_url" alt="User Avatar" 
+             *ngIf="user?.avatar_url">
+      </ion-avatar>
+    </div>
+    <h2 class="user-name" *ngIf="user">Hello {{user.first_name || 'مستخدم'}}</h2>
+  </div>
+
+  <!-- Order Status Tabs -->
+  <div class="section">
+    <div class="section-header">
+      <h3>طلباتي</h3>
+      <ion-button fill="clear" routerLink="/orders">عرض الكل</ion-button>
+    </div>
+    
+    <ion-segment [value]="activeTab" (ionChange)="segmentChanged($event)" mode="md" scrollable>
+      <ion-segment-button value="in-progress">
+        <ion-label>قيد التنفيذ</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="delivered">
+        <ion-label>تم التسليم</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="returned">
+        <ion-label>مرتجع</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+    
+    <div class="order-status-container" [ngSwitch]="activeTab">
+      <div *ngSwitchCase="'in-progress'" class="order-list">
+        <!-- Order items would be listed here -->
+        <div class="empty-orders" *ngIf="true">
+          <ion-icon name="bag-outline"></ion-icon>
+          <p>ليس لديك طلبات قيد التنفيذ</p>
+        </div>
+      </div>
+      
+      <div *ngSwitchCase="'delivered'" class="order-list">
+        <!-- Delivered orders would be listed here -->
+        <div class="empty-orders" *ngIf="true">
+          <ion-icon name="checkmark-circle-outline"></ion-icon>
+          <p>ليس لديك طلبات تم تسليمها بعد</p>
+        </div>
+      </div>
+      
+      <div *ngSwitchCase="'returned'" class="order-list">
+        <!-- Returned orders would be listed here -->
+        <div class="empty-orders" *ngIf="true">
+          <ion-icon name="return-down-back-outline"></ion-icon>
+          <p>ليس لديك طلبات مرتجعة</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Options -->
+  <div class="section">
+    <h3>المساعدة والمعلومات</h3>
+    
+    <ion-grid class="options-grid">
+      <ion-row>
+        <ion-col size="3">
+          <div class="option-item" (click)="goToPage('/edit-profile')">
+            <div class="option-icon">
+              <ion-icon name="person-outline"></ion-icon>
+            </div>
+            <div class="option-name">الملف الشخصي</div>
+          </div>
+        </ion-col>
+        
+        <ion-col size="3">
+          <div class="option-item" (click)="goToPage('/rewards')">
+            <div class="option-icon">
+              <ion-icon name="gift-outline"></ion-icon>
+            </div>
+            <div class="option-name">المكافآت</div>
+          </div>
+        </ion-col>
+        
+        <ion-col size="3">
+          <div class="option-item" (click)="goToPage('/rate-app')">
+            <div class="option-icon">
+              <ion-icon name="star-outline"></ion-icon>
+            </div>
+            <div class="option-name">قيمنا</div>
+          </div>
+        </ion-col>
+        
+        <ion-col size="3">
+          <div class="option-item" (click)="goToPage('/share')">
+            <div class="option-icon">
+              <ion-icon name="share-social-outline"></ion-icon>
+            </div>
+            <div class="option-name">شارك دزن</div>
+          </div>
+        </ion-col>
+      </ion-row>
+      
+      <ion-row>
+        <ion-col size="3">
+          <div class="option-item" (click)="goToPage('/addresses')">
+            <div class="option-icon">
+              <ion-icon name="location-outline"></ion-icon>
+            </div>
+            <div class="option-name">عناويني</div>
+          </div>
+        </ion-col>
+        
+        <ion-col size="3">
+          <div class="option-item" (click)="goToPage('/wallet')">
+            <div class="option-icon">
+              <ion-icon name="wallet-outline"></ion-icon>
+            </div>
+            <div class="option-name">المحفظة</div>
+          </div>
+        </ion-col>
+        
+        <ion-col size="3">
+          <div class="option-item" (click)="goToPage('/contact')">
+            <div class="option-icon">
+              <ion-icon name="mail-outline"></ion-icon>
+            </div>
+            <div class="option-name">اتصل بنا</div>
+          </div>
+        </ion-col>
+        
+        <ion-col size="3">
+          <div class="option-item" (click)="logout()">
+            <div class="option-icon">
+              <ion-icon name="log-out-outline"></ion-icon>
+            </div>
+            <div class="option-name">تسجيل خروج</div>
+          </div>
+        </ion-col>
+      </ion-row>
+      
+      <ion-row>
+        <ion-col size="3">
+          <div class="option-item" (click)="deleteAccount()">
+            <div class="option-icon">
+              <ion-icon name="trash-outline"></ion-icon>
+            </div>
+            <div class="option-name">حذف الحساب</div>
+          </div>
+        </ion-col>
+        
+        <ion-col size="3"></ion-col>
+        <ion-col size="3"></ion-col>
+        <ion-col size="3"></ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+
+  <!-- Legal Information -->
+  <div class="section legal-section">
+    <h3>معلومات قانونية</h3>
+    
+    <ion-list lines="none">
+      <ion-item (click)="goToPage('/privacy-policy')">
+        <ion-label>سياسة الخصوصية</ion-label>
+        <ion-icon name="chevron-forward" slot="end"></ion-icon>
+      </ion-item>
+      
+      <ion-item (click)="goToPage('/terms-conditions')">
+        <ion-label>الشروط والأحكام</ion-label>
+        <ion-icon name="chevron-forward" slot="end"></ion-icon>
+      </ion-item>
+      
+      <ion-item (click)="goToPage('/shipping-delivery')">
+        <ion-label>الشحن والتوصيل</ion-label>
+        <ion-icon name="chevron-forward" slot="end"></ion-icon>
+      </ion-item>
+    </ion-list>
+  </div>
+
+  <!-- Store Badges -->
+  <div class="store-badges">
+    <img src="assets/images/adfa-badge.png" alt="ضريبة القيمة المضافة">
+    <img src="assets/images/sbc-badge.png" alt="المركز السعودي للأعمال">
+    <img src="assets/images/vat-badge.png" alt="VAT">
+  </div>
+</ion-content>
+
+<!-- Bottom Tabs -->
+<app-tabs></app-tabs>

@@ -1,0 +1,91 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ categoryName }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="openFilterModal()">
+        <ion-icon slot="icon-only" name="options-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+  
+  <!-- Filter Bar Section -->
+  <div class="filter-bar">
+    <div class="filter-tags" *ngIf="currentFilters.categories?.length || currentFilters.brands?.length">
+      <ion-chip *ngFor="let categoryId of currentFilters.categories" class="filter-chip">
+        <ion-label>{{ categoryId }}</ion-label>
+        <ion-icon name="close-circle"></ion-icon>
+      </ion-chip>
+      
+      <ion-chip *ngFor="let brandId of currentFilters.brands" class="filter-chip">
+        <ion-label>{{ brandId }}</ion-label>
+        <ion-icon name="close-circle"></ion-icon>
+      </ion-chip>
+    </div>
+  </div>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+  
+  <!-- Product Grid -->
+  <div class="product-grid" *ngIf="!isLoading && products.length > 0">
+    <div class="product-grid-item" *ngFor="let product of products">
+      <app-product-card 
+        [product]="product"
+        (favoriteChanged)="onFavoriteChange($event)">
+      </app-product-card>
+    </div>
+  </div>
+  
+  <!-- Loading Indicator -->
+  <div class="loading-container" *ngIf="isLoading">
+    <ion-spinner name="crescent" color="primary"></ion-spinner>
+    <p>جاري التحميل...</p>
+  </div>
+  
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading && products.length === 0">
+    <ion-icon name="search-outline"></ion-icon>
+    <h4>لم يتم العثور على منتجات</h4>
+    <p>جرب البحث بكلمات مختلفة أو قم بإزالة بعض الفلاتر</p>
+    <ion-button routerLink="/categories" fill="outline">
+      تصفح الأقسام
+    </ion-button>
+  </div>
+  
+  <!-- Infinite Scroll -->
+  <ion-infinite-scroll threshold="100px" (ionInfinite)="loadNextPage($event)">
+    <ion-infinite-scroll-content
+      loadingSpinner="crescent"
+      loadingText="جاري تحميل المزيد من المنتجات...">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>
+
+<!-- Tab Bar -->
+<ion-tab-bar slot="bottom">
+  <ion-tab-button tab="home" routerLink="/">
+    <ion-icon name="home"></ion-icon>
+    <ion-label>الرئيسية</ion-label>
+  </ion-tab-button>
+  
+  <ion-tab-button tab="categories" routerLink="/categories">
+    <ion-icon name="grid"></ion-icon>
+    <ion-label>الأقسام</ion-label>
+  </ion-tab-button>
+  
+  <ion-tab-button tab="account" routerLink="/account">
+    <ion-icon name="person"></ion-icon>
+    <ion-label>حسابي</ion-label>
+  </ion-tab-button>
+  
+  <ion-tab-button tab="cart" routerLink="/cart">
+    <ion-icon name="cart"></ion-icon>
+    <ion-label>السلة</ion-label>
+  </ion-tab-button>
+</ion-tab-bar>

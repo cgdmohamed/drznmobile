@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="400" fill="#f5f5f5"/>
+  <path d="M200,120 C211.046,120 220,111.046 220,100 C220,88.954 211.046,80 200,80 C188.954,80 180,88.954 180,100 C180,111.046 188.954,120 200,120 Z M200,140 C177.909,140 160,122.091 160,100 C160,77.909 177.909,60 200,60 C222.091,60 240,77.909 240,100 C240,122.091 222.091,140 200,140 Z" fill="#E9324A"/>
+  <path d="M230,210 L295,320 L165,320 L230,210 Z" fill="#E9324A"/>
+  <path d="M90,320 L140,240 L190,320 L90,320 Z" fill="#E9324A"/>
+  <rect x="70" y="330" width="260" height="20" fill="#E9324A"/>
+  <text x="200" y="350" font-family="Arial, sans-serif" font-size="16" fill="#FFFFFF" dominant-baseline="middle" text-anchor="middle">DARZN</text>
+</svg>

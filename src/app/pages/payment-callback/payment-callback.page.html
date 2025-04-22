@@ -1,0 +1,65 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>حالة الدفع</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="payment-result-container">
+    <!-- Processing state -->
+    <div class="status-container" *ngIf="status === 'processing'">
+      <ion-spinner name="crescent" class="status-icon processing"></ion-spinner>
+      <h2 class="status-title">جاري التحقق من حالة الدفع</h2>
+      <p class="status-message">يرجى الإنتظار...</p>
+    </div>
+    
+    <!-- Success state -->
+    <div class="status-container" *ngIf="status === 'success'">
+      <ion-icon name="checkmark-circle" class="status-icon success"></ion-icon>
+      <h2 class="status-title">تمت عملية الدفع بنجاح</h2>
+      <p class="status-message">شكرا لك، تم إتمام الطلب بنجاح وستتم عملية الشحن قريبا.</p>
+      
+      <div class="action-buttons">
+        <ion-button expand="block" (click)="goToOrders()" color="primary">عرض الطلبات</ion-button>
+        <ion-button expand="block" (click)="goToHome()" fill="outline">العودة إلى المتجر</ion-button>
+      </div>
+    </div>
+    
+    <!-- Warning state (payment ok but order not found) -->
+    <div class="status-container" *ngIf="status === 'warning'">
+      <ion-icon name="alert-circle" class="status-icon warning"></ion-icon>
+      <h2 class="status-title">تمت عملية الدفع</h2>
+      <p class="status-message">تم الدفع بنجاح ولكن لم يتم العثور على معلومات الطلب. سيتم التواصل معك قريبا.</p>
+      <p class="payment-id">رقم الدفع: {{ paymentId }}</p>
+      
+      <div class="action-buttons">
+        <ion-button expand="block" (click)="goToHome()" color="primary">العودة إلى المتجر</ion-button>
+      </div>
+    </div>
+    
+    <!-- Failed state -->
+    <div class="status-container" *ngIf="status === 'failed'">
+      <ion-icon name="close-circle" class="status-icon failure"></ion-icon>
+      <h2 class="status-title">فشلت عملية الدفع</h2>
+      <p class="status-message">{{ error }}</p>
+      
+      <div class="action-buttons">
+        <ion-button expand="block" (click)="goToHome()" color="primary">العودة إلى المتجر</ion-button>
+      </div>
+    </div>
+    
+    <!-- Error state -->
+    <div class="status-container" *ngIf="status === 'error'">
+      <ion-icon name="warning" class="status-icon error"></ion-icon>
+      <h2 class="status-title">حدث خطأ</h2>
+      <p class="status-message">{{ error }}</p>
+      
+      <div class="action-buttons">
+        <ion-button expand="block" (click)="goToHome()" color="primary">العودة إلى المتجر</ion-button>
+      </div>
+    </div>
+  </div>
+</ion-content>

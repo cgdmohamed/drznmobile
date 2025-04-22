@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+  <rect x="5" y="5" width="80" height="30" rx="5" ry="5" fill="#e91e29"/>
+  <text x="42" y="27" font-family="Arial" font-size="20" font-weight="bold" text-anchor="middle" fill="white">DARZN</text>
+  <path d="M95 20a10 10 0 1 0 0 1z" fill="#ffdd00"/>
+</svg>

@@ -1,0 +1,59 @@
+// Tab bar styling
+ion-tab-bar {
+  --background: white;
+  --border: 1px solid #eee;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  
+  ion-tab-button {
+    --color: var(--ion-color-medium);
+    --color-selected: var(--ion-color-danger);
+    
+    ion-icon {
+      font-size: 24px;
+    }
+    
+    ion-label {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+  }
+}
+
+// Menu styling
+ion-menu {
+  --width: 280px;
+  
+  ion-toolbar {
+    --background: var(--ion-color-danger);
+    --color: white;
+  }
+  
+  ion-item {
+    --padding-start: 16px;
+    
+    &.selected {
+      --background: rgba(var(--ion-color-danger-rgb), 0.1);
+      --color: var(--ion-color-danger);
+      
+      ion-icon {
+        color: var(--ion-color-danger);
+      }
+    }
+  }
+  
+  .menu-footer {
+    padding: 16px;
+    border-top: 1px solid #eee;
+    margin-top: 16px;
+  }
+}
+
+// RTL support
+:host-context([dir="rtl"]) {
+  ion-menu {
+    ion-item {
+      --padding-start: 16px;
+      --padding-end: 16px;
+    }
+  }
+}

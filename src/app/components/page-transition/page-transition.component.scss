@@ -1,0 +1,45 @@
+.page-transition-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  
+  &.active {
+    opacity: 1;
+  }
+  
+  .transition-indicator {
+    height: 3px;
+    width: 100%;
+    overflow: hidden;
+    background-color: rgba(236, 28, 36, 0.1); // Light red background matching primary color
+    
+    .transition-bar {
+      height: 100%;
+      width: 100%;
+      background-color: #ec1c24; // Hardcoded primary color (red) to ensure visibility
+      transform: translateX(-100%);
+      animation: loading-animation 1.5s infinite cubic-bezier(0.65, 0.05, 0.36, 1);
+      box-shadow: 0 0 10px rgba(236, 28, 36, 0.5); // Add glow effect
+    }
+  }
+}
+
+@keyframes loading-animation {
+  0% {
+    transform: translateX(-100%);
+  }
+  20% {
+    transform: translateX(-40%);
+  }
+  60% {
+    transform: translateX(40%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

@@ -1,0 +1,136 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar color="danger">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/profile"></ion-back-button>
+    </ion-buttons>
+    <ion-title>تعديل الملف الشخصي</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="edit-profile-container">
+    <!-- Loading Indicator -->
+    <div class="loading-container" *ngIf="isLoading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>جاري تحميل المعلومات...</p>
+    </div>
+
+    <!-- Profile Form -->
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" *ngIf="!isLoading">
+      <div class="form-section">
+        <h3>المعلومات الشخصية</h3>
+        
+        <ion-item>
+          <ion-label position="floating">الاسم الأول</ion-label>
+          <ion-input type="text" formControlName="first_name"></ion-input>
+        </ion-item>
+        <div *ngIf="hasError('first_name', 'required')" class="error-message">
+          الاسم الأول مطلوب
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">الاسم الأخير</ion-label>
+          <ion-input type="text" formControlName="last_name"></ion-input>
+        </ion-item>
+        <div *ngIf="hasError('last_name', 'required')" class="error-message">
+          الاسم الأخير مطلوب
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">البريد الإلكتروني</ion-label>
+          <ion-input type="email" formControlName="email"></ion-input>
+        </ion-item>
+        <div *ngIf="hasError('email', 'required')" class="error-message">
+          البريد الإلكتروني مطلوب
+        </div>
+        <div *ngIf="hasError('email', 'email')" class="error-message">
+          يرجى إدخال بريد إلكتروني صحيح
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">رقم الهاتف</ion-label>
+          <ion-input type="tel" formControlName="phone"></ion-input>
+        </ion-item>
+        <div *ngIf="hasError('phone', 'required')" class="error-message">
+          رقم الهاتف مطلوب
+        </div>
+      </div>
+      
+      <div class="form-section">
+        <h3>عنوان الفواتير</h3>
+        
+        <ion-item>
+          <ion-label position="floating">العنوان</ion-label>
+          <ion-input type="text" formControlName="billing_address_1"></ion-input>
+        </ion-item>
+        <div *ngIf="hasError('billing_address_1', 'required')" class="error-message">
+          العنوان مطلوب
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">العنوان 2 (اختياري)</ion-label>
+          <ion-input type="text" formControlName="billing_address_2"></ion-input>
+        </ion-item>
+        
+        <ion-item>
+          <ion-label position="floating">المدينة</ion-label>
+          <ion-input type="text" formControlName="billing_city"></ion-input>
+        </ion-item>
+        <div *ngIf="hasError('billing_city', 'required')" class="error-message">
+          المدينة مطلوبة
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">المنطقة</ion-label>
+          <ion-select formControlName="billing_state">
+            <ion-select-option value="Riyadh">الرياض</ion-select-option>
+            <ion-select-option value="Jeddah">جدة</ion-select-option>
+            <ion-select-option value="Makkah">مكة المكرمة</ion-select-option>
+            <ion-select-option value="Medina">المدينة المنورة</ion-select-option>
+            <ion-select-option value="Dammam">الدمام</ion-select-option>
+            <ion-select-option value="Taif">الطائف</ion-select-option>
+            <ion-select-option value="Tabuk">تبوك</ion-select-option>
+            <ion-select-option value="Al-Khobar">الخبر</ion-select-option>
+            <ion-select-option value="Abha">أبها</ion-select-option>
+            <ion-select-option value="Jazan">جازان</ion-select-option>
+            <ion-select-option value="Buraidah">بريدة</ion-select-option>
+            <ion-select-option value="Najran">نجران</ion-select-option>
+            <ion-select-option value="Hail">حائل</ion-select-option>
+            <ion-select-option value="Al-Ahsa">الأحساء</ion-select-option>
+            <ion-select-option value="Other">أخرى</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <div *ngIf="hasError('billing_state', 'required')" class="error-message">
+          المنطقة مطلوبة
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">الرمز البريدي</ion-label>
+          <ion-input type="text" formControlName="billing_postcode"></ion-input>
+        </ion-item>
+        <div *ngIf="hasError('billing_postcode', 'required')" class="error-message">
+          الرمز البريدي مطلوب
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">الدولة</ion-label>
+          <ion-select formControlName="billing_country" disabled>
+            <ion-select-option value="SA">المملكة العربية السعودية</ion-select-option>
+          </ion-select>
+        </ion-item>
+      </div>
+      
+      <!-- Save Button -->
+      <div class="form-submit">
+        <ion-button expand="block" type="submit" [disabled]="profileForm.invalid && formSubmitted">
+          <ion-icon name="save-outline" slot="start"></ion-icon>
+          حفظ التغييرات
+        </ion-button>
+        
+        <ion-button expand="block" fill="outline" (click)="goBack()">
+          إلغاء
+        </ion-button>
+      </div>
+    </form>
+  </div>
+</ion-content>

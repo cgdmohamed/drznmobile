@@ -1,0 +1,132 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>حسابي</ion-title>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/cart">
+        <ion-icon slot="icon-only" name="cart-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="ion-padding">
+    <!-- Not logged in state -->
+    <div class="guest-content" *ngIf="!user && !isLoading">
+      <div class="login-card">
+        <ion-icon name="person-circle-outline"></ion-icon>
+        <h3>يرجى تسجيل الدخول</h3>
+        <p>قم بتسجيل الدخول للوصول إلى ملفك الشخصي وإدارة طلباتك</p>
+        <ion-button expand="block" (click)="login()">
+          تسجيل الدخول
+        </ion-button>
+        <ion-button expand="block" fill="outline" routerLink="/register">
+          تسجيل حساب جديد
+        </ion-button>
+      </div>
+    </div>
+
+    <!-- Logged in state -->
+    <div class="account-content" *ngIf="user && !isLoading">
+      <!-- User Info -->
+      <div class="user-card">
+        <div class="user-avatar">
+          <ion-icon name="person-circle"></ion-icon>
+        </div>
+        <div class="user-info">
+          <h3>{{ user.first_name }} {{ user.last_name }}</h3>
+          <p>{{ user.email }}</p>
+          <p *ngIf="user.billing?.phone">{{ user.billing.phone }}</p>
+        </div>
+      </div>
+
+      <!-- Menu Items -->
+      <div class="account-menu">
+        <ion-list lines="full">
+          <ion-item routerLink="/profile">
+            <ion-icon name="person-outline" slot="start"></ion-icon>
+            <ion-label>تعديل الملف الشخصي</ion-label>
+          </ion-item>
+          
+          <ion-item routerLink="/orders">
+            <ion-icon name="bag-outline" slot="start"></ion-icon>
+            <ion-label>طلباتي</ion-label>
+          </ion-item>
+          
+          <ion-item routerLink="/addresses">
+            <ion-icon name="location-outline" slot="start"></ion-icon>
+            <ion-label>عناويني</ion-label>
+          </ion-item>
+          
+          <ion-item routerLink="/wishlist">
+            <ion-icon name="heart-outline" slot="start"></ion-icon>
+            <ion-label>المفضلة</ion-label>
+          </ion-item>
+        </ion-list>
+      </div>
+
+      <!-- Recent Orders -->
+      <div class="recent-orders" *ngIf="recentOrders.length > 0">
+        <h4>آخر الطلبات</h4>
+        
+        <div class="order-card" *ngFor="let order of recentOrders" [routerLink]="['/order', order.id]">
+          <div class="order-header">
+            <span class="order-number">{{ order.number }}</span>
+            <span class="order-status" [ngClass]="order.status">{{ order.status }}</span>
+          </div>
+          <div class="order-date">
+            {{ order.date_created | date:'mediumDate' }}
+          </div>
+          <div class="order-items">
+            {{ order.line_items.length }} منتج
+          </div>
+          <div class="order-total">
+            {{ order.total }} ر.س
+          </div>
+        </div>
+        
+        <ion-button expand="block" fill="outline" routerLink="/orders">
+          عرض جميع الطلبات
+        </ion-button>
+      </div>
+
+      <!-- App Settings -->
+      <div class="app-settings">
+        <h4>إعدادات التطبيق</h4>
+        
+        <ion-list lines="full">
+          <ion-item>
+            <ion-icon name="moon-outline" slot="start"></ion-icon>
+            <ion-label>الوضع الداكن</ion-label>
+            <ion-toggle [(ngModel)]="darkMode" (ionChange)="toggleDarkMode()"></ion-toggle>
+          </ion-item>
+          
+          <ion-item>
+            <ion-icon name="text-outline" slot="start"></ion-icon>
+            <ion-label>حجم النص</ion-label>
+            <ion-select [(ngModel)]="textSize" (ionChange)="changeTextSize(textSize)" interface="popover">
+              <ion-select-option value="small">صغير</ion-select-option>
+              <ion-select-option value="medium">متوسط</ion-select-option>
+              <ion-select-option value="large">كبير</ion-select-option>
+            </ion-select>
+          </ion-item>
+        </ion-list>
+      </div>
+
+      <!-- Logout Button -->
+      <ion-button expand="block" color="danger" (click)="logout()" class="logout-button">
+        تسجيل الخروج
+      </ion-button>
+    </div>
+
+    <!-- Skeleton screens for loading state -->
+    <div *ngIf="isLoading" class="skeleton-container">
+      <app-skeleton type="profile"></app-skeleton>
+      <app-skeleton type="list-item" *ngFor="let i of [1,2,3,4]"></app-skeleton>
+      <app-skeleton type="card" *ngFor="let i of [1,2]"></app-skeleton>
+    </div>
+  </div>
+</ion-content>

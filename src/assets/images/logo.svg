@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="150" height="40" viewBox="0 0 150 40" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .text { font-family: Arial, sans-serif; font-weight: bold; fill: #FFFFFF; }
+    .highlight { fill: #FFFFFF; }
+  </style>
+  <rect width="150" height="40" rx="8" fill="#E9324A"/>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" class="text" font-size="24">DARZN</text>
+  <path class="highlight" d="M15,20 C15,14.48 19.48,10 25,10 C30.52,10 35,14.48 35,20 C35,25.52 30.52,30 25,30 C19.48,30 15,25.52 15,20 Z M19,20 C19,23.31 21.69,26 25,26 C28.31,26 31,23.31 31,20 C31,16.69 28.31,14 25,14 C21.69,14 19,16.69 19,20 Z"/>
+</svg>

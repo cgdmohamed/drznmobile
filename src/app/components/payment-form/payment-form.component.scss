@@ -1,0 +1,160 @@
+.payment-form-container {
+  margin: 20px 0;
+  min-height: 280px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  
+  ion-spinner {
+    margin-bottom: 16px;
+    width: 48px;
+    height: 48px;
+    color: #e31e24; // DARZN red color
+  }
+  
+  p {
+    color: var(--ion-color-medium);
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+  padding: 16px;
+  
+  .error-message {
+    color: #e31e24; // DARZN red color for error
+    margin-bottom: 16px;
+    text-align: center;
+    font-weight: 500;
+  }
+  
+  ion-button {
+    --background: #e31e24;
+    --color: white;
+    font-weight: 500;
+  }
+}
+
+.apple-pay-container {
+  margin-bottom: 20px;
+  
+  .apple-pay-button {
+    --background: #000;
+    --color: #fff;
+    --border-radius: 8px;
+    --padding-top: 12px;
+    --padding-bottom: 12px;
+    
+    ion-icon {
+      margin-right: 10px;
+      font-size: 1.2em;
+    }
+  }
+}
+
+.moyasar-form {
+  width: 100%;
+  margin: 0 auto;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  
+  // Customizing Moyasar form styles
+  ::ng-deep {
+    .mysr-form {
+      direction: rtl;
+      font-family: var(--ion-font-family, inherit) !important;
+    }
+    
+    .mysr-row {
+      margin-bottom: 16px;
+    }
+    
+    .mysr-label {
+      font-weight: 500;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #333;
+    }
+    
+    .mysr-input, .mysr-select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      box-shadow: none;
+      transition: border-color 0.2s;
+      
+      &:focus {
+        border-color: #e31e24;
+        outline: none;
+      }
+    }
+    
+    .mysr-button {
+      background-color: #e31e24 !important; // DARZN red color
+      color: white !important;
+      border: none !important;
+      border-radius: 4px !important;
+      padding: 14px 20px !important;
+      font-weight: 600 !important;
+      width: 100% !important;
+      font-size: 16px !important;
+      cursor: pointer !important;
+      transition: background-color 0.2s !important;
+      margin-top: 10px !important;
+      
+      &:hover {
+        background-color: #ca1a1f !important;
+      }
+    }
+    
+    .mysr-cc-icons {
+      display: flex;
+      margin-bottom: 16px;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    
+    .mysr-error {
+      color: #e31e24;
+      font-size: 13px;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+  }
+}
+
+// RTL styles
+:host-context([dir="rtl"]) {
+  .moyasar-form {
+    direction: rtl;
+    
+    ::ng-deep {
+      .mysr-form {
+        direction: rtl;
+        text-align: right;
+      }
+      
+      .mysr-cc-icons {
+        justify-content: flex-start;
+      }
+    }
+  }
+}

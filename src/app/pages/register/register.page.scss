@@ -1,0 +1,107 @@
+.register-container {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  max-width: 400px;
+  margin: 0 auto;
+  height: 100%;
+}
+
+.logo-container {
+  display: flex;
+  justify-content: center;
+  margin: 30px 0 20px;
+  
+  img {
+    width: 130px;
+  }
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--ion-color-dark);
+}
+
+p {
+  color: var(--ion-color-medium);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.validation-error {
+  color: var(--ion-color-danger);
+  font-size: 12px;
+  padding: 4px 16px;
+  margin-bottom: 8px;
+}
+
+.terms-checkbox {
+  margin-top: 16px;
+  --inner-padding-end: 0;
+  
+  ion-label {
+    margin-inline-start: 8px;
+    font-size: 14px;
+    white-space: normal;
+    
+    a {
+      color: var(--ion-color-primary);
+      text-decoration: none;
+    }
+  }
+}
+
+.form-buttons {
+  margin-top: 20px;
+  
+  ion-button {
+    margin-bottom: 12px;
+    height: 48px;
+  }
+}
+
+.login-link {
+  margin-top: 20px;
+  
+  p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0;
+    
+    ion-button {
+      --padding-start: 4px;
+      --padding-end: 4px;
+      --color: var(--ion-color-primary);
+      font-weight: 600;
+    }
+  }
+}
+
+.error-message {
+  margin-bottom: 16px;
+  
+  p {
+    color: var(--ion-color-danger);
+  }
+}
+
+ion-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  
+  ion-button {
+    margin-inline-end: 0;
+  }
+}
+
+// RTL specific styles
+:host-context([dir="rtl"]) {
+  ion-item {
+    ion-label {
+      margin-right: 8px;
+    }
+  }
+}

@@ -1,0 +1,56 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>المفضلة</ion-title>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/cart">
+        <ion-icon slot="icon-only" name="cart-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="ion-padding">
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="!isLoading && wishlistItems.length === 0">
+      <ion-icon name="heart-outline"></ion-icon>
+      <h3>قائمة المفضلة فارغة</h3>
+      <p>لم تقم بإضافة أي منتجات إلى المفضلة بعد</p>
+      <ion-button routerLink="/home" expand="block" fill="outline">
+        تصفح المنتجات
+      </ion-button>
+    </div>
+
+    <!-- Wishlist items -->
+    <div class="wishlist-container" *ngIf="!isLoading && wishlistItems.length > 0">
+      <div class="wishlist-item" *ngFor="let product of wishlistItems">
+        <div class="product-image" [routerLink]="['/product', product.id]">
+          <img [src]="product.images[0]?.src || 'assets/placeholder.png'" [alt]="product.name">
+        </div>
+        <div class="product-details">
+          <h4 [routerLink]="['/product', product.id]">{{ product.name }}</h4>
+          <div class="price-row">
+            <span class="price" [class.sale]="product.on_sale">{{ product.price }} ر.س</span>
+            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} ر.س</span>
+          </div>
+          <div class="action-buttons">
+            <ion-button fill="clear" color="primary" (click)="addToCart(product)">
+              <ion-icon slot="icon-only" name="cart-outline"></ion-icon>
+            </ion-button>
+            <ion-button fill="clear" color="danger" (click)="removeFromWishlist(product.id)">
+              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skeleton screens for loading state -->
+    <div *ngIf="isLoading" class="wishlist-container">
+      <app-skeleton *ngFor="let i of [1,2,3,4]" type="wishlist-item"></app-skeleton>
+    </div>
+  </div>
+</ion-content>

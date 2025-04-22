@@ -1,0 +1,88 @@
+<div class="test-card-container">
+  <div class="test-card-header" (click)="toggleExpanded()">
+    <ion-icon [name]="expanded ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+    <span>معلومات البطاقة الاختبارية</span>
+  </div>
+  
+  <div class="test-card-content" [class.expanded]="expanded">
+    <div class="test-card-info">
+      <h5>بطاقة اختبار ناجحة:</h5>
+      <div class="card-details">
+        <div class="detail-row">
+          <span class="label">رقم البطاقة:</span>
+          <span class="value">4111 1111 1111 1111</span>
+          <ion-button fill="clear" size="small" (click)="copyToClipboard('4111 1111 1111 1111'); $event.stopPropagation()">
+            <ion-icon name="copy-outline"></ion-icon>
+          </ion-button>
+        </div>
+        <div class="detail-row">
+          <span class="label">تاريخ الانتهاء:</span>
+          <span class="value">أي تاريخ مستقبلي</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">رمز CVV:</span>
+          <span class="value">أي ثلاثة أرقام</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">اسم صاحب البطاقة:</span>
+          <span class="value">أي اسم</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-card-info">
+      <h5>بطاقة اختبار فاشلة:</h5>
+      <div class="card-details">
+        <div class="detail-row">
+          <span class="label">رقم البطاقة:</span>
+          <span class="value">4111 1111 1111 1112</span>
+          <ion-button fill="clear" size="small" (click)="copyToClipboard('4111 1111 1111 1112'); $event.stopPropagation()">
+            <ion-icon name="copy-outline"></ion-icon>
+          </ion-button>
+        </div>
+        <div class="detail-row">
+          <span class="label">تاريخ الانتهاء:</span>
+          <span class="value">أي تاريخ مستقبلي</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">رمز CVV:</span>
+          <span class="value">أي ثلاثة أرقام</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">اسم صاحب البطاقة:</span>
+          <span class="value">أي اسم</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-card-info">
+      <h5>بطاقة اختبار 3D Secure:</h5>
+      <div class="card-details">
+        <div class="detail-row">
+          <span class="label">رقم البطاقة:</span>
+          <span class="value">4242 4242 4242 4242</span>
+          <ion-button fill="clear" size="small" (click)="copyToClipboard('4242 4242 4242 4242'); $event.stopPropagation()">
+            <ion-icon name="copy-outline"></ion-icon>
+          </ion-button>
+        </div>
+        <div class="detail-row">
+          <span class="label">تاريخ الانتهاء:</span>
+          <span class="value">أي تاريخ مستقبلي</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">رمز CVV:</span>
+          <span class="value">أي ثلاثة أرقام</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">اسم صاحب البطاقة:</span>
+          <span class="value">أي اسم</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-note">
+      <ion-icon name="information-circle-outline"></ion-icon>
+      <span>هذه بطاقات اختبار لبوابة موياسر للمدفوعات. لا تحاول استخدام بطاقات حقيقية في بيئة الاختبار.</span>
+    </div>
+  </div>
+</div>

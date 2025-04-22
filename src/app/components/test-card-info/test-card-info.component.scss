@@ -1,0 +1,130 @@
+.test-card-container {
+  margin: 16px 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f9f9f9;
+}
+
+.test-card-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  background-color: #f0f0f0;
+  transition: background-color 0.2s;
+  
+  ion-icon {
+    margin-left: 8px;
+    font-size: 18px;
+    color: #666;
+  }
+  
+  span {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+  }
+  
+  &:hover {
+    background-color: #e8e8e8;
+  }
+}
+
+.test-card-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+  
+  &.expanded {
+    max-height: 700px; // Adjust based on content
+  }
+}
+
+.test-card-info {
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+  
+  h5 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ion-color-primary);
+  }
+  
+  .card-details {
+    background-color: white;
+    border-radius: 6px;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    
+    .detail-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .label {
+        min-width: 110px;
+        font-size: 13px;
+        color: #666;
+        font-weight: 500;
+      }
+      
+      .value {
+        flex: 1;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        font-weight: 600;
+        color: #333;
+        letter-spacing: 0.5px;
+      }
+      
+      ion-button {
+        --padding-start: 4px;
+        --padding-end: 4px;
+        height: 30px;
+      }
+    }
+  }
+}
+
+.test-note {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 16px;
+  background-color: #fff9e6;
+  
+  ion-icon {
+    color: #e6a700;
+    font-size: 18px;
+    margin-left: 8px;
+    margin-top: 2px;
+  }
+  
+  span {
+    font-size: 12px;
+    color: #8a6d3b;
+    line-height: 1.4;
+  }
+}
+
+// RTL Support
+:host-context([dir="rtl"]) {
+  .test-card-header {
+    ion-icon {
+      margin-left: 0;
+      margin-right: 8px;
+    }
+  }
+  
+  .test-note {
+    ion-icon {
+      margin-left: 0;
+      margin-right: 8px;
+    }
+  }
+}

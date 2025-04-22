@@ -1,0 +1,7 @@
+{
+  "name": "darzn-ionic-app",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}

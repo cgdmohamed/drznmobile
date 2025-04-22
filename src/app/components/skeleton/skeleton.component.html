@@ -1,0 +1,96 @@
+<ng-container [ngSwitch]="type">
+  
+  <!-- Product Card Skeleton -->
+  <ng-container *ngSwitchCase="'card'">
+    <div *ngFor="let item of countArray" class="skeleton-card" [class.skeleton-animated]="animated">
+      <div class="skeleton-image"></div>
+      <div class="skeleton-content">
+        <div class="skeleton-title"></div>
+        <div class="skeleton-price"></div>
+        <div class="skeleton-actions"></div>
+      </div>
+    </div>
+  </ng-container>
+  
+  <!-- List Item Skeleton -->
+  <ng-container *ngSwitchCase="'list'">
+    <div *ngFor="let item of countArray" class="skeleton-list-item" [class.skeleton-animated]="animated">
+      <div class="skeleton-list-image"></div>
+      <div class="skeleton-list-content">
+        <div class="skeleton-list-title"></div>
+        <div class="skeleton-list-subtitle"></div>
+      </div>
+    </div>
+  </ng-container>
+  
+  <!-- List Item Skeleton (simpler version for settings/menu lists) -->
+  <ng-container *ngSwitchCase="'list-item'">
+    <div *ngFor="let item of countArray" class="skeleton-list-item-simple" [class.skeleton-animated]="animated">
+      <div class="skeleton-list-icon"></div>
+      <div class="skeleton-list-content">
+        <div class="skeleton-list-title"></div>
+      </div>
+    </div>
+  </ng-container>
+  
+  <!-- Category Skeleton -->
+  <ng-container *ngSwitchCase="'category'">
+    <div class="skeleton-category" [class.skeleton-animated]="animated">
+      <div class="skeleton-category-image"></div>
+      <div class="skeleton-category-title"></div>
+    </div>
+  </ng-container>
+  
+  <!-- Banner Skeleton -->
+  <ng-container *ngSwitchCase="'banner'">
+    <div *ngFor="let item of countArray" class="skeleton-banner" [class.skeleton-animated]="animated"></div>
+  </ng-container>
+  
+  <!-- Product Detail Skeleton -->
+  <ng-container *ngSwitchCase="'detail'">
+    <div class="skeleton-detail" [class.skeleton-animated]="animated">
+      <div class="skeleton-detail-gallery"></div>
+      <div class="skeleton-detail-title"></div>
+      <div class="skeleton-detail-price"></div>
+      <div class="skeleton-detail-description"></div>
+      <div class="skeleton-detail-actions"></div>
+    </div>
+  </ng-container>
+  
+  <!-- Profile Skeleton -->
+  <ng-container *ngSwitchCase="'profile'">
+    <div class="skeleton-profile" [class.skeleton-animated]="animated">
+      <div class="skeleton-profile-avatar"></div>
+      <div class="skeleton-profile-content">
+        <div class="skeleton-profile-name"></div>
+        <div class="skeleton-profile-info"></div>
+        <div class="skeleton-profile-info"></div>
+      </div>
+    </div>
+  </ng-container>
+  
+  <!-- Wishlist Item Skeleton -->
+  <ng-container *ngSwitchCase="'wishlist-item'">
+    <div *ngFor="let item of countArray" class="skeleton-wishlist-item" [class.skeleton-animated]="animated">
+      <div class="skeleton-wishlist-image"></div>
+      <div class="skeleton-wishlist-content">
+        <div class="skeleton-wishlist-title"></div>
+        <div class="skeleton-wishlist-price"></div>
+        <div class="skeleton-wishlist-actions"></div>
+      </div>
+    </div>
+  </ng-container>
+  
+  <!-- Default to Card Skeleton if type is not specified -->
+  <ng-container *ngSwitchDefault>
+    <div *ngFor="let item of countArray" class="skeleton-card" [class.skeleton-animated]="animated">
+      <div class="skeleton-image"></div>
+      <div class="skeleton-content">
+        <div class="skeleton-title"></div>
+        <div class="skeleton-price"></div>
+        <div class="skeleton-actions"></div>
+      </div>
+    </div>
+  </ng-container>
+  
+</ng-container>
