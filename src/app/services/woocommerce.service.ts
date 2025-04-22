@@ -8,6 +8,8 @@ import { Category } from '../interfaces/category.interface';
 import { Order } from '../interfaces/order.interface';
 import { AuthService } from './auth.service';
 import { ToastController } from '@ionic/angular';
+import { demoProducts } from '../demo/demo-products';
+import { demoCategories } from '../demo/demo-categories';
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +20,7 @@ export class WoocommerceService {
   private consumerSecret = environment.consumerSecret;
   
   // For demo purposes, if the API fails to connect
-  private useDemo = false;
+  private useDemo = environment.useDemoData || false;
   
   constructor(
     private http: HttpClient,
@@ -31,6 +33,36 @@ export class WoocommerceService {
    * @param options Query parameters to filter products
    */
   getProducts(options: any = {}): Observable<Product[]> {
+    // If in demo mode, return demo products directly
+    if (this.useDemo) {
+      console.log('Using demo products data');
+      
+      let filteredProducts = [...demoProducts];
+      
+      // Apply filters
+      if (options.featured) {
+        filteredProducts = filteredProducts.filter(p => p.featured);
+      }
+      
+      if (options.on_sale) {
+        filteredProducts = filteredProducts.filter(p => p.on_sale);
+      }
+      
+      if (options.orderby === 'date' && options.order === 'desc') {
+        filteredProducts = filteredProducts.sort((a, b) => 
+          new Date(b.date_created).getTime() - new Date(a.date_created).getTime()
+        );
+      }
+      
+      // Limit results if per_page is set
+      if (options.per_page) {
+        filteredProducts = filteredProducts.slice(0, parseInt(options.per_page));
+      }
+      
+      return of(filteredProducts);
+    }
+    
+    // Otherwise, call the API
     const params = this.createParams(options);
     
     return this.http.get<Product[]>(`${this.apiUrl}/products`, { params })
@@ -49,12 +81,23 @@ export class WoocommerceService {
    * @param productId The ID of the product to fetch
    */
   getProduct(productId: number): Observable<Product> {
+    // If in demo mode, return demo product
+    if (this.useDemo) {
+      const product = demoProducts.find(p => p.id === productId);
+      if (product) {
+        return of(product);
+      }
+      // If product not found, return the first one
+      return of(demoProducts[0]);
+    }
+    
     return this.http.get<Product>(`${this.apiUrl}/products/${productId}`, {
       params: this.createParams()
     }).pipe(
       retry(2),
       catchError(error => {
         console.error(`Error fetching product ID ${productId} from API:`, error);
+        this.useDemo = true;
         return this.handleError('Failed to fetch product details', error);
       })
     );
@@ -65,6 +108,12 @@ export class WoocommerceService {
    * @param options Query parameters to filter categories
    */
   getCategories(options: any = {}): Observable<Category[]> {
+    // If in demo mode, return demo categories directly
+    if (this.useDemo) {
+      console.log('Using demo categories data');
+      return of(demoCategories);
+    }
+    
     const params = this.createParams(options);
     
     return this.http.get<Category[]>(`${this.apiUrl}/products/categories`, { params })
@@ -84,6 +133,25 @@ export class WoocommerceService {
    * @param options Additional query parameters
    */
   getProductsByCategory(categoryId: number, options: any = {}): Observable<Product[]> {
+    // If in demo mode, filter demo products by category
+    if (this.useDemo) {
+      console.log(`Using demo products for category ${categoryId}`);
+      
+      const filteredProducts = demoProducts.filter(product => 
+        product.categories.some(category => category.id === categoryId)
+      );
+      
+      // Apply additional filters
+      let result = [...filteredProducts];
+      
+      // Limit results if per_page is set
+      if (options.per_page) {
+        result = result.slice(0, parseInt(options.per_page));
+      }
+      
+      return of(result);
+    }
+    
     const params = this.createParams({
       ...options,
       category: categoryId
@@ -94,6 +162,7 @@ export class WoocommerceService {
         retry(2),
         catchError(error => {
           console.error(`Error fetching products for category ${categoryId} from API:`, error);
+          this.useDemo = true;
           return this.handleError('Failed to fetch category products', error);
         })
       );
@@ -178,6 +247,35 @@ export class WoocommerceService {
    * @param options Additional query parameters
    */
   searchProducts(searchQuery: string, options: any = {}): Observable<Product[]> {
+    // If in demo mode, do a simple search on product names/descriptions
+    if (this.useDemo) {
+      console.log(`Using demo products for search: "${searchQuery}"`);
+      
+      const searchTerms = searchQuery.toLowerCase().split(' ');
+      
+      // Search in name, description, and short_description
+      const filteredProducts = demoProducts.filter(product => {
+        const searchText = [
+          product.name,
+          product.description,
+          product.short_description
+        ].join(' ').toLowerCase();
+        
+        // Match if any search term is found
+        return searchTerms.some(term => searchText.includes(term));
+      });
+      
+      // Apply additional filters
+      let result = [...filteredProducts];
+      
+      // Limit results if per_page is set
+      if (options.per_page) {
+        result = result.slice(0, parseInt(options.per_page));
+      }
+      
+      return of(result);
+    }
+    
     const params = this.createParams({
       ...options,
       search: searchQuery
@@ -188,6 +286,7 @@ export class WoocommerceService {
         retry(2),
         catchError(error => {
           console.error(`Error searching for products with query "${searchQuery}":`, error);
+          this.useDemo = true;
           return this.handleError('Failed to search products', error);
         })
       );
@@ -202,6 +301,17 @@ export class WoocommerceService {
       return of([]);
     }
     
+    // If in demo mode, filter by product IDs
+    if (this.useDemo) {
+      console.log(`Using demo products for IDs: ${productIds.join(', ')}`);
+      
+      const filteredProducts = demoProducts.filter(product => 
+        productIds.includes(product.id)
+      );
+      
+      return of(filteredProducts);
+    }
+    
     const params = this.createParams({
       include: productIds.join(',')
     });
@@ -211,6 +321,7 @@ export class WoocommerceService {
         retry(2),
         catchError(error => {
           console.error('Error fetching products by IDs:', error);
+          this.useDemo = true;
           return this.handleError('Failed to fetch products', error);
         })
       );
@@ -238,7 +349,7 @@ export class WoocommerceService {
    * @param message Error message to display
    * @param error The error response
    */
-  private handleError(message: string, error: HttpErrorResponse): Observable<never> {
+  private handleError(message: string, error: HttpErrorResponse): Observable<any> {
     let errorMessage = message;
     
     if (error.error instanceof ErrorEvent) {
@@ -261,12 +372,31 @@ export class WoocommerceService {
       }
     }
     
-    // Show error message to user
-    this.presentToast(errorMessage);
+    console.log('API Error:', errorMessage, 'Using demo data instead');
     
     // If API connection fails, return demo data for better UX
     if (this.useDemo) {
-      return throwError(() => new Error(errorMessage));
+      // Return appropriate demo data based on the request
+      if (message.includes('products')) {
+        if (message.includes('categories')) {
+          return of(demoCategories);
+        }
+        if (message.includes('featured')) {
+          return of(demoProducts.filter(p => p.featured));
+        }
+        if (message.includes('on-sale')) {
+          return of(demoProducts.filter(p => p.on_sale));
+        }
+        if (message.includes('category')) {
+          // For category products, just return demo products as we don't have the category ID here
+          return of(demoProducts);
+        }
+        // Default to all products
+        return of(demoProducts);
+      }
+      
+      // For other requests, return empty data
+      return of([]);
     }
     
     return throwError(() => new Error(errorMessage));

@@ -1,0 +1,49 @@
+ng] Build at: 2025-04-22T20:46:03.327Z - Hash: f02b98817cd0866c - Time: 12769ms
+[ng] ✖ Failed to compile.
+[ng] 
+[ng] Warning: /home/runner/workspace/node_modules/@ionic/storage/dist/esm/index.js depends on 'localforage'. CommonJS or AMD dependencies can cause optimization bailouts.
+[ng] For more info see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+[ng] 
+[ng] 
+[ng] Error: src/app/components/payment-form/payment-form.component.ts:153:8 - error TS2339: Property 'subscribe' does not exist on type 'Promise<PaymentResult>'.
+[ng] 153       .subscribe(
+[ng]            ~~~~~~~~~
+[ng] Error: src/app/pages/checkout/checkout.page.ts:894:25 - error TS2554: Expected 5 arguments, but got 1.
+[ng] 894       this.orderService.createOrder(orderData).subscribe(
+[ng]                             ~~~~~~~~~~~
+[ng]   src/app/services/order.service.ts:187:5
+[ng]     187     billingDetails: any,
+[ng]             ~~~~~~~~~~~~~~~~~~~
+[ng]     An argument for 'billingDetails' was not provided.
+[ng] 
+
+[INFO] Development server running!
+       
+       Local: http://localhost:5000
+       External: http://172.31.128.31:5000
+       
+       Use Ctrl+C to quit this process
+
+[ng] ✔ Browser application bundle generation complete.
+[ng] 
+[ng] Initial chunk files | Names   |  Raw size
+[ng] main.js             | main    | 256.68 kB | 
+[ng] runtime.js          | runtime |  14.42 kB | 
+[ng] 
+[ng] 84 unchanged chunks
+[ng] 
+[ng] Build at: 2025-04-22T20:46:06.938Z - Hash: 34680f8eacf3a477 - Time: 3095ms
+[ng] ✖ Failed to compile.
+[ng] 
+[ng] Error: src/app/components/payment-form/payment-form.component.ts:153:8 - error TS2339: Property 'subscribe' does not exist on type 'Promise<PaymentResult>'.
+[ng] 153       .subscribe(
+[ng]            ~~~~~~~~~
+[ng] Error: src/app/pages/checkout/checkout.page.ts:894:25 - error TS2554: Expected 5 arguments, but got 1.
+[ng] 894       this.orderService.createOrder(orderData).subscribe(
+[ng]                             ~~~~~~~~~~~
+[ng]   src/app/services/order.service.ts:187:5
+[ng]     187     billingDetails: any,
+[ng]             ~~~~~~~~~~~~~~~~~~~
+[ng]     An argument for 'billingDetails' was not provided.
+[ng] 
+^C
