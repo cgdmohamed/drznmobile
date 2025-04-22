@@ -8,6 +8,7 @@ import { Order } from '../interfaces/order.interface';
 import { Cart } from '../interfaces/cart.interface';
 import { ToastController } from '@ionic/angular';
 import { AuthService } from './auth.service';
+import { demoProducts } from '../demo/demo-products';
 
 @Injectable({
   providedIn: 'root'
@@ -176,63 +177,193 @@ export class OrderService {
   
   /**
    * Create a new order
-   * @param cart The cart to create an order from
-   * @param billingDetails The billing details
-   * @param shippingDetails The shipping details
-   * @param paymentMethod The payment method
-   * @param paymentResult The payment result
+   * @param orderData The order data or cart
+   * @param billingDetails The billing details (optional if included in orderData)
+   * @param shippingDetails The shipping details (optional if included in orderData)
+   * @param paymentMethod The payment method (optional if included in orderData)
+   * @param paymentResult The payment result (optional)
    */
   createOrder(
-    cart: Cart,
-    billingDetails: any,
-    shippingDetails: any,
-    paymentMethod: string,
-    paymentResult: any
+    orderDataOrCart: any,
+    billingDetails?: any,
+    shippingDetails?: any,
+    paymentMethod?: string,
+    paymentResult?: any
   ): Observable<Order> {
-    // Prepare line items
-    const lineItems = cart.items.map(item => ({
-      product_id: item.product.id,
-      quantity: item.quantity,
-      name: item.product.name,
-      price: parseFloat(item.product.price)
-    }));
+    let orderData: any;
     
-    // Prepare order data
-    const orderData = {
-      payment_method: paymentMethod,
-      payment_method_title: this.getPaymentMethodTitle(paymentMethod),
-      set_paid: paymentMethod !== 'cod', // Mark as paid if not Cash on Delivery
-      billing: billingDetails,
-      shipping: shippingDetails,
-      line_items: lineItems,
-      customer_id: this.authService.isLoggedIn ? this.authService.userValue?.id : 0,
-      customer_note: '',
-      shipping_lines: [
-        {
-          method_id: 'flat_rate',
-          method_title: 'Flat Rate',
-          total: cart.shipping.toString()
-        }
-      ],
-      fee_lines: [
-        {
-          name: 'VAT (15%)',
-          total: cart.vat.toString(),
-          tax_class: 'standard',
-          tax_status: 'taxable'
-        }
-      ],
-      meta_data: [
-        {
-          key: 'transaction_id',
-          value: paymentResult?.transactionId || ''
-        },
-        {
-          key: 'payment_details',
-          value: JSON.stringify(paymentResult || {})
-        }
-      ]
-    };
+    // Check if first parameter is a complete order object or a cart
+    if (orderDataOrCart && orderDataOrCart.line_items) {
+      // It's already a prepared order object
+      orderData = orderDataOrCart;
+      
+      // If we're in demo mode, return a fake order
+      if (!this.apiUrl || !this.consumerKey || !this.consumerSecret) {
+        console.log('Using demo order creation mode');
+        
+        // Create a fake order response
+        const demoOrder: Order = {
+          id: Math.floor(Math.random() * 10000),
+          number: `ORDER-${Date.now()}`,
+          status: 'processing',
+          date_created: new Date().toISOString(),
+          total: orderData.line_items.reduce((total: number, item: any) => 
+            total + (parseFloat(item.price || '0') * item.quantity), 0).toString(),
+          line_items: orderData.line_items.map((item: any) => ({
+            id: item.product_id,
+            name: `Product #${item.product_id}`,
+            product_id: item.product_id,
+            variation_id: 0,
+            quantity: item.quantity,
+            tax_class: '',
+            subtotal: '0',
+            subtotal_tax: '0',
+            total: '0',
+            total_tax: '0',
+            taxes: [],
+            meta_data: [],
+            sku: '',
+            price: 0,
+            image: {
+              id: '',
+              src: 'https://via.placeholder.com/50'
+            }
+          })),
+          // Add other required Order fields
+          parent_id: 0,
+          order_key: `wc_order_${Date.now()}`,
+          created_via: 'app',
+          version: '1.0',
+          currency: 'SAR',
+          date_modified: new Date().toISOString(),
+          discount_total: '0',
+          discount_tax: '0',
+          shipping_total: '0',
+          shipping_tax: '0',
+          cart_tax: '0',
+          total_tax: '0',
+          prices_include_tax: false,
+          customer_id: 0,
+          customer_ip_address: '',
+          customer_user_agent: '',
+          customer_note: orderData.customer_note || '',
+          billing: orderData.billing || {
+            first_name: '',
+            last_name: '',
+            company: '',
+            address_1: '',
+            address_2: '',
+            city: '',
+            state: '',
+            postcode: '',
+            country: 'SA',
+            email: '',
+            phone: ''
+          },
+          shipping: orderData.shipping || {
+            first_name: '',
+            last_name: '',
+            company: '',
+            address_1: '',
+            address_2: '',
+            city: '',
+            state: '',
+            postcode: '',
+            country: 'SA'
+          },
+          payment_method: orderData.payment_method || 'cod',
+          payment_method_title: orderData.payment_method_title || 'Cash on Delivery',
+          transaction_id: '',
+          date_paid: new Date().toISOString(),
+          date_completed: '',
+          cart_hash: '',
+          tax_lines: [],
+          shipping_lines: [{
+            id: 1,
+            method_title: 'Flat Rate',
+            method_id: 'flat_rate',
+            instance_id: '',
+            total: '0',
+            total_tax: '0',
+            taxes: [],
+            meta_data: []
+          }],
+          fee_lines: [],
+          coupon_lines: [],
+          refunds: [],
+          meta_data: orderData.meta_data || [],
+          _links: {
+            self: [{
+              href: ''
+            }],
+            collection: [{
+              href: ''
+            }]
+          }
+        };
+        
+        // Add to local orders list
+        const currentOrders = this.ordersValue;
+        const updatedOrders = [demoOrder, ...currentOrders];
+        this._orders.next(updatedOrders);
+        this.saveOrders(updatedOrders);
+        
+        this.presentToast('Order placed successfully!');
+        return of(demoOrder);
+      }
+    } else if (orderDataOrCart && orderDataOrCart.items && billingDetails) {
+      // It's a cart object, need to build order data
+      const cart = orderDataOrCart as Cart;
+      
+      // Prepare line items
+      const lineItems = cart.items.map(item => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+        name: item.product.name,
+        price: parseFloat(item.product.price)
+      }));
+      
+      // Prepare order data
+      orderData = {
+        payment_method: paymentMethod || 'cod',
+        payment_method_title: this.getPaymentMethodTitle(paymentMethod || 'cod'),
+        set_paid: paymentMethod !== 'cod', // Mark as paid if not Cash on Delivery
+        billing: billingDetails,
+        shipping: shippingDetails || billingDetails,
+        line_items: lineItems,
+        customer_id: this.authService.isLoggedIn ? this.authService.userValue?.id : 0,
+        customer_note: '',
+        shipping_lines: [
+          {
+            method_id: 'flat_rate',
+            method_title: 'Flat Rate',
+            total: cart.shipping.toString()
+          }
+        ],
+        fee_lines: [
+          {
+            name: 'VAT (15%)',
+            total: cart.vat.toString(),
+            tax_class: 'standard',
+            tax_status: 'taxable'
+          }
+        ],
+        meta_data: [
+          {
+            key: 'transaction_id',
+            value: paymentResult?.transactionId || ''
+          },
+          {
+            key: 'payment_details',
+            value: JSON.stringify(paymentResult || {})
+          }
+        ]
+      };
+    } else {
+      // Invalid parameters
+      console.error('Invalid parameters for createOrder');
+      return throwError(() => new Error('Invalid parameters for creating order'));
+    }
     
     return this.http.post<Order>(`${this.apiUrl}/orders`, orderData, {
       params: {

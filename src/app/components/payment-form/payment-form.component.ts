@@ -146,31 +146,28 @@ export class PaymentFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   
   // Process payment with Apple Pay
-  processApplePay() {
+  async processApplePay() {
     this.isProcessing = true;
     
-    this.paymentService.processApplePayPayment(this.amount, this.description)
-      .subscribe(
-        (response) => {
-          this.isProcessing = false;
-          
-          if (response.success === false) {
-            this.presentToast('فشل في تهيئة Apple Pay: ' + response.message, 'danger');
-            return;
-          }
-          
-          if (response.initiated) {
-            console.log('Apple Pay payment initiated');
-            // The actual payment processing happens in the payment service
-            // We'll receive the result through the onpaymentauthorized callback
-          }
-        },
-        (error) => {
-          this.isProcessing = false;
-          console.error('Error initiating Apple Pay payment:', error);
-          this.presentToast('حدث خطأ أثناء معالجة الدفع بواسطة Apple Pay', 'danger');
-        }
-      );
+    try {
+      const response = await this.paymentService.processApplePayPayment(this.amount, this.description);
+      this.isProcessing = false;
+      
+      if (response.success === false) {
+        this.presentToast('فشل في تهيئة Apple Pay: ' + response.message, 'danger');
+        return;
+      }
+      
+      if (response.success) {
+        console.log('Apple Pay payment initiated');
+        // The actual payment processing happens in the payment service
+        // We'll receive the result through the onpaymentauthorized callback
+      }
+    } catch (error) {
+      this.isProcessing = false;
+      console.error('Error initiating Apple Pay payment:', error);
+      this.presentToast('حدث خطأ أثناء معالجة الدفع بواسطة Apple Pay', 'danger');
+    }
   }
   
   // Helper method to retry form initialization
