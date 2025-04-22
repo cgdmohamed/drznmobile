@@ -84,10 +84,4 @@ export class EnvironmentService {
   }
 }
 
-// TypeScript definitions for runtime environment variables
-declare global {
-  const WC_CONSUMER_KEY: string | undefined;
-  const WC_CONSUMER_SECRET: string | undefined;
-  const WC_STORE_URL: string | undefined;
-  const MOYASAR_PUBLISHABLE_KEY: string | undefined;
-}
+// TypeScript definitions are in types.d.ts file

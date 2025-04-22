@@ -1,10 +1,4 @@
-// TypeScript declarations for runtime environment variables
-declare global {
-  const WC_CONSUMER_KEY: string | undefined;
-  const WC_CONSUMER_SECRET: string | undefined;
-  const WC_STORE_URL: string | undefined;
-  const MOYASAR_PUBLISHABLE_KEY: string | undefined;
-}
+// TypeScript declarations are in a separate file to avoid duplicate declarations
 
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
@@ -47,7 +41,12 @@ export class WoocommerceService {
     try {
       // Get WooCommerce credentials from environment variables
       if (typeof WC_STORE_URL !== 'undefined' && WC_STORE_URL) {
-        this.apiUrl = `https://${WC_STORE_URL}/wp-json/wc/v3`;
+        // Handle both formats of URL (with or without https://)
+        const storeUrl = WC_STORE_URL.startsWith('http')
+          ? WC_STORE_URL
+          : `https://${WC_STORE_URL}`;
+          
+        this.apiUrl = `${storeUrl}/wp-json/wc/v3`;
         console.log('WooCommerce API URL set:', this.apiUrl);
       }
       
