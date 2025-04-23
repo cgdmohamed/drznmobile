@@ -1,60 +1,134 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { Storage } from '@ionic/storage-angular';
+import { EnvironmentService } from './environment.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class OtpService {
   private apiUrl = 'https://api.taqnyat.sa';
-  private apiKey = environment.taqnyatApiKey;
   private sender = 'DARZN';
-  private tempVerificationCode: string; // For demo without actual API
+  private readonly OTP_STORAGE_KEY = 'otp_verification_data';
+  private readonly OTP_EXPIRATION_MINUTES = 10;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private storage: Storage,
+    private environmentService: EnvironmentService
+  ) {}
 
   // Send OTP to a phone number
   sendOtp(phoneNumber: string): Observable<any> {
     // Format the phone number
     const formattedNumber = this.formatPhoneNumber(phoneNumber);
     
-    // Set a fixed 4-digit OTP code for testing purposes
-    this.tempVerificationCode = '1234';
+    // Generate a random 4-digit OTP
+    const verificationCode = this.generateOtpCode();
     
-    // In a real application, this would make an API call to Taqnyat.sa
-    // const endpoint = `${this.apiUrl}/v1/messages`;
-    // const body = {
-    //   sender: this.sender,
-    //   recipients: [formattedNumber],
-    //   body: `Your DARZN verification code is: ${this.tempVerificationCode}. Valid for 10 minutes.`
-    // };
-    // const headers = {
-    //   'Authorization': `Bearer ${this.apiKey}`,
-    //   'Content-Type': 'application/json'
-    // };
-    // return this.http.post(endpoint, body, { headers });
+    // Store the OTP and its expiration time
+    this.storeOtpData(formattedNumber, verificationCode);
     
-    // For demo purposes, simulate a successful SMS sent response
-    console.log(`Demo: OTP ${this.tempVerificationCode} would be sent to ${formattedNumber}`);
-    return of({
-      status: 'success',
-      message: 'OTP sent successfully (Use code: 1234 for testing)',
-      messageId: 'msg_' + Math.random().toString(36).substring(2, 15)
-    });
+    if (!this.environmentService.isTaqnyatConfigured()) {
+      console.warn('Taqnyat API key not configured, using demo mode');
+      // In demo mode, return a mock response but use a real OTP code that's saved for verification
+      console.log(`Demo Mode: OTP ${verificationCode} would be sent to ${formattedNumber}`);
+      return of({
+        status: 'success',
+        message: 'OTP sent successfully (Demo Mode)',
+        messageId: 'msg_' + Math.random().toString(36).substring(2, 15)
+      });
+    }
+    
+    // Real implementation using Taqnyat.sa API
+    const endpoint = `${this.apiUrl}/v1/messages`;
+    const body = {
+      sender: this.sender,
+      recipients: [formattedNumber],
+      body: `Your DARZN verification code is: ${verificationCode}. Valid for ${this.OTP_EXPIRATION_MINUTES} minutes.`
+    };
+    const headers = {
+      'Authorization': `Bearer ${this.environmentService.taqnyatApiKey}`,
+      'Content-Type': 'application/json'
+    };
+    
+    return this.http.post(endpoint, body, { headers }).pipe(
+      tap(response => console.log('Taqnyat API response:', response)),
+      catchError(error => {
+        console.error('Error sending OTP via Taqnyat API:', error);
+        if (environment.production) {
+          return throwError(() => new Error('Failed to send verification code. Please try again later.'));
+        } else {
+          // In development, fallback to demo mode if API fails
+          console.log(`API Failed, Demo Fallback: OTP ${verificationCode} would be sent to ${formattedNumber}`);
+          return of({
+            status: 'success',
+            message: 'OTP sent successfully (Demo Fallback)',
+            messageId: 'msg_' + Math.random().toString(36).substring(2, 15)
+          });
+        }
+      })
+    );
   }
 
   // Verify the OTP entered by the user
-  verifyOtp(code: string): boolean {
-    // In a real application, verification would be done via API
-    // This is a simple check for demo purposes
-    console.log(`Verifying OTP: Entered=${code}, Stored=${this.tempVerificationCode}`);
+  async verifyOtp(code: string): Promise<boolean> {
+    // Get the stored OTP data
+    const otpData = await this.storage.get(this.OTP_STORAGE_KEY);
     
-    // For testing purposes in development, accept any 4-digit code
-    return code.length === 4 && /^\d{4}$/.test(code);
+    if (!otpData) {
+      console.error('No OTP data found');
+      return false;
+    }
+    
+    const now = new Date();
+    const expirationTime = new Date(otpData.expirationTime);
+    
+    // Check if OTP has expired
+    if (now > expirationTime) {
+      console.error('OTP expired');
+      await this.storage.remove(this.OTP_STORAGE_KEY);
+      return false;
+    }
+    
+    // Verify the code
+    const isValid = code === otpData.code;
+    
+    console.log(`Verifying OTP: Entered=${code}, Stored=${otpData.code}, Valid=${isValid}`);
+    
+    // If valid, clear the stored OTP data
+    if (isValid) {
+      await this.storage.remove(this.OTP_STORAGE_KEY);
+    }
+    
+    return isValid;
   }
 
-  // Format phone number to international format
+  // Generate a random 4-digit OTP code
+  private generateOtpCode(): string {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  }
+  
+  // Store OTP data with expiration
+  private async storeOtpData(phoneNumber: string, code: string): Promise<void> {
+    // Calculate expiration time (10 minutes from now)
+    const expirationTime = new Date();
+    expirationTime.setMinutes(expirationTime.getMinutes() + this.OTP_EXPIRATION_MINUTES);
+    
+    const otpData = {
+      phoneNumber,
+      code,
+      expirationTime: expirationTime.toISOString(),
+      createdAt: new Date().toISOString()
+    };
+    
+    await this.storage.set(this.OTP_STORAGE_KEY, otpData);
+  }
+
+  // Format phone number to international format for Saudi Arabia
   private formatPhoneNumber(phoneNumber: string): string {
     // Remove any non-digit characters
     let cleaned = phoneNumber.replace(/\D/g, '');

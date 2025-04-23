@@ -10,7 +10,8 @@ export const environment = {
   consumerKey: 'ck_6255526889b609ea53066560b71fdc41da7b866f',
   consumerSecret: 'cs_bf2088d5f696a0b9f364d6090c48e9b4343c11a3',
   moyasarPublishableKey: 'pk_test_RU3BN2JEMDqyMGS6HcEiKcCw2bGhgR9tQnU6ihmY',
-  taqnyatApiKey: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+  // This will be loaded from environment variables in the service
+  taqnyatApiKey: 'TAQNYAT_API_KEY_PLACEHOLDER',
   oneSignalAppId: 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX',
   // JWT Authentication
   jwtAuthUrl: '/wp-json/jwt-auth/v1/token',

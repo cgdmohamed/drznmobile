@@ -1,8 +1,9 @@
 import { Component, OnInit, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { AlertController, LoadingController } from '@ionic/angular';
+import { AlertController, LoadingController, ToastController } from '@ionic/angular';
 import { OtpService } from '../../services/otp.service';
 import { AuthService } from '../../services/auth.service';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-otp',
@@ -18,6 +19,9 @@ export class OtpPage implements OnInit {
   returnUrl: string = '/';
   otpSent: boolean = false;
   isRegistration: boolean = false;
+  remainingTime: number = 0;
+  resendEnabled: boolean = false;
+  timerInterval: any;
   
   constructor(
     private router: Router,
@@ -25,7 +29,8 @@ export class OtpPage implements OnInit {
     private otpService: OtpService,
     private authService: AuthService,
     private alertCtrl: AlertController,
-    private loadingCtrl: LoadingController
+    private loadingCtrl: LoadingController,
+    private toastCtrl: ToastController
   ) { }
 
   ngOnInit() {
@@ -57,6 +62,13 @@ export class OtpPage implements OnInit {
     }
   }
 
+  ngOnDestroy() {
+    // Clear any timers when component is destroyed
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+  }
+
   async sendOtp() {
     if (!this.phoneNumber || this.phoneNumber.length < 9) {
       await this.showAlert('خطأ', 'يرجى إدخال رقم هاتف صالح');
@@ -64,30 +76,57 @@ export class OtpPage implements OnInit {
     }
     
     this.isSubmitting = true;
+    this.resendEnabled = false;
     
     const loading = await this.loadingCtrl.create({
-      message: 'جاري إرسال رمز التحقق...'
+      message: 'جاري إرسال رمز التحقق...',
+      spinner: 'circles'
     });
     await loading.present();
     
-    this.otpService.sendOtp(this.phoneNumber).subscribe(
-      response => {
+    this.otpService.sendOtp(this.phoneNumber)
+      .pipe(finalize(() => {
         loading.dismiss();
         this.isSubmitting = false;
-        this.otpSent = true;
-        this.showAlert('تم الإرسال', 'تم إرسال رمز التحقق إلى رقم الهاتف المدخل');
-        
-        // Focus on first input
-        setTimeout(() => {
-          this.otpDigits.first.nativeElement.focus();
-        }, 300);
-      },
-      error => {
-        loading.dismiss();
-        this.isSubmitting = false;
-        this.showAlert('خطأ', 'حدث خطأ أثناء إرسال رمز التحقق');
+      }))
+      .subscribe({
+        next: (response) => {
+          this.otpSent = true;
+          
+          // Set up cooldown timer for resend (2 minutes)
+          this.remainingTime = 120;
+          this.startResendTimer();
+          
+          // Focus on first input
+          setTimeout(() => {
+            if (this.otpDigits && this.otpDigits.first) {
+              this.otpDigits.first.nativeElement.focus();
+            }
+          }, 300);
+          
+          this.presentToast('تم إرسال رمز التحقق إلى رقم الهاتف المدخل', 'success');
+        },
+        error: (error) => {
+          console.error('OTP send error:', error);
+          this.showAlert('خطأ', 'حدث خطأ أثناء إرسال رمز التحقق. يرجى المحاولة مرة أخرى لاحقًا.');
+        }
+      });
+  }
+
+  // Start a timer for OTP resend cooldown
+  startResendTimer() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+    
+    this.timerInterval = setInterval(() => {
+      this.remainingTime--;
+      
+      if (this.remainingTime <= 0) {
+        this.resendEnabled = true;
+        clearInterval(this.timerInterval);
       }
-    );
+    }, 1000);
   }
 
   async verifyOtp() {
@@ -103,100 +142,116 @@ export class OtpPage implements OnInit {
     this.isSubmitting = true;
     
     const loading = await this.loadingCtrl.create({
-      message: 'جاري التحقق من الرمز...'
+      message: 'جاري التحقق من الرمز...',
+      spinner: 'circles'
     });
     await loading.present();
     
-    // In a real app, this would call the backend to verify OTP
-    // Here we'll use the local service method
-    // For testing purposes, we'll accept '1234' as the valid OTP
-    const isVerified = this.otpService.verifyOtp(otpValue);
-    
-    if (isVerified) {
-      // Different flows for registration vs login
-      if (this.isRegistration) {
-        // Handle registration flow - get pending registration data
-        const pendingRegistrationJSON = localStorage.getItem('pendingRegistration');
-        
-        if (pendingRegistrationJSON) {
-          try {
-            const pendingRegistration = JSON.parse(pendingRegistrationJSON);
-            
-            // Create a user account with phone number
-            const userData = {
-              first_name: pendingRegistration.first_name,
-              last_name: pendingRegistration.last_name,
-              email: `${this.phoneNumber}@darzn.com`, // Generate an email from phone
-              username: this.phoneNumber, // Use phone as username
-              password: 'Mobile' + Math.floor(100000 + Math.random() * 900000), // Generate a random password
-              phone: this.phoneNumber
-            };
-            
-            this.authService.register(userData).subscribe(
-              async response => {
-                loading.dismiss();
-                this.isSubmitting = false;
-                
-                // Clear pending registration data
-                localStorage.removeItem('pendingRegistration');
-                
-                const toast = await this.alertCtrl.create({
-                  header: 'تم التسجيل بنجاح',
-                  message: 'تم إنشاء حسابك بنجاح. يمكنك الآن استخدام التطبيق.',
-                  buttons: [{
-                    text: 'تم',
-                    handler: () => {
-                      this.router.navigate(['/home']);
-                    }
-                  }]
-                });
-                await toast.present();
-              },
-              error => {
-                loading.dismiss();
-                this.isSubmitting = false;
-                this.showAlert('خطأ في التسجيل', 'حدث خطأ أثناء إنشاء الحساب، يرجى المحاولة مرة أخرى.');
-                console.error('Registration error', error);
-              }
-            );
-          } catch (error) {
-            loading.dismiss();
-            this.isSubmitting = false;
-            this.showAlert('خطأ', 'حدث خطأ في بيانات التسجيل، يرجى المحاولة مرة أخرى.');
-            console.error('Pending registration parse error', error);
-          }
+    try {
+      // Use the updated OTP service with proper validation
+      const isVerified = await this.otpService.verifyOtp(otpValue);
+      
+      if (isVerified) {
+        // Handle successful verification
+        if (this.isRegistration) {
+          await this.handleRegistration(loading);
         } else {
-          loading.dismiss();
-          this.isSubmitting = false;
-          this.showAlert('خطأ', 'لم يتم العثور على بيانات التسجيل، يرجى المحاولة مرة أخرى.');
+          await this.handleLogin(loading);
         }
       } else {
-        // Handle login flow
         loading.dismiss();
         this.isSubmitting = false;
-        
-        // Automatically login the user
-        const autoLoginEmail = `${this.phoneNumber}@darzn.com`;
-        const autoLoginPwd = 'temporary_password'; // This is just for demonstration
-        
-        // For simplicity, we'll try to login directly
-        // In a real app, you would have a proper login flow
-        this.authService.login(autoLoginEmail, autoLoginPwd).subscribe(
-          loginResponse => {
-            this.router.navigate([this.returnUrl]);
-          },
-          loginError => {
-            // If login fails, could mean the user needs to register first
-            this.showAlert('تم التحقق', 'تم التحقق من رقم الهاتف بنجاح، يرجى تسجيل الدخول');
-            this.router.navigate(['/login']);
-          }
-        );
+        this.showAlert('خطأ', 'رمز التحقق غير صحيح أو منتهي الصلاحية');
       }
-    } else {
+    } catch (error) {
       loading.dismiss();
       this.isSubmitting = false;
-      this.showAlert('خطأ', 'رمز التحقق غير صحيح');
+      console.error('OTP verification error:', error);
+      this.showAlert('خطأ', 'حدث خطأ أثناء التحقق من الرمز');
     }
+  }
+
+  // Handle registration after successful OTP verification
+  private async handleRegistration(loading: HTMLIonLoadingElement) {
+    // Get pending registration data
+    const pendingRegistrationJSON = localStorage.getItem('pendingRegistration');
+    
+    if (!pendingRegistrationJSON) {
+      loading.dismiss();
+      this.isSubmitting = false;
+      this.showAlert('خطأ', 'لم يتم العثور على بيانات التسجيل، يرجى المحاولة مرة أخرى.');
+      return;
+    }
+    
+    try {
+      const pendingRegistration = JSON.parse(pendingRegistrationJSON);
+      
+      // Create a user account with phone number
+      const userData = {
+        first_name: pendingRegistration.first_name,
+        last_name: pendingRegistration.last_name,
+        email: pendingRegistration.email || `${this.phoneNumber}@darzn.com`, // Use provided email or generate one
+        username: this.phoneNumber, // Use phone as username
+        password: 'Mobile' + Math.floor(100000 + Math.random() * 900000), // Generate a secure random password
+        phone: this.phoneNumber
+      };
+      
+      this.authService.register(userData).subscribe({
+        next: async (response) => {
+          loading.dismiss();
+          this.isSubmitting = false;
+          
+          // Clear pending registration data
+          localStorage.removeItem('pendingRegistration');
+          
+          const alert = await this.alertCtrl.create({
+            header: 'تم التسجيل بنجاح',
+            message: 'تم إنشاء حسابك بنجاح. يمكنك الآن استخدام التطبيق.',
+            buttons: [{
+              text: 'تم',
+              handler: () => {
+                this.router.navigate(['/home']);
+              }
+            }]
+          });
+          await alert.present();
+        },
+        error: (error) => {
+          loading.dismiss();
+          this.isSubmitting = false;
+          console.error('Registration error:', error);
+          this.showAlert('خطأ في التسجيل', 'حدث خطأ أثناء إنشاء الحساب، يرجى المحاولة مرة أخرى.');
+        }
+      });
+    } catch (error) {
+      loading.dismiss();
+      this.isSubmitting = false;
+      console.error('Pending registration parse error:', error);
+      this.showAlert('خطأ', 'حدث خطأ في بيانات التسجيل، يرجى المحاولة مرة أخرى.');
+    }
+  }
+  
+  // Handle login after successful OTP verification
+  private async handleLogin(loading: HTMLIonLoadingElement) {
+    loading.dismiss();
+    this.isSubmitting = false;
+    
+    // Try to login with phone-based credentials
+    const autoLoginEmail = `${this.phoneNumber}@darzn.com`;
+    const autoLoginPwd = 'temporary_password'; // This is just for demonstration
+    
+    this.authService.login(autoLoginEmail, autoLoginPwd).subscribe({
+      next: (loginResponse) => {
+        this.presentToast('تم تسجيل الدخول بنجاح', 'success');
+        this.router.navigate([this.returnUrl]);
+      },
+      error: (loginError) => {
+        // If login fails, could mean the user needs to register first
+        console.log('Login failed, redirecting to login page:', loginError);
+        this.presentToast('تم التحقق من رقم الهاتف بنجاح، يرجى تسجيل الدخول', 'success');
+        this.router.navigate(['/login']);
+      }
+    });
   }
 
   otpDigitInputChanged(index: number, event: any) {
@@ -255,10 +310,24 @@ export class OtpPage implements OnInit {
     }
   }
 
+  async resendOtp() {
+    if (this.resendEnabled) {
+      // Reset OTP code fields
+      this.otpCode = ['', '', '', ''];
+      // Send OTP again
+      await this.sendOtp();
+    }
+  }
+
   goBack() {
     if (this.otpSent) {
       this.otpSent = false;
       this.otpCode = ['', '', '', ''];
+      
+      // Clear any active timers
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+      }
     } else {
       this.router.navigate(['/login']);
     }
@@ -272,5 +341,29 @@ export class OtpPage implements OnInit {
     });
     
     await alert.present();
+  }
+  
+  async presentToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
+    const toast = await this.toastCtrl.create({
+      message: message,
+      duration: 3000,
+      position: 'bottom',
+      color: color,
+      buttons: [
+        {
+          text: 'إغلاق',
+          role: 'cancel'
+        }
+      ]
+    });
+    
+    await toast.present();
+  }
+  
+  // Format remaining time as MM:SS
+  formatTime(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   }
 }

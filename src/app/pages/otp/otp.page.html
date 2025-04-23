@@ -29,7 +29,8 @@
         class="send-otp-button" 
         [disabled]="isSubmitting || !phoneNumber" 
         (click)="sendOtp()">
-        إرسال رمز التحقق
+        <ion-spinner name="circles" *ngIf="isSubmitting"></ion-spinner>
+        <span *ngIf="!isSubmitting">إرسال رمز التحقق</span>
       </ion-button>
     </div>
     
@@ -42,9 +43,12 @@
       <h2>أدخل رمز التحقق</h2>
       <p>تم إرسال رمز التحقق إلى رقم {{ phoneNumber }}</p>
       
-      <!-- Testing message -->
-      <div class="test-message">
-        <ion-note color="medium">للاختبار: يمكنك إدخال أي رمز مكون من 4 أرقام</ion-note>
+      <!-- Expiration timer -->
+      <div class="otp-timer">
+        <ion-note>
+          <ion-icon name="time-outline"></ion-icon>
+          <span>ينتهي الرمز في {{ formatTime(remainingTime) }}</span>
+        </ion-note>
       </div>
       
       <div class="otp-input-container">
@@ -64,12 +68,15 @@
         class="verify-button" 
         [disabled]="isSubmitting || otpCode.includes('')" 
         (click)="verifyOtp()">
-        تحقق
+        <ion-spinner name="circles" *ngIf="isSubmitting"></ion-spinner>
+        <span *ngIf="!isSubmitting">تحقق</span>
       </ion-button>
       
       <div class="resend-code">
         <span>لم تستلم الرمز؟</span>
-        <a (click)="sendOtp()">إرسال مرة أخرى</a>
+        <a [class.disabled]="!resendEnabled" (click)="resendOtp()">
+          {{ resendEnabled ? 'إرسال مرة أخرى' : 'انتظر ' + formatTime(remainingTime) }}
+        </a>
       </div>
     </div>
   </div>
