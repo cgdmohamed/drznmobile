@@ -66,12 +66,12 @@
           <ion-accordion value="price">
             <ion-item slot="header" class="filter-header">
               <ion-label>السعر</ion-label>
-              <ion-note slot="end" *ngIf="filters.maxPrice < 5000">{{ filters.maxPrice }} ر.س</ion-note>
+              <ion-note slot="end" *ngIf="filters.maxPrice < 5000">{{ filters.maxPrice }} <img src="assets/sar.png" alt="SAR" class="currency-icon"></ion-note>
             </ion-item>
             <div slot="content" class="filter-section-content">
               <ion-range [(ngModel)]="filters.maxPrice" min="0" max="5000" step="10">
-                <ion-label slot="start">0 ر.س</ion-label>
-                <ion-label slot="end">{{ filters.maxPrice }} ر.س</ion-label>
+                <ion-label slot="start">0 <img src="assets/sar.png" alt="SAR" class="currency-icon"></ion-label>
+                <ion-label slot="end">{{ filters.maxPrice }} <img src="assets/sar.png" alt="SAR" class="currency-icon"></ion-label>
               </ion-range>
             </div>
           </ion-accordion>
@@ -179,8 +179,8 @@
         <div class="product-info">
           <h3 class="product-title" [routerLink]="['/product', product.id]">{{ product.name }}</h3>
           <div class="product-price">
-            <span class="current-price">{{ product.price }} ر.س</span>
-            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} ر.س</span>
+            <span class="current-price">{{ product.price }} <img src="assets/sar.png" alt="SAR" class="currency-icon"></span>
+            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} <img src="assets/sar.png" alt="SAR" class="currency-icon"></span>
           </div>
           <div class="product-actions">
             <ion-button fill="clear" class="favorite-button" (click)="onFavoriteChange(product.id)">
@@ -205,11 +205,14 @@
     </div>
   </div>
   
+  <!-- Loading more indicator -->
+  <div class="loading-more-indicator" *ngIf="isLoadingMore">
+    <ion-spinner name="crescent" color="primary"></ion-spinner>
+    <span>جاري تحميل المزيد من المنتجات...</span>
+  </div>
+  
   <!-- Infinite scroll -->
-  <ion-infinite-scroll *ngIf="!isLoading && products.length > 0" threshold="100px" (ionInfinite)="loadMore($event)">
-    <ion-infinite-scroll-content
-      loadingSpinner="crescent"
-      loadingText="جاري تحميل المزيد من المنتجات...">
-    </ion-infinite-scroll-content>
+  <ion-infinite-scroll *ngIf="!isLoading && !isLoadingMore && products.length > 0" threshold="100px" (ionInfinite)="loadMore($event)">
+    <ion-infinite-scroll-content></ion-infinite-scroll-content>
   </ion-infinite-scroll>
 </ion-content>

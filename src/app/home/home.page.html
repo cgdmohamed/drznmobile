@@ -66,23 +66,17 @@
     
     <!-- Two row category grid with swiper -->
     <div *ngIf="!isLoading" class="category-grid-container">
-      <!-- Simple grid implementation for now -->
-      <div class="category-grid">
-        <div class="category-item" *ngFor="let category of categories | slice:0:8" [routerLink]="['/category', category.id]">
-          <div class="category-image">
-            <img [src]="category.image?.src || 'https://placehold.co/200x200.jpg'" [alt]="category.name">
+      <swiper-container class="category-swiper" #categorySwiper init="false" 
+                    slides-per-view="4" grid-rows="2" space-between="8">
+        <swiper-slide *ngFor="let category of categories | slice:0:8" [routerLink]="['/category', category.id]">
+          <div class="category-item">
+            <div class="category-image">
+              <img [src]="category.image?.src || 'https://placehold.co/200x200.jpg'" [alt]="category.name">
+            </div>
+            <h3>{{ category.name }}</h3>
           </div>
-          <h3>{{ category.name }}</h3>
-        </div>
-      </div>
-      
-      <!-- View all categories button -->
-      <div class="view-all-categories">
-        <ion-button fill="clear" size="small" routerLink="/categories">
-          <span>عرض كل التصنيفات</span>
-          <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
-        </ion-button>
-      </div>
+        </swiper-slide>
+      </swiper-container>
     </div>
 
     <!-- Personalized Recommendations -->
@@ -117,8 +111,8 @@
           <h3 class="product-name" [routerLink]="['/product', product.id]">{{ product.name }}</h3>
           
           <div class="product-price">
-            <span class="current-price">{{ product.on_sale ? product.sale_price : product.regular_price }} ر.س</span>
-            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} ر.س</span>
+            <span class="current-price">{{ product.on_sale ? product.sale_price : product.regular_price }} <img src="assets/sar.png" alt="SAR" class="currency-icon"></span>
+            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} <img src="assets/sar.png" alt="SAR" class="currency-icon"></span>
           </div>
           
           <div class="product-actions">
@@ -158,8 +152,8 @@
           <h3 class="product-name" [routerLink]="['/product', product.id]">{{ product.name }}</h3>
           
           <div class="product-price">
-            <span class="current-price">{{ product.on_sale ? product.sale_price : product.regular_price }} ر.س</span>
-            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} ر.س</span>
+            <span class="current-price">{{ product.on_sale ? product.sale_price : product.regular_price }} <img src="assets/sar.png" alt="SAR" class="currency-icon"></span>
+            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} <img src="assets/sar.png" alt="SAR" class="currency-icon"></span>
           </div>
           
           <div class="product-actions">
@@ -199,8 +193,8 @@
           <h3 class="product-name" [routerLink]="['/product', product.id]">{{ product.name }}</h3>
           
           <div class="product-price">
-            <span class="current-price">{{ product.sale_price }} ر.س</span>
-            <span class="original-price">{{ product.regular_price }} ر.س</span>
+            <span class="current-price">{{ product.sale_price }} <img src="assets/sar.png" alt="SAR" class="currency-icon"></span>
+            <span class="original-price">{{ product.regular_price }} <img src="assets/sar.png" alt="SAR" class="currency-icon"></span>
           </div>
           
           <div class="product-actions">

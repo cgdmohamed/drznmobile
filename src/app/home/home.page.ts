@@ -18,7 +18,7 @@ import { register } from 'swiper/element/bundle';
   standalone: false
 })
 export class HomePage implements OnInit, OnDestroy, AfterViewInit {
-  // No longer using category swiper
+  @ViewChild('categorySwiper') categorySwiperEl: ElementRef;
   
   featuredProducts: Product[] = [];
   newProducts: Product[] = [];
@@ -147,6 +147,34 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   ngAfterViewInit() {
     // Register Swiper web components for other swiper elements in the app
     register();
+    
+    // Initialize category swiper with grid layout
+    setTimeout(() => {
+      this.initializeCategorySwiper();
+    }, 500);
+  }
+  
+  // Initialize category swiper with grid layout (2 rows x 4 columns)
+  private initializeCategorySwiper() {
+    if (this.categorySwiperEl?.nativeElement) {
+      const swiperEl = this.categorySwiperEl.nativeElement;
+      
+      // Configure the swiper for a 2-row grid layout
+      Object.assign(swiperEl, {
+        slidesPerView: 4,
+        grid: {
+          rows: 2,
+          fill: 'row'
+        },
+        spaceBetween: 8
+      });
+      
+      // Initialize the swiper
+      swiperEl.initialize();
+      console.log('Category grid swiper initialized');
+    } else {
+      console.warn('Category swiper element not found');
+    }
   }
 
   // Load all data for the home page
