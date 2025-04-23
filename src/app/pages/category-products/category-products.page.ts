@@ -33,6 +33,8 @@ export class CategoryProductsPage implements OnInit {
   availableBrands: any[] = [];
   isLoading = true;
   isFilterVisible = false;
+  page: number = 1;
+  totalPages: number = 1;
   private wishlistSubscription: Subscription;
   
   @ViewChild(IonModal) filterModal: IonModal;
@@ -121,10 +123,16 @@ export class CategoryProductsPage implements OnInit {
     });
   }
 
-  loadCategoryProducts() {
+  loadCategoryProducts(resetPage: boolean = true) {
     this.isLoading = true;
     
-    // Apply the current filters
+    // Reset page to 1 if loading initial products or applying new filters
+    if (resetPage) {
+      this.page = 1;
+      this.products = []; // Clear existing products
+    }
+    
+    // Apply the current filters with pagination
     const filterOptions = {
       orderby: this.filters.orderby,
       order: this.filters.order,
@@ -132,12 +140,34 @@ export class CategoryProductsPage implements OnInit {
       maxPrice: this.filters.maxPrice,
       onSale: this.filters.onSale,
       inStock: this.filters.inStock,
-      brands: this.filters.brands // Include brand filtering
+      brands: this.filters.brands, // Include brand filtering
+      page: this.page,
+      per_page: 20 // Number of products per page
     };
     
     this.productService.getProductsByCategory(this.categoryId, filterOptions).subscribe({
-      next: (products) => {
-        this.products = products;
+      next: (response: any) => {
+        // Check if response has products and pagination info
+        let products: Product[] = [];
+        
+        if (Array.isArray(response)) {
+          // Direct array response
+          products = response;
+          // Estimate total pages if headers not available
+          this.totalPages = products.length < 20 ? this.page : this.page + 1;
+        } else if (response && response.products) {
+          // Object response with pagination
+          products = response.products;
+          this.totalPages = response.totalPages || 1;
+        }
+        
+        if (resetPage) {
+          this.products = products;
+        } else {
+          // Append to existing products for infinite scroll
+          this.products = [...this.products, ...products];
+        }
+        
         this.isLoading = false;
       },
       error: (error) => {
@@ -145,6 +175,21 @@ export class CategoryProductsPage implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+  
+  // Load more products when scrolling
+  loadMore(event: any) {
+    if (this.page >= this.totalPages) {
+      event.target.complete();
+      return;
+    }
+    
+    this.page++;
+    this.loadCategoryProducts(false); // Load more products without resetting
+    
+    setTimeout(() => {
+      event.target.complete();
+    }, 1000);
   }
   
   // Method to apply filters and reload products
