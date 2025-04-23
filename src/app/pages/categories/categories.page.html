@@ -18,7 +18,7 @@
   </ion-refresher>
 
   <div class="ion-padding">
-    <div class="categories-container" *ngIf="!isLoading">
+    <div class="categories-container">
       <div class="category-card" *ngFor="let category of categories" (click)="viewCategory(category.id)">
         <div class="category-image">
           <img [src]="category.image?.src || 'assets/placeholder.png'" [alt]="category.name">
@@ -34,5 +34,13 @@
     <div *ngIf="isLoading" class="categories-container">
       <app-skeleton *ngFor="let i of [1,2,3,4,5,6]" type="category"></app-skeleton>
     </div>
+    
+    <!-- Infinite scroll -->
+    <ion-infinite-scroll threshold="100px" (ionInfinite)="loadMoreCategories($event)">
+      <ion-infinite-scroll-content
+        loadingSpinner="bubbles"
+        loadingText="جاري تحميل المزيد من التصنيفات...">
+      </ion-infinite-scroll-content>
+    </ion-infinite-scroll>
   </div>
 </ion-content>

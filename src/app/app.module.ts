@@ -17,6 +17,9 @@ register(); // Call the register function to register Swiper custom elements
 // Interceptors
 import { TokenInterceptor } from './interceptors/token.interceptor';
 
+// Services
+import { JwtAuthService } from './services/jwt-auth.service';
+
 @NgModule({
   declarations: [AppComponent],
   imports: [
@@ -32,7 +35,8 @@ import { TokenInterceptor } from './interceptors/token.interceptor';
   ],
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-    { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true }
+    { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true },
+    JwtAuthService
   ],
   bootstrap: [AppComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]

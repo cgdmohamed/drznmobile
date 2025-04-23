@@ -57,17 +57,30 @@ export class ProductService {
     );
   }
 
-  // Get product categories
-  getCategories(): Observable<Category[]> {
+  // Get product categories with pagination support
+  getCategories(options: any = {}): Observable<Category[]> {
     // Connect to WooCommerce API using environment variables
-    return this.http.get<Category[]>(
-      `${this.apiUrl}/products/categories?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&per_page=100`
-    ).pipe(
-      catchError(error => {
-        console.error('Error fetching categories from API:', error);
-        return this.mockDataService.getCategories();
-      })
-    );
+    const params = {
+      consumer_key: this.consumerKey,
+      consumer_secret: this.consumerSecret,
+      per_page: options.per_page || 20,
+      page: options.page || 1,
+      ...options
+    };
+
+    const queryString = Object.keys(params)
+      .map(key => `${key}=${params[key]}`)
+      .join('&');
+    
+    console.log(`Fetching categories, page: ${params.page}, per_page: ${params.per_page}`);
+    
+    return this.http.get<Category[]>(`${this.apiUrl}/products/categories?${queryString}`)
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching categories from API:', error);
+          return this.mockDataService.getCategories();
+        })
+      );
   }
 
   // Get products by category with filtering options
@@ -130,17 +143,31 @@ export class ProductService {
       );
   }
 
-  // Search products
-  searchProducts(query: string): Observable<Product[]> {
+  // Search products with advanced options and pagination
+  searchProducts(query: string, options: any = {}): Observable<Product[]> {
     // Connect to WooCommerce API using environment variables
-    return this.http.get<Product[]>(
-      `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&search=${query}&per_page=20`
-    ).pipe(
-      catchError(error => {
-        console.error(`Error searching products with query "${query}" from API:`, error);
-        return this.getDemoProducts(5);
-      })
-    );
+    const params = {
+      consumer_key: this.consumerKey,
+      consumer_secret: this.consumerSecret,
+      search: query,
+      per_page: options.per_page || 20,
+      page: options.page || 1,
+      ...options
+    };
+    
+    const queryString = Object.keys(params)
+      .map(key => `${key}=${encodeURIComponent(params[key])}`)
+      .join('&');
+    
+    console.log(`Searching products with query "${query}", page: ${params.page}`);
+    
+    return this.http.get<Product[]>(`${this.apiUrl}/products?${queryString}`)
+      .pipe(
+        catchError(error => {
+          console.error(`Error searching products with query "${query}" from API:`, error);
+          return this.getDemoProducts(params.per_page);
+        })
+      );
   }
 
   // Get product brands (product attributes)

@@ -35,9 +35,11 @@
   
   <!-- Category Skeleton -->
   <ng-container *ngSwitchCase="'category'">
-    <div class="skeleton-category" [class.skeleton-animated]="animated">
-      <div class="skeleton-category-image"></div>
-      <div class="skeleton-category-title"></div>
+    <div class="skeleton-categories-grid">
+      <div *ngFor="let item of countArray" class="skeleton-category" [class.skeleton-animated]="animated">
+        <div class="skeleton-category-image"></div>
+        <div class="skeleton-category-title"></div>
+      </div>
     </div>
   </ng-container>
   

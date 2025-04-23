@@ -5,6 +5,7 @@ import { Subscription } from "rxjs";
 import { Router, NavigationEnd } from "@angular/router";
 import { filter } from "rxjs/operators";
 import { AuthService } from "./services/auth.service";
+import { JwtAuthService } from "./services/jwt-auth.service";
 import { CartService } from "./services/cart.service";
 import { NotificationService } from "./services/notification.service";
 import { ThemeService } from "./services/theme.service";
@@ -27,6 +28,7 @@ export class AppComponent implements OnInit, OnDestroy {
     private platform: Platform,
     private storage: Storage,
     public authService: AuthService, // Changed to public for template access
+    public jwtAuthService: JwtAuthService, // JWT auth service
     private cartService: CartService,
     private notificationService: NotificationService,
     private themeService: ThemeService,
@@ -110,8 +112,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   initializeApp() {
     this.platform.ready().then(() => {
-      // Auto login
+      // Auto login using either auth service (will be gradually migrated to JWT)
       this.authService.autoLogin().subscribe();
+      
+      // JWT auth is initialized automatically when injected
+      // Add jwt-based auth check/verification here if needed
 
       // Initialize push notifications if on a device
       if (this.platform.is("capacitor") || this.platform.is("cordova")) {

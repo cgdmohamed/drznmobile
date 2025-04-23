@@ -1,233 +1,502 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
-import { tap, catchError, map } from 'rxjs/operators';
+import { BehaviorSubject, Observable, from, throwError, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { Storage } from '@ionic/storage-angular';
 import { environment } from '../../environments/environment';
+import { User } from '../interfaces/user.interface';
 import { ToastController } from '@ionic/angular';
-import { Router } from '@angular/router';
 
 interface AuthResponse {
-  token: string;
-  user_email: string;
-  user_nicename: string;
-  user_display_name: string;
+  success: boolean;
+  data?: {
+    jwt_token: string;
+    user_id: number;
+    user?: User;
+  };
+  message?: string;
 }
 
-interface User {
-  email: string;
-  name: string;
-  displayName: string;
+interface JwtPayload {
+  user_id: number;
+  user_email: string;
+  iat: number;
+  exp: number;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class JwtAuthService {
-  private authUrl = environment.jwtAuthUrl;
-  private _isAuthenticated = new BehaviorSubject<boolean>(false);
-  private _user = new BehaviorSubject<User | null>(null);
-  private _token = new BehaviorSubject<string | null>(null);
-  
-  private readonly TOKEN_KEY = 'auth_token';
-  private readonly USER_KEY = 'auth_user';
-  
+  private apiUrl = environment.apiUrl;
+  private jwtUrl = `${this.apiUrl}/simple-jwt-login`;
+  private user = new BehaviorSubject<User | null>(null);
+  private token = new BehaviorSubject<string | null>(null);
+  private readonly TOKEN_KEY = 'jwt_token';
+  private readonly USER_KEY = 'user_data';
+
   constructor(
     private http: HttpClient,
     private storage: Storage,
-    private toastController: ToastController,
-    private router: Router
+    private toastController: ToastController
   ) {
-    this.initialize();
+    this.initializeAuth();
   }
-  
+
   /**
    * Initialize the auth service
    */
-  async initialize() {
-    await this.checkToken();
-  }
-  
-  /**
-   * Check if there's a token in storage
-   */
-  private async checkToken() {
+  async initializeAuth() {
     try {
-      const token = await this.storage.get(this.TOKEN_KEY);
-      const user = await this.storage.get(this.USER_KEY);
+      // Ensure storage is created
+      await this.storage.create();
       
-      if (token && user) {
-        this._token.next(token);
-        this._user.next(user);
-        this._isAuthenticated.next(true);
-        return true;
+      // Load token and user from storage
+      const storedToken = await this.storage.get(this.TOKEN_KEY);
+      const storedUser = await this.storage.get(this.USER_KEY);
+      
+      if (storedToken && storedUser) {
+        // Check if token is expired
+        if (this.isTokenExpired(storedToken)) {
+          // Token expired, clear storage and subjects
+          this.clearAuth();
+          console.log('JWT token expired, logging out');
+        } else {
+          // Valid token, set user and token
+          this.token.next(storedToken);
+          this.user.next(storedUser);
+          console.log('JWT token loaded from storage');
+        }
       }
-      
-      return false;
     } catch (error) {
-      console.error('Error checking token:', error);
-      return false;
+      console.error('Error initializing auth:', error);
     }
   }
-  
+
   /**
-   * Get authentication state as an observable
+   * Get current authenticated user as observable
    */
-  get isAuthenticated(): Observable<boolean> {
-    return this._isAuthenticated.asObservable();
+  get currentUser(): Observable<User | null> {
+    return this.user.asObservable();
   }
-  
+
   /**
-   * Get current authentication state
+   * Get current JWT token as observable
    */
-  get isAuthenticatedValue(): boolean {
-    return this._isAuthenticated.getValue();
+  get currentToken(): Observable<string | null> {
+    return this.token.asObservable();
   }
-  
+
   /**
-   * Get user as an observable
+   * Get current user value (not as observable)
    */
-  get user(): Observable<User | null> {
-    return this._user.asObservable();
+  get currentUserValue(): User | null {
+    return this.user.getValue();
   }
-  
+
   /**
-   * Get current user
+   * Get current token value (not as observable)
    */
-  get userValue(): User | null {
-    return this._user.getValue();
+  get currentTokenValue(): string | null {
+    return this.token.getValue();
   }
-  
+
   /**
-   * Get token as an observable
+   * Check if user is authenticated
    */
-  get token(): Observable<string | null> {
-    return this._token.asObservable();
+  get isAuthenticated(): boolean {
+    return !!this.currentTokenValue && !this.isTokenExpired(this.currentTokenValue);
   }
-  
+
   /**
-   * Get current token
+   * Register a new user
+   * @param email User email
+   * @param password User password
+   * @param firstName User first name
+   * @param lastName User last name
+   * @param username User username (optional)
    */
-  get tokenValue(): string | null {
-    return this._token.getValue();
-  }
-  
-  /**
-   * Login with username and password
-   * @param username Username or email
-   * @param password Password
-   */
-  login(username: string, password: string): Observable<any> {
-    return this.http.post<AuthResponse>(this.authUrl, {
-      username,
-      password
-    }).pipe(
-      tap(response => this.handleAuthResponse(response)),
+  register(email: string, password: string, firstName: string, lastName: string, username?: string): Observable<any> {
+    if (!username) {
+      // Create username from email if not provided
+      username = email.split('@')[0];
+    }
+
+    const registerData = {
+      email,
+      password,
+      user_login: username,
+      first_name: firstName,
+      last_name: lastName
+    };
+
+    return this.http.post<AuthResponse>(`${this.jwtUrl}/register`, registerData).pipe(
       catchError(error => {
-        console.error('Login error:', error);
-        this.presentToast('Login failed: ' + (error.error?.message || 'Unknown error'));
-        return throwError(() => error);
+        console.error('Registration error:', error);
+        const message = error.error?.message || 'Registration failed. Please try again.';
+        this.presentToast(message, 'danger');
+        return throwError(() => new Error(message));
+      }),
+      tap(response => {
+        if (response.success && response.data) {
+          this.presentToast('Registration successful', 'success');
+        }
       })
     );
   }
-  
+
   /**
-   * Handle the auth response from the server
-   * @param response The auth response from the server
+   * Login with email and password
+   * @param email User email
+   * @param password User password
    */
-  private async handleAuthResponse(response: AuthResponse) {
-    if (response && response.token) {
-      const user: User = {
-        email: response.user_email,
-        name: response.user_nicename,
-        displayName: response.user_display_name
-      };
-      
-      // Save to storage
-      await this.storage.set(this.TOKEN_KEY, response.token);
-      await this.storage.set(this.USER_KEY, user);
-      
-      // Update subjects
-      this._token.next(response.token);
-      this._user.next(user);
-      this._isAuthenticated.next(true);
-      
-      this.presentToast('Login successful');
-    }
+  login(email: string, password: string): Observable<User> {
+    const loginData = {
+      email,
+      password
+    };
+
+    return this.http.post<AuthResponse>(`${this.jwtUrl}/auth`, loginData).pipe(
+      catchError(error => {
+        console.error('Login error:', error);
+        const message = error.error?.message || 'Login failed. Please check your credentials.';
+        this.presentToast(message, 'danger');
+        return throwError(() => new Error(message));
+      }),
+      map(response => {
+        if (response.success && response.data) {
+          return this.handleAuthentication(response.data.jwt_token, response.data.user);
+        } else {
+          throw new Error(response.message || 'Authentication failed');
+        }
+      })
+    );
   }
-  
+
   /**
-   * Register a new user
-   * @param userData The user registration data
+   * Login with OTP
+   * @param phoneNumber User phone number
+   * @param otp OTP code
    */
-  register(userData: any): Observable<any> {
-    // This is a placeholder. In a real app, you would have a WP registration endpoint
-    // For now, we'll simulate registration success
-    
-    // For demo purposes, we'll just show how to integrate with WP registration
-    // In a real app, you'd have an endpoint like /wp-json/wp/v2/users or a custom endpoint
-    
-    const demoSuccess = true;
-    
-    if (demoSuccess) {
-      return of({ success: true, message: 'Registration successful. Please log in.' })
-        .pipe(
-          tap(_ => this.presentToast('Registration successful. Please log in.'))
-        );
-    } else {
-      return throwError(() => new Error('Registration failed'));
-    }
+  loginWithOTP(phoneNumber: string, otp: string): Observable<User> {
+    const otpData = {
+      phone: phoneNumber,
+      otp_code: otp
+    };
+
+    return this.http.post<AuthResponse>(`${this.jwtUrl}/auth-otp`, otpData).pipe(
+      catchError(error => {
+        console.error('OTP login error:', error);
+        const message = error.error?.message || 'OTP verification failed. Please try again.';
+        this.presentToast(message, 'danger');
+        return throwError(() => new Error(message));
+      }),
+      map(response => {
+        if (response.success && response.data) {
+          return this.handleAuthentication(response.data.jwt_token, response.data.user);
+        } else {
+          throw new Error(response.message || 'OTP verification failed');
+        }
+      })
+    );
   }
-  
+
   /**
-   * Logout the current user
+   * Request OTP for a phone number
+   * @param phoneNumber User phone number
    */
-  async logout() {
-    // Clear storage
-    await this.storage.remove(this.TOKEN_KEY);
-    await this.storage.remove(this.USER_KEY);
-    
-    // Update subjects
-    this._token.next(null);
-    this._user.next(null);
-    this._isAuthenticated.next(false);
-    
-    this.presentToast('Logged out successfully');
-    this.router.navigate(['/login']);
+  requestOTP(phoneNumber: string): Observable<any> {
+    return this.http.post<any>(`${this.jwtUrl}/request-otp`, { phone: phoneNumber }).pipe(
+      catchError(error => {
+        console.error('OTP request error:', error);
+        const message = error.error?.message || 'Failed to send OTP. Please try again.';
+        this.presentToast(message, 'danger');
+        return throwError(() => new Error(message));
+      }),
+      tap(response => {
+        if (response.success) {
+          this.presentToast('OTP sent successfully', 'success');
+        }
+      })
+    );
   }
-  
+
   /**
-   * Forgot password request
-   * @param email The email to send password reset to
+   * Request password reset
+   * @param email User email
    */
   forgotPassword(email: string): Observable<any> {
-    // This is a placeholder. In a real app, you would have a WP password reset endpoint
+    return this.http.post<any>(`${this.jwtUrl}/forgot-password`, { email }).pipe(
+      catchError(error => {
+        console.error('Password reset request error:', error);
+        const message = error.error?.message || 'Failed to request password reset. Please try again.';
+        this.presentToast(message, 'danger');
+        return throwError(() => new Error(message));
+      }),
+      tap(response => {
+        if (response.success) {
+          this.presentToast('Password reset instructions sent to your email', 'success');
+        }
+      })
+    );
+  }
+
+  /**
+   * Reset password with token
+   * @param resetToken Password reset token
+   * @param newPassword New password
+   */
+  resetPassword(resetToken: string, newPassword: string): Observable<any> {
+    return this.http.post<any>(`${this.jwtUrl}/reset-password`, {
+      reset_token: resetToken,
+      password: newPassword
+    }).pipe(
+      catchError(error => {
+        console.error('Password reset error:', error);
+        const message = error.error?.message || 'Failed to reset password. Please try again.';
+        this.presentToast(message, 'danger');
+        return throwError(() => new Error(message));
+      }),
+      tap(response => {
+        if (response.success) {
+          this.presentToast('Password reset successful', 'success');
+        }
+      })
+    );
+  }
+
+  /**
+   * Validate JWT token
+   * @param token JWT token to validate
+   */
+  validateToken(token: string): Observable<boolean> {
+    return this.http.post<AuthResponse>(`${this.jwtUrl}/validate`, { jwt: token }).pipe(
+      catchError(error => {
+        console.error('Token validation error:', error);
+        return of(false);
+      }),
+      map(response => {
+        if (typeof response === 'boolean') {
+          return response;
+        }
+        return response.success === true;
+      })
+    );
+  }
+
+  /**
+   * Refresh JWT token
+   */
+  refreshToken(): Observable<string> {
+    const currentToken = this.currentTokenValue;
+    if (!currentToken) {
+      return throwError(() => new Error('No token to refresh'));
+    }
+
+    return this.http.post<AuthResponse>(`${this.jwtUrl}/refresh`, { jwt: currentToken }).pipe(
+      catchError(error => {
+        console.error('Token refresh error:', error);
+        this.logout();
+        return throwError(() => new Error('Failed to refresh token'));
+      }),
+      map(response => {
+        if (response.success && response.data) {
+          const newToken = response.data.jwt_token;
+          this.token.next(newToken);
+          this.storage.set(this.TOKEN_KEY, newToken);
+          return newToken;
+        } else {
+          throw new Error('Token refresh failed');
+        }
+      })
+    );
+  }
+
+  /**
+   * Get user profile
+   */
+  getUserProfile(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/wp/v2/users/me`).pipe(
+      catchError(error => {
+        console.error('Get profile error:', error);
+        return throwError(() => new Error('Failed to get user profile'));
+      }),
+      tap(user => {
+        this.user.next(user);
+        this.storage.set(this.USER_KEY, user);
+      })
+    );
+  }
+
+  /**
+   * Update user profile
+   * @param userData User data to update
+   */
+  updateUserProfile(userData: Partial<User>): Observable<User> {
+    const userId = this.currentUserValue?.id;
+    if (!userId) {
+      return throwError(() => new Error('User not authenticated'));
+    }
+
+    return this.http.put<User>(`${this.apiUrl}/wp/v2/users/${userId}`, userData).pipe(
+      catchError(error => {
+        console.error('Update profile error:', error);
+        this.presentToast('Failed to update profile', 'danger');
+        return throwError(() => new Error('Failed to update profile'));
+      }),
+      tap(updatedUser => {
+        // Merge with existing user data
+        const currentUser = this.currentUserValue;
+        const mergedUser = { ...currentUser, ...updatedUser };
+        this.user.next(mergedUser);
+        this.storage.set(this.USER_KEY, mergedUser);
+        this.presentToast('Profile updated successfully', 'success');
+      })
+    );
+  }
+
+  /**
+   * Logout user
+   */
+  logout(): Observable<any> {
+    this.clearAuth();
+    this.presentToast('You have been logged out', 'success');
+    return from(Promise.resolve(true));
+  }
+
+  /**
+   * Handle successful authentication
+   * @param token JWT token
+   * @param userData User data
+   */
+  private handleAuthentication(token: string, userData?: User): User {
+    // Set token in state and storage
+    this.token.next(token);
+    this.storage.set(this.TOKEN_KEY, token);
     
-    // For demo purposes
-    return of({ success: true, message: 'Password reset instructions sent to your email.' })
-      .pipe(
-        tap(_ => this.presentToast('Password reset instructions sent to your email.'))
+    let user: User;
+    
+    if (userData) {
+      // If user data is provided in auth response
+      user = userData;
+      this.user.next(user);
+      this.storage.set(this.USER_KEY, user);
+    } else {
+      // Extract user ID from token payload
+      const payload = this.parseJwt(token);
+      
+      // Create minimal user object (will be updated from getUserProfile)
+      user = {
+        id: payload.user_id,
+        email: payload.user_email,
+        username: '',
+        first_name: '',
+        last_name: '',
+        role: '',
+        date_created: '',
+        date_modified: '',
+        billing: {
+          first_name: '',
+          last_name: '',
+          company: '',
+          address_1: '',
+          address_2: '',
+          city: '',
+          state: '',
+          postcode: '',
+          country: '',
+          email: '',
+          phone: ''
+        },
+        shipping: {
+          first_name: '',
+          last_name: '',
+          company: '',
+          address_1: '',
+          address_2: '',
+          city: '',
+          state: '',
+          postcode: '',
+          country: ''
+        },
+        is_paying_customer: false,
+        avatar_url: '',
+        meta_data: []
+      };
+      
+      this.user.next(user);
+      this.storage.set(this.USER_KEY, user);
+      
+      // Fetch full user profile
+      this.getUserProfile().subscribe();
+    }
+    
+    this.presentToast('Login successful', 'success');
+    return user;
+  }
+
+  /**
+   * Clear authentication data
+   */
+  private clearAuth() {
+    this.token.next(null);
+    this.user.next(null);
+    this.storage.remove(this.TOKEN_KEY);
+    this.storage.remove(this.USER_KEY);
+  }
+
+  /**
+   * Parse JWT token to get payload
+   * @param token JWT token
+   */
+  private parseJwt(token: string): JwtPayload {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        window.atob(base64)
+          .split('')
+          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
       );
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('Error parsing JWT:', error);
+      return {
+        user_id: 0,
+        user_email: '',
+        iat: 0,
+        exp: 0
+      };
+    }
   }
-  
+
   /**
-   * Get the JWT token for API requests
+   * Check if token is expired
+   * @param token JWT token
    */
-  getAuthToken(): string | null {
-    return this.tokenValue;
+  private isTokenExpired(token: string): boolean {
+    try {
+      const decoded = this.parseJwt(token);
+      const currentTime = Date.now() / 1000;
+      return decoded.exp < currentTime;
+    } catch (error) {
+      return true; // Assume expired on error
+    }
   }
-  
+
   /**
-   * Present a toast message
-   * @param message The message to display
+   * Present toast message
+   * @param message Message to display
+   * @param color Toast color (success, danger, etc.)
    */
-  private async presentToast(message: string) {
+  private async presentToast(message: string, color: string = 'success') {
     const toast = await this.toastController.create({
       message,
       duration: 3000,
-      position: 'bottom'
+      position: 'bottom',
+      color
     });
-    
     await toast.present();
   }
 }

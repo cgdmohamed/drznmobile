@@ -134,6 +134,41 @@
   }
 }
 
+// Category Grid Skeleton
+.skeleton-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+  
+  @media (max-width: 576px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .skeleton-category {
+    width: 100%;
+    text-align: center;
+    padding: 8px;
+    
+    .skeleton-category-image {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background-color: #e7e7e7;
+      margin: 0 auto 8px;
+    }
+    
+    .skeleton-category-title {
+      height: 12px;
+      width: 80%;
+      margin: 0 auto;
+      background-color: #e7e7e7;
+      border-radius: 4px;
+    }
+  }
+}
+
 // Banner Skeleton
 .skeleton-banner {
   width: 100%;

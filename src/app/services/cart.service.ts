@@ -29,6 +29,8 @@ export class CartService {
    * Initialize the cart service
    */
   async initialize() {
+    // Ensure storage is created before loading cart
+    await this.storage.create();
     await this.loadCart();
   }
   
