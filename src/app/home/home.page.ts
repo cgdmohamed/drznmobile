@@ -14,6 +14,8 @@ import { WishlistService } from '../services/wishlist.service';
   standalone: false
 })
 export class HomePage implements OnInit, OnDestroy {
+  // Using grid layout for categories instead of Swiper
+  
   featuredProducts: Product[] = [];
   newProducts: Product[] = [];
   onSaleProducts: Product[] = [];
