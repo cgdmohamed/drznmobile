@@ -10,6 +10,7 @@ import { CartService } from "./services/cart.service";
 import { NotificationService } from "./services/notification.service";
 import { ThemeService } from "./services/theme.service";
 import { SplashScreenService } from "./services/splash-screen.service";
+import { WishlistService } from "./services/wishlist.service";
 
 @Component({
   selector: "app-root",
@@ -29,8 +30,9 @@ export class AppComponent implements OnInit, OnDestroy {
     private storage: Storage,
     public authService: AuthService, // Changed to public for template access
     public jwtAuthService: JwtAuthService, // JWT auth service
-    private cartService: CartService,
-    private notificationService: NotificationService,
+    public cartService: CartService, // Changed to public for template access
+    public notificationService: NotificationService, // Changed to public for template access
+    public wishlistService: WishlistService, // Added for template access
     private themeService: ThemeService,
     private splashScreenService: SplashScreenService,
     private menuController: MenuController,

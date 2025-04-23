@@ -49,4 +49,13 @@
     font-size: 12px;
     font-weight: 500;
   }
+  
+  // Badge positioning for tabs
+  .notification-badge {
+    position: absolute;
+    top: 8px;
+    right: calc(50% - 12px);
+    width: 6px;
+    height: 6px;
+  }
 }

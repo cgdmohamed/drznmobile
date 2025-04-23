@@ -15,11 +15,22 @@
       <span>التصنيفات</span>
     </div>
     
-    <div class="tab-item" 
-         [class.active]="activeTab === 'wishlist'" 
+    <div class="tab-item pulse-badge"
+         [class.active]="activeTab === 'wishlist'"
+         [class.active-pulse]="wishlistItemCount > 0"
          [routerLink]="['/wishlist']">
       <ion-icon name="heart-outline"></ion-icon>
       <span>المفضلة</span>
+      <span *ngIf="wishlistItemCount > 0" class="notification-badge"></span>
+    </div>
+    
+    <div class="tab-item pulse-badge"
+         [class.active]="activeTab === 'cart'"
+         [class.active-pulse]="cartItemCount > 0"
+         [routerLink]="['/cart']">
+      <ion-icon name="bag-outline"></ion-icon>
+      <span>السلة</span>
+      <span *ngIf="cartItemCount > 0" class="notification-badge"></span>
     </div>
     
     <div class="tab-item" 

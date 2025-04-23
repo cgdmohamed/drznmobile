@@ -52,6 +52,12 @@ export class ProductService {
 
   // Get a single product by ID
   getProduct(id: number): Observable<Product> {
+    // In Replit demo environment or when API fails, use demo data
+    if (environment.useDemoData) {
+      console.log(`Using demo product for ID: ${id}`);
+      return of(this.generateDemoProduct(id));
+    }
+    
     // Connect to WooCommerce API using environment variables
     return this.http.get<Product>(
       `${this.apiUrl}/products/${id}?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}`
@@ -65,6 +71,12 @@ export class ProductService {
 
   // Get product categories with pagination support
   getCategories(options: any = {}): Observable<Category[]> {
+    // In Replit demo environment or when API fails, use demo data
+    if (environment.useDemoData) {
+      console.log('Using demo categories');
+      return this.mockDataService.getCategories();
+    }
+    
     // Connect to WooCommerce API using environment variables
     const params = {
       consumer_key: this.consumerKey,
@@ -91,6 +103,19 @@ export class ProductService {
 
   // Get products by category with filtering options and pagination
   getProductsByCategory(categoryId: number, options: any = {}): Observable<any> {
+    // In Replit demo environment or when API fails, use demo data
+    if (environment.useDemoData) {
+      console.log(`Using demo products for category ID: ${categoryId}`);
+      const demoProducts = this.getDemoProducts(options.per_page || 20).pipe(
+        map(products => ({
+          products: products,
+          totalPages: Math.ceil(products.length / (options.per_page || 20)),
+          currentPage: options.page || 1
+        }))
+      );
+      return demoProducts;
+    }
+    
     // Connect to WooCommerce API using environment variables
     const params: any = {
       consumer_key: this.consumerKey,
@@ -171,6 +196,17 @@ export class ProductService {
 
   // Search products with advanced options and pagination
   searchProducts(query: string, page: number = 1, per_page: number = 10): Observable<any> {
+    // In Replit demo environment or when API fails, use demo data
+    if (environment.useDemoData) {
+      console.log(`Using demo search results for query: "${query}"`);
+      const demoProducts = this.mockDataService.searchDemoProducts(query, per_page);
+      return of({
+        products: demoProducts,
+        totalPages: Math.ceil(demoProducts.length / per_page),
+        currentPage: page
+      });
+    }
+    
     // Connect to WooCommerce API using environment variables
     const params = {
       consumer_key: this.consumerKey,
@@ -281,6 +317,12 @@ export class ProductService {
 
   // Get featured products
   getFeaturedProducts(limit: number = 10): Observable<Product[]> {
+    // In Replit demo environment or when API fails, use demo data
+    if (environment.useDemoData) {
+      console.log('Using demo featured products');
+      return this.mockDataService.getFeaturedProducts();
+    }
+    
     // Connect to WooCommerce API using environment variables
     return this.http.get<Product[]>(
       `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&featured=true&per_page=${limit}`
@@ -314,6 +356,12 @@ export class ProductService {
 
   // Get new products
   getNewProducts(): Observable<Product[]> {
+    // In Replit demo environment or when API fails, use demo data
+    if (environment.useDemoData) {
+      console.log('Using demo new products');
+      return this.mockDataService.getNewProducts();
+    }
+    
     // Connect to WooCommerce API using environment variables
     return this.http.get<Product[]>(
       `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&orderby=date&order=desc&per_page=10`
@@ -340,6 +388,12 @@ export class ProductService {
 
   // Get products on sale
   getOnSaleProducts(): Observable<Product[]> {
+    // In Replit demo environment or when API fails, use demo data
+    if (environment.useDemoData) {
+      console.log('Using demo on-sale products');
+      return this.mockDataService.getOnSaleProducts();
+    }
+    
     // Connect to WooCommerce API using environment variables
     return this.http.get<Product[]>(
       `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&on_sale=true&per_page=10`

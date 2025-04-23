@@ -47,6 +47,13 @@ export class CartService {
   get cartValue(): Cart {
     return this._cart.getValue();
   }
+
+  /**
+   * Get current count of items in cart
+   */
+  getCurrentItemCount(): number {
+    return this.cartValue.itemCount;
+  }
   
   /**
    * Load cart from storage

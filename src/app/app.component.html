@@ -23,10 +23,16 @@
           <ion-item routerLink="/cart" routerDirection="forward" routerLinkActive="selected">
             <ion-icon name="bag-outline" slot="start"></ion-icon>
             <ion-label>سلة التسوق</ion-label>
+            <div class="pulse-badge" slot="end" [class.active-pulse]="cartService.getCurrentItemCount() > 0" *ngIf="cartService.getCurrentItemCount() > 0">
+              <span class="notification-badge"></span>
+            </div>
           </ion-item>
           <ion-item routerLink="/wishlist" routerDirection="forward" routerLinkActive="selected">
             <ion-icon name="heart-outline" slot="start"></ion-icon>
             <ion-label>المفضلة</ion-label>
+            <div class="pulse-badge" slot="end" [class.active-pulse]="wishlistService.getWishlistItems().length > 0" *ngIf="wishlistService.getWishlistItems().length > 0">
+              <span class="notification-badge"></span>
+            </div>
           </ion-item>
           <ion-item routerLink="/orders" routerDirection="forward" routerLinkActive="selected">
             <ion-icon name="receipt-outline" slot="start"></ion-icon>
@@ -35,7 +41,7 @@
           <ion-item routerLink="/notifications" routerDirection="forward" routerLinkActive="selected">
             <ion-icon name="notifications-outline" slot="start"></ion-icon>
             <ion-label>الإشعارات</ion-label>
-            <div class="pulse-badge" slot="end" *ngIf="notificationService.getCurrentUnreadCount() > 0">
+            <div class="pulse-badge" slot="end" [class.active-pulse]="notificationService.getCurrentUnreadCount() > 0" *ngIf="notificationService.getCurrentUnreadCount() > 0">
               <span class="notification-badge"></span>
             </div>
           </ion-item>
