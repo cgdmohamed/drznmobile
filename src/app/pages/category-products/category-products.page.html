@@ -205,17 +205,13 @@
     </div>
   </div>
   
-  <!-- Loading indicator for infinite scroll -->
-  <div class="loading-more" *ngIf="isLoadingMore">
-    <ion-spinner name="crescent"></ion-spinner>
-    <p>جاري تحميل المزيد من المنتجات...</p>
-  </div>
-  
-  <!-- Infinite scroll -->
+  <!-- Infinite scroll with custom loading indicator -->
   <ion-infinite-scroll *ngIf="!isLoading && products.length > 0" threshold="100px" (ionInfinite)="loadMore($event)">
-    <ion-infinite-scroll-content
-      loadingSpinner="crescent"
-      loadingText="جاري تحميل المزيد من المنتجات...">
-    </ion-infinite-scroll-content>
+    <div class="loading-more" *ngIf="isLoadingMore">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>جاري تحميل المزيد من المنتجات...</p>
+    </div>
+    <!-- Empty content to prevent the default indicator -->
+    <ion-infinite-scroll-content></ion-infinite-scroll-content>
   </ion-infinite-scroll>
 </ion-content>

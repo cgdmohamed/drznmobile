@@ -134,14 +134,8 @@ export class ProductDetailPage implements OnInit, OnDestroy {
   }
 
   // Load product details from API
-  async loadProduct() {
+  loadProduct() {
     this.isLoading = true;
-    const loading = await this.loadingController.create({
-      message: 'جاري تحميل المنتج...',
-      spinner: 'crescent'
-    });
-    
-    await loading.present();
     
     this.productId = +this.route.snapshot.paramMap.get('id');
     
@@ -156,12 +150,10 @@ export class ProductDetailPage implements OnInit, OnDestroy {
         // Load product reviews
         this.loadReviews();
         
-        loading.dismiss();
         this.isLoading = false;
       },
       error => {
         console.error('Error loading product', error);
-        loading.dismiss();
         this.isLoading = false;
         this.presentToast('حدث خطأ أثناء تحميل المنتج. الرجاء المحاولة مرة أخرى.');
       }

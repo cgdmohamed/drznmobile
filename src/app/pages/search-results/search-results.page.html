@@ -60,11 +60,14 @@
     </div>
   </div>
   
-  <!-- Infinite scroll -->
+  <!-- Loading more indicator -->
+  <div class="loading-more" *ngIf="isLoadingMore">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>جاري تحميل المزيد من المنتجات...</p>
+  </div>
+  
+  <!-- Infinite scroll with empty content to prevent default indicator -->
   <ion-infinite-scroll *ngIf="!isLoading && searchResults.length > 0" threshold="100px" (ionInfinite)="loadMore($event)">
-    <ion-infinite-scroll-content
-      loadingSpinner="crescent"
-      loadingText="جاري تحميل المزيد من المنتجات...">
-    </ion-infinite-scroll-content>
+    <ion-infinite-scroll-content></ion-infinite-scroll-content>
   </ion-infinite-scroll>
 </ion-content>

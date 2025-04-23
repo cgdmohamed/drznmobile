@@ -15,6 +15,7 @@ export class SearchResultsPage implements OnInit {
   searchTerm: string = '';
   searchResults: Product[] = [];
   isLoading: boolean = true;
+  isLoadingMore: boolean = false;
   noResults: boolean = false;
   page: number = 1;
   totalPages: number = 1;
@@ -65,15 +66,18 @@ export class SearchResultsPage implements OnInit {
       return;
     }
     
+    this.isLoadingMore = true;
     this.page++;
     
     this.productService.searchProducts(this.searchTerm, this.page).subscribe(
       (response) => {
         this.searchResults = [...this.searchResults, ...response.products];
+        this.isLoadingMore = false;
         event.target.complete();
       },
       (error) => {
         console.error('Error loading more search results:', error);
+        this.isLoadingMore = false;
         event.target.complete();
       }
     );
