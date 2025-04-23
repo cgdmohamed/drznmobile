@@ -4,7 +4,7 @@
       <img src="assets/images/logo.svg" class="branding" alt="DARZN Logo" height="28">
     </ion-title>
     <ion-buttons slot="end">
-      <ion-button routerLink="/search">
+      <ion-button (click)="showSearchPrompt()">
         <ion-icon slot="icon-only" name="search-outline"></ion-icon>
       </ion-button>
       <ion-button routerLink="/wishlist">
@@ -64,23 +64,25 @@
       <app-skeleton type="category" count="8"></app-skeleton>
     </div>
     
-    <!-- Two row category grid with flexbox -->
-    <div *ngIf="!isLoading" class="category-grid-container">
-      <div class="category-grid">
-        <div class="category-item" *ngFor="let category of categories | slice:0:8" [routerLink]="['/category', category.id]">
-          <div class="category-image">
-            <img [src]="category.image?.src || 'https://placehold.co/200x200.jpg'" [alt]="category.name">
+    <!-- Two row category slider with swiper -->
+    <div *ngIf="!isLoading" class="category-slider-container">
+      <swiper-container class="category-slider" #categorySwiper>
+        <swiper-slide *ngFor="let category of categories | slice:0:12" [routerLink]="['/category', category.id]">
+          <div class="category-item">
+            <div class="category-image">
+              <img [src]="category.image?.src || 'https://placehold.co/200x200.jpg'" [alt]="category.name">
+            </div>
+            <h3>{{ category.name }}</h3>
           </div>
-          <h3>{{ category.name }}</h3>
-        </div>
-      </div>
+        </swiper-slide>
+      </swiper-container>
       
-      <!-- See more categories button -->
-      <div class="see-more-categories">
-        <ion-button expand="block" fill="clear" routerLink="/categories">
-          عرض المزيد من التصنيفات
-          <ion-icon name="arrow-forward" slot="end"></ion-icon>
-        </ion-button>
+      <!-- Navigation arrows for categories -->
+      <div class="swiper-button-prev category-nav-prev">
+        <ion-icon name="chevron-back-outline"></ion-icon>
+      </div>
+      <div class="swiper-button-next category-nav-next">
+        <ion-icon name="chevron-forward-outline"></ion-icon>
       </div>
     </div>
 

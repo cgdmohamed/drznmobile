@@ -1,0 +1,103 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-searchbar
+      #searchBar
+      placeholder="ابحث عن منتجات..."
+      [(ngModel)]="searchTerm"
+      (ionInput)="onSearchInput($event)"
+      (ionClear)="onClearSearch()"
+      showCancelButton="focus"
+      animated
+      dir="rtl">
+    </ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <!-- Initial screen when no search has been performed -->
+  <div *ngIf="!isLoading && searchResults.length === 0 && !noResults && !searchTerm" class="search-suggestions-container">
+    <!-- Recent searches -->
+    <div *ngIf="recentSearches.length > 0" class="search-section">
+      <div class="section-header">
+        <h4>عمليات البحث الأخيرة</h4>
+        <ion-button fill="clear" size="small" (click)="clearAllRecentSearches()">مسح</ion-button>
+      </div>
+      <div class="search-chips">
+        <ion-chip *ngFor="let term of recentSearches" (click)="useSearchTerm(term)">
+          <ion-label>{{ term }}</ion-label>
+          <ion-icon name="close" (click)="$event.stopPropagation(); removeRecentSearch(term)"></ion-icon>
+        </ion-chip>
+      </div>
+    </div>
+    
+    <!-- Popular searches -->
+    <div class="search-section">
+      <div class="section-header">
+        <h4>عمليات البحث الشائعة</h4>
+      </div>
+      <div class="search-chips">
+        <ion-chip *ngFor="let term of popularSearches" (click)="useSearchTerm(term)">
+          <ion-label>{{ term }}</ion-label>
+        </ion-chip>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Loading skeleton -->
+  <div *ngIf="isLoading" class="loading-container">
+    <app-skeleton type="card" count="4"></app-skeleton>
+  </div>
+  
+  <!-- No results found -->
+  <div *ngIf="noResults && !isLoading" class="empty-state">
+    <ion-icon name="search-outline"></ion-icon>
+    <h4>لا توجد نتائج</h4>
+    <p>جرب كلمات بحث أخرى أو تصفح التصنيفات</p>
+    <ion-button routerLink="/categories" fill="outline">
+      تصفح التصنيفات
+    </ion-button>
+  </div>
+  
+  <!-- Search results -->
+  <div *ngIf="!isLoading && searchResults.length > 0" class="search-results">
+    <div class="products-grid">
+      <div class="product-card" *ngFor="let product of searchResults">
+        <!-- Product card content -->
+        <div class="product-image" [routerLink]="['/product', product.id]">
+          <img [src]="product.images && product.images.length > 0 ? product.images[0].src : 'https://placehold.co/300x300.jpg'" [alt]="product.name">
+          <div class="product-badge" *ngIf="product.on_sale">تخفيض</div>
+        </div>
+        
+        <div class="product-details">
+          <h3 class="product-name" [routerLink]="['/product', product.id]">{{ product.name }}</h3>
+          
+          <div class="product-price">
+            <span class="current-price">{{ product.on_sale ? product.sale_price : product.regular_price }} ر.س</span>
+            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} ر.س</span>
+          </div>
+          
+          <div class="product-actions">
+            <ion-button fill="clear" (click)="toggleWishlist(product.id)">
+              <ion-icon [name]="isProductInWishlist(product.id) ? 'heart' : 'heart-outline'"></ion-icon>
+            </ion-button>
+            
+            <ion-button expand="block" (click)="addToCart(product)">
+              إضافة للسلة
+            </ion-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Infinite scroll -->
+  <ion-infinite-scroll *ngIf="!isLoading && searchResults.length > 0" threshold="100px" (ionInfinite)="loadMoreResults($event)">
+    <ion-infinite-scroll-content
+      loadingSpinner="crescent"
+      loadingText="جاري تحميل المزيد من المنتجات...">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>

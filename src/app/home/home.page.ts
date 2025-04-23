@@ -1,11 +1,15 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ToastController } from '@ionic/angular';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { AlertController, ToastController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 import { Product } from '../interfaces/product.interface';
 import { Category } from '../interfaces/category.interface';
 import { ProductService } from '../services/product.service';
 import { CartService } from '../services/cart.service';
 import { WishlistService } from '../services/wishlist.service';
+
+// Required for Swiper
+import { register } from 'swiper/element/bundle';
 
 @Component({
   selector: 'app-home',
@@ -13,8 +17,8 @@ import { WishlistService } from '../services/wishlist.service';
   styleUrls: ['home.page.scss'],
   standalone: false
 })
-export class HomePage implements OnInit, OnDestroy {
-  // Using grid layout for categories instead of Swiper
+export class HomePage implements OnInit, OnDestroy, AfterViewInit {
+  @ViewChild('categorySwiper') categorySwiperEl: ElementRef;
   
   featuredProducts: Product[] = [];
   newProducts: Product[] = [];
@@ -79,7 +83,9 @@ export class HomePage implements OnInit, OnDestroy {
     private productService: ProductService,
     private cartService: CartService,
     private wishlistService: WishlistService,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private alertController: AlertController,
+    private router: Router
   ) {
     this.cartSubscription = this.cartService.cart.subscribe(cart => {
       this.cartItemCount = cart.itemCount;
@@ -88,6 +94,40 @@ export class HomePage implements OnInit, OnDestroy {
     this.wishlistSubscription = this.wishlistService.wishlist.subscribe(() => {
       // Just trigger a refresh when wishlist changes
     });
+  }
+  
+  // Show search prompt
+  async showSearchPrompt() {
+    const alert = await this.alertController.create({
+      header: 'بحث',
+      message: 'البحث عن منتجات',
+      inputs: [
+        {
+          name: 'query',
+          type: 'text',
+          placeholder: 'أدخل كلمة البحث هنا'
+        }
+      ],
+      buttons: [
+        {
+          text: 'إلغاء',
+          role: 'cancel'
+        },
+        {
+          text: 'بحث',
+          handler: (data) => {
+            if (data.query && data.query.trim() !== '') {
+              this.router.navigate(['/search-results'], { 
+                queryParams: { query: data.query.trim() } 
+              });
+            }
+          }
+        }
+      ],
+      cssClass: 'search-alert'
+    });
+
+    await alert.present();
   }
 
   ngOnInit() {
@@ -101,6 +141,60 @@ export class HomePage implements OnInit, OnDestroy {
     
     if (this.wishlistSubscription) {
       this.wishlistSubscription.unsubscribe();
+    }
+  }
+  
+  ngAfterViewInit() {
+    // Register Swiper web components
+    register();
+    
+    // Initialize category swiper with a delay to ensure data is loaded
+    setTimeout(() => {
+      this.initializeCategorySwiper();
+    }, 1000);
+  }
+  
+  // Initialize category swiper with grid layout (2 rows x 4 columns)
+  private initializeCategorySwiper() {
+    if (this.categorySwiperEl?.nativeElement) {
+      const swiperEl = this.categorySwiperEl.nativeElement;
+      
+      // Configure the swiper for a 2-row grid
+      Object.assign(swiperEl, {
+        slidesPerView: 4,
+        grid: {
+          rows: 2,
+          fill: 'row'
+        },
+        spaceBetween: 10,
+        navigation: {
+          nextEl: '.category-nav-next',
+          prevEl: '.category-nav-prev',
+        }
+      });
+      
+      // Initialize the swiper
+      swiperEl.initialize();
+      
+      // Add event listeners for navigation arrows
+      const prevButton = document.querySelector('.category-nav-prev');
+      const nextButton = document.querySelector('.category-nav-next');
+      
+      if (prevButton) {
+        prevButton.addEventListener('click', () => {
+          swiperEl.swiper.slidePrev();
+        });
+      }
+      
+      if (nextButton) {
+        nextButton.addEventListener('click', () => {
+          swiperEl.swiper.slideNext();
+        });
+      }
+      
+      console.log('Category swiper initialized');
+    } else {
+      console.warn('Category swiper element not found');
     }
   }
 

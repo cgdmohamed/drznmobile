@@ -82,6 +82,10 @@ const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'search-results',
+    loadChildren: () => import('./pages/search-results/search-results.module').then(m => m.SearchResultsPageModule)
+  },
+  {
     path: '**',
     redirectTo: 'home'
   }

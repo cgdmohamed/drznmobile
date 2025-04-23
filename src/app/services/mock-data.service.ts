@@ -45,6 +45,34 @@ export class MockDataService {
   }
   
   /**
+   * Search demo products by search term
+   * @param query Search query
+   * @param limit Maximum number of products to return
+   */
+  searchDemoProducts(query: string, limit: number = 10): Product[] {
+    // Generate a larger set of products to search through
+    const allProducts = this.generateMockProducts(30);
+    
+    // If no query, return random products
+    if (!query || query.trim() === '') {
+      return allProducts.slice(0, limit);
+    }
+    
+    // Search by matching query to product name or description
+    const queryLower = query.toLowerCase();
+    const matchedProducts = allProducts.filter(product => {
+      return (
+        product.name.toLowerCase().includes(queryLower) ||
+        product.description.toLowerCase().includes(queryLower) ||
+        product.short_description.toLowerCase().includes(queryLower)
+      );
+    });
+    
+    // Return up to the limit
+    return matchedProducts.slice(0, limit);
+  }
+  
+  /**
    * Generate mock products
    */
   private generateMockProducts(count: number, featured: boolean = false, onSale: boolean = false): Product[] {

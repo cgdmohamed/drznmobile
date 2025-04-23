@@ -144,28 +144,44 @@ export class ProductService {
   }
 
   // Search products with advanced options and pagination
-  searchProducts(query: string, options: any = {}): Observable<Product[]> {
+  searchProducts(query: string, page: number = 1, per_page: number = 10): Observable<any> {
     // Connect to WooCommerce API using environment variables
     const params = {
       consumer_key: this.consumerKey,
       consumer_secret: this.consumerSecret,
       search: query,
-      per_page: options.per_page || 20,
-      page: options.page || 1,
-      ...options
+      per_page: per_page,
+      page: page
     };
     
     const queryString = Object.keys(params)
       .map(key => `${key}=${encodeURIComponent(params[key])}`)
       .join('&');
     
-    console.log(`Searching products with query "${query}", page: ${params.page}`);
+    console.log(`Searching products with query "${query}", page: ${page}, per_page: ${per_page}`);
     
-    return this.http.get<Product[]>(`${this.apiUrl}/products?${queryString}`)
+    return this.http.get<Product[]>(`${this.apiUrl}/products?${queryString}`, { observe: 'response' })
       .pipe(
+        map(response => {
+          const totalPages = response.headers.get('X-WP-TotalPages') ? 
+            parseInt(response.headers.get('X-WP-TotalPages') || '1', 10) : 1;
+          
+          return {
+            products: response.body || [],
+            totalPages: totalPages,
+            currentPage: page
+          };
+        }),
         catchError(error => {
           console.error(`Error searching products with query "${query}" from API:`, error);
-          return this.getDemoProducts(params.per_page);
+          
+          // Return demo products with pagination info
+          const demoProducts = this.mockDataService.searchDemoProducts(query, per_page);
+          return of({
+            products: demoProducts,
+            totalPages: Math.ceil(demoProducts.length / per_page),
+            currentPage: page
+          });
         })
       );
   }
