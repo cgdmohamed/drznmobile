@@ -46,41 +46,16 @@
   
   .category-swiper {
     width: 100%;
-    height: 170px; // Increased height to accommodate two-line text
+    height: 180px; // Height for 2 rows of categories
     
     ::ng-deep {
       swiper-slide {
-        height: calc((100% - 10px) / 2) !important;
-        transition: all 0.3s ease;
+        height: calc((100% - 8px) / 2) !important;
+        transition: transform 0.2s;
         
         &:hover {
-          transform: translateY(-1px);
+          transform: translateY(-2px);
         }
-      }
-      
-      .swiper-button-next,
-      .swiper-button-prev {
-        display: none !important; // Hide navigation arrows
-      }
-      
-      // Show pagination dots with primary color
-      .swiper-pagination {
-        bottom: 0px;
-        position: relative;
-        margin-top: 8px;
-        margin-bottom: 5px;
-      }
-      
-      .swiper-pagination-bullet {
-        width: 6px;
-        height: 6px;
-        background: var(--ion-color-medium);
-        opacity: 0.4;
-      }
-      
-      .swiper-pagination-bullet-active {
-        background: var(--ion-color-primary);
-        opacity: 1;
       }
     }
   }
@@ -93,49 +68,37 @@
     cursor: pointer;
     width: 100%;
     height: 100%;
-    transition: transform 0.2s ease;
-    
-    &:active {
-      transform: scale(0.95);
-    }
     
     .category-image {
-      width: 60px;
-      height: 60px;
+      width: 70px;
+      height: 70px;
       border-radius: 50%;
       overflow: hidden;
-      margin-bottom: 5px;
-      border: 1.5px solid #f0f0f0;
-      background-color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      margin-bottom: 8px;
+      border: 2px solid #f3f3f3;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
       
       img {
-        width: 80%;
-        height: 80%;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
-        padding: 0;
       }
     }
     
     h3 {
-      font-size: 10px;
+      font-size: 12px;
       margin: 0;
       text-align: center;
+      white-space: nowrap;
       overflow: hidden;
-      width: 100%;
-      height: 28px; // Doubled for two lines
-      line-height: 14px;
-      font-weight: 500; // Slightly bolder for better readability
-      color: #222; // Darker color for better contrast
-      display: -webkit-box;
-      -webkit-line-clamp: 2; // Show 2 lines
-      -webkit-box-orient: vertical;
-      white-space: normal; // Allow text to wrap
-      padding: 0 2px; // Add some horizontal padding
-      letter-spacing: -0.1px; // Tighten the text slightly for Arabic
+      text-overflow: ellipsis;
+      max-width: 100%;
     }
   }
 }
