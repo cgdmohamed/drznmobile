@@ -64,7 +64,13 @@
       <app-skeleton type="category" count="8"></app-skeleton>
     </div>
     
-    <!-- Two row category grid with swiper -->
+    <!-- Section header for categories -->
+    <div class="section-header">
+      <h2>التصنيفات</h2>
+      <ion-button fill="clear" size="small" routerLink="/categories">عرض الكل</ion-button>
+    </div>
+    
+    <!-- Two row category grid with swiper - similar to reference image -->
     <div *ngIf="!isLoading" class="category-grid-container">
       <swiper-container class="category-swiper" #categorySwiper
                     init="true" 
@@ -72,8 +78,6 @@
                     grid="true"
                     grid-rows="2"
                     space-between="10"
-                    pagination="true"
-                    pagination-clickable="true"
                     navigation="true">
         <swiper-slide *ngFor="let category of categories" [routerLink]="['/category', category.id]">
           <div class="category-item">
