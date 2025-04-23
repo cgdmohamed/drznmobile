@@ -1,0 +1,62 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Notifications</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="clearAllNotifications()" *ngIf="notifications && notifications.length > 0">
+        <ion-icon name="trash-outline"></ion-icon>
+      </ion-button>
+      <ion-button (click)="markAllAsRead()" *ngIf="notifications && notifications.length > 0">
+        <ion-icon name="checkmark-done-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner></ion-spinner>
+    <p>Loading notifications...</p>
+  </div>
+
+  <ion-list *ngIf="!isLoading">
+    <div *ngIf="notifications && notifications.length > 0">
+      <ion-item-sliding *ngFor="let notification of notifications">
+        <ion-item [ngClass]="{'unread': !notification.isRead}">
+          <ion-avatar slot="start">
+            <div class="notification-icon" [ngClass]="{'unread-icon': !notification.isRead}">
+              <ion-icon [name]="getNotificationIcon(notification)"></ion-icon>
+            </div>
+          </ion-avatar>
+          <ion-label>
+            <h2>{{ notification.title }}</h2>
+            <p>{{ notification.body }}</p>
+            <p class="notification-time">{{ getNotificationTime(notification) }}</p>
+          </ion-label>
+          <ion-badge *ngIf="!notification.isRead" color="danger" slot="end"></ion-badge>
+        </ion-item>
+        
+        <ion-item-options side="end">
+          <ion-item-option *ngIf="!notification.isRead" color="primary" (click)="markAsRead(notification)">
+            <ion-icon slot="icon-only" name="checkmark"></ion-icon>
+          </ion-item-option>
+          <ion-item-option color="danger" (click)="deleteNotification(notification)">
+            <ion-icon slot="icon-only" name="trash"></ion-icon>
+          </ion-item-option>
+        </ion-item-options>
+      </ion-item-sliding>
+    </div>
+
+    <div *ngIf="notifications && notifications.length === 0" class="empty-state">
+      <ion-icon name="notifications-off-outline"></ion-icon>
+      <h2>No notifications</h2>
+      <p>You don't have any notifications right now</p>
+    </div>
+  </ion-list>
+</ion-content>

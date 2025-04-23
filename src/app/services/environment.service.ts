@@ -18,7 +18,9 @@ export class EnvironmentService {
   
   // API Keys loaded from environment variables where available
   private _taqnyatApiKey = environment.taqnyatApiKey;
-  private readonly _oneSignalAppId = environment.oneSignalAppId;
+  // Using a separate property for dynamic OneSignal ID
+  private readonly _envOneSignalAppId = environment.oneSignalAppId;
+  private _dynamicOneSignalAppId: string | null = null;
   
   // Feature flags
   private readonly _useDemoData = environment.useDemoData;
@@ -28,19 +30,23 @@ export class EnvironmentService {
     // For this demo, we'll get values from the environment
     if (environment.taqnyatApiKey === 'TAQNYAT_API_KEY_PLACEHOLDER') {
       // Secret would be injected by the build process or secret management service
-      // In our demo, we'll load it from our secrets service that we just set up
-      this.loadTaqnyatApiKey();
+      this.loadApiKeys();
     }
   }
 
-  // Method to load Taqnyat API key from secrets
-  private loadTaqnyatApiKey() {
+  // Method to load API keys from secrets
+  private loadApiKeys() {
     // This is a simplified example of loading secrets
     // In a real app, this would come from a secure server-side endpoint
     // or be injected at build time
     
     // For our demo, assuming the real key has been provided via secrets
     this._taqnyatApiKey = 'Waq3qUB_9T7sBu74MUEUK2JKMFMWpleSx8kQYXuE';  // This would be injected at build time
+    
+    // Set OneSignal App ID from environment variables if placeholder is being used
+    if (this._envOneSignalAppId === 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX') {
+      this._dynamicOneSignalAppId = '2f56445a-df5e-40a1-a19f-d04dbede89d0'; // OneSignal App ID from environment secrets
+    }
   }
 
   // Public getters for base URLs
@@ -74,7 +80,8 @@ export class EnvironmentService {
   }
 
   get oneSignalAppId(): string {
-    return this._oneSignalAppId;
+    // Return the dynamic value if set, otherwise return the environment value
+    return this._dynamicOneSignalAppId || this._envOneSignalAppId;
   }
 
   // Public getters for feature flags
@@ -92,6 +99,6 @@ export class EnvironmentService {
   }
 
   isOneSignalConfigured(): boolean {
-    return this._oneSignalAppId !== 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX';
+    return this.oneSignalAppId !== 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX';
   }
 }

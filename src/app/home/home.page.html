@@ -7,6 +7,10 @@
       <ion-button (click)="showSearchPrompt()">
         <ion-icon slot="icon-only" name="search-outline"></ion-icon>
       </ion-button>
+      <ion-button routerLink="/notifications">
+        <ion-icon slot="icon-only" name="notifications-outline"></ion-icon>
+        <ion-badge *ngIf="unreadNotificationCount > 0" color="danger">{{ unreadNotificationCount }}</ion-badge>
+      </ion-button>
       <ion-button routerLink="/wishlist">
         <ion-icon slot="icon-only" name="heart-outline"></ion-icon>
       </ion-button>

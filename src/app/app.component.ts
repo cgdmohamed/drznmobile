@@ -64,6 +64,9 @@ export class AppComponent implements OnInit, OnDestroy {
     // Initialize services that depend on storage
     await this.themeService.initialize();
     await this.cartService.initialize();
+    
+    // Initialize notifications - this will load stored notifications
+    await this.notificationService.initPushNotifications();
 
     // Subscribe to theme changes
     this.themeSubscription = this.themeService.themeConfig.subscribe(
@@ -127,6 +130,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // Logout method
   async logout() {
+    // Unregister device from notifications
+    await this.notificationService.unregisterDevice();
+    
+    // Clear sessions and data
     this.authService.logout();
     this.cartService.clearCart();
     this.menuController.close("main-menu");

@@ -7,6 +7,7 @@ import { Category } from '../interfaces/category.interface';
 import { ProductService } from '../services/product.service';
 import { CartService } from '../services/cart.service';
 import { WishlistService } from '../services/wishlist.service';
+import { NotificationService } from '../services/notification.service';
 
 // Required for Swiper
 import { register } from 'swiper/element/bundle';
@@ -26,8 +27,10 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   categories: Category[] = [];
   isLoading = true;
   cartItemCount = 0;
+  unreadNotificationCount = 0;
   private cartSubscription: Subscription;
   private wishlistSubscription: Subscription;
+  private notificationSubscription: Subscription;
 
   // Slider options for banner
   slideOpts = {
@@ -83,6 +86,7 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
     private productService: ProductService,
     private cartService: CartService,
     private wishlistService: WishlistService,
+    private notificationService: NotificationService,
     private toastController: ToastController,
     private alertController: AlertController,
     private router: Router
@@ -93,6 +97,11 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
 
     this.wishlistSubscription = this.wishlistService.wishlist.subscribe(() => {
       // Just trigger a refresh when wishlist changes
+    });
+    
+    // Subscribe to notification count changes
+    this.notificationSubscription = this.notificationService.unreadCount.subscribe(count => {
+      this.unreadNotificationCount = count;
     });
   }
   
@@ -141,6 +150,10 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
     
     if (this.wishlistSubscription) {
       this.wishlistSubscription.unsubscribe();
+    }
+    
+    if (this.notificationSubscription) {
+      this.notificationSubscription.unsubscribe();
     }
   }
   

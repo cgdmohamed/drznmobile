@@ -32,6 +32,13 @@
             <ion-icon name="receipt-outline" slot="start"></ion-icon>
             <ion-label>طلباتي</ion-label>
           </ion-item>
+          <ion-item routerLink="/notifications" routerDirection="forward" routerLinkActive="selected">
+            <ion-icon name="notifications-outline" slot="start"></ion-icon>
+            <ion-label>الإشعارات</ion-label>
+            <ion-badge color="danger" slot="end" *ngIf="notificationService.getCurrentUnreadCount() > 0">
+              {{ notificationService.getCurrentUnreadCount() }}
+            </ion-badge>
+          </ion-item>
           <ion-item routerLink="/profile" routerDirection="forward" routerLinkActive="selected">
             <ion-icon name="person-outline" slot="start"></ion-icon>
             <ion-label>الملف الشخصي</ion-label>
