@@ -46,16 +46,16 @@
   
   .category-swiper {
     width: 100%;
-    height: 200px; // Adjust for 2 rows of categories
+    height: 180px; // Height for 2 rows of categories
     
     ::ng-deep {
-      .swiper-grid-column > .swiper-wrapper {
-        flex-direction: row;
-        flex-wrap: wrap;
-      }
-      
-      .swiper-slide {
-        height: calc((100% - 10px) / 2) !important;
+      swiper-slide {
+        height: calc((100% - 8px) / 2) !important;
+        transition: transform 0.2s;
+        
+        &:hover {
+          transform: translateY(-2px);
+        }
       }
     }
   }

@@ -66,8 +66,12 @@
     
     <!-- Two row category grid with swiper -->
     <div *ngIf="!isLoading" class="category-grid-container">
-      <swiper-container class="category-swiper" #categorySwiper init="false" 
-                    slides-per-view="4" grid-rows="2" space-between="8">
+      <swiper-container class="category-swiper" #categorySwiper
+                    init="true" 
+                    slides-per-view="4"
+                    grid="true"
+                    grid-rows="2"
+                    space-between="8">
         <swiper-slide *ngFor="let category of categories | slice:0:8" [routerLink]="['/category', category.id]">
           <div class="category-item">
             <div class="category-image">
