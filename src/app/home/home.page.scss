@@ -46,15 +46,17 @@
   
   .category-swiper {
     width: 100%;
-    height: 180px; // Height for 2 rows of categories
+    height: 170px; // Height for 2 rows of categories
     
     ::ng-deep {
       swiper-slide {
-        height: calc((100% - 8px) / 2) !important;
-        transition: transform 0.2s;
+        height: calc((100% - 10px) / 2) !important;
+        transition: all 0.3s ease;
+        opacity: 0.8;
         
         &:hover {
           transform: translateY(-2px);
+          opacity: 1;
         }
       }
       
@@ -106,8 +108,8 @@
     height: 100%;
     
     .category-image {
-      width: 70px;
-      height: 70px;
+      width: 65px;
+      height: 65px;
       border-radius: 50%;
       overflow: hidden;
       margin-bottom: 8px;
@@ -123,18 +125,22 @@
       img {
         width: 100%;
         height: 100%;
-        object-fit: contain;
+        object-fit: cover;
+        background-color: #f9f9f9;
       }
     }
     
     h3 {
-      font-size: 12px;
+      font-size: 11px;
       margin: 0;
       text-align: center;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 100%;
+      height: 16px;
+      line-height: 16px;
+      font-weight: 500;
     }
   }
 }
