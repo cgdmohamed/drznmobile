@@ -83,8 +83,8 @@ export class ProductService {
       );
   }
 
-  // Get products by category with filtering options and pagination
-  getProductsByCategory(categoryId: number, options: any = {}): Observable<any> {
+  // Get products by category with filtering options
+  getProductsByCategory(categoryId: number, options: any = {}): Observable<Product[]> {
     // Connect to WooCommerce API using environment variables
     const params: any = {
       consumer_key: this.consumerKey,
@@ -134,31 +134,11 @@ export class ProductService {
       .map(key => `${key}=${params[key]}`)
       .join('&');
     
-    return this.http.get<Product[]>(`${this.apiUrl}/products?${queryString}`, { observe: 'response' })
+    return this.http.get<Product[]>(`${this.apiUrl}/products?${queryString}`)
       .pipe(
-        map(response => {
-          const totalPages = response.headers.get('X-WP-TotalPages') ? 
-            parseInt(response.headers.get('X-WP-TotalPages') || '1', 10) : 1;
-          
-          return {
-            products: response.body || [],
-            totalPages: totalPages,
-            currentPage: params.page
-          };
-        }),
         catchError(error => {
           console.error(`Error fetching products for category ${categoryId} from API:`, error);
-          
-          // Return demo products with pagination info
-          const demoProducts = this.getDemoProducts(options.per_page || 20).pipe(
-            map(products => ({
-              products: products,
-              totalPages: Math.ceil(products.length / (options.per_page || 20)),
-              currentPage: params.page
-            }))
-          );
-          
-          return demoProducts;
+          return this.getDemoProducts(options.per_page || 20);
         })
       );
   }

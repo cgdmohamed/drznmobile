@@ -18,7 +18,7 @@ import { register } from 'swiper/element/bundle';
   standalone: false
 })
 export class HomePage implements OnInit, OnDestroy, AfterViewInit {
-  // No longer using category swiper
+  @ViewChild('categorySwiper') categorySwiperEl: ElementRef;
   
   featuredProducts: Product[] = [];
   newProducts: Product[] = [];
@@ -145,8 +145,57 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   }
   
   ngAfterViewInit() {
-    // Register Swiper web components for other swiper elements in the app
+    // Register Swiper web components
     register();
+    
+    // Initialize category swiper with a delay to ensure data is loaded
+    setTimeout(() => {
+      this.initializeCategorySwiper();
+    }, 1000);
+  }
+  
+  // Initialize category swiper with grid layout (2 rows x 4 columns)
+  private initializeCategorySwiper() {
+    if (this.categorySwiperEl?.nativeElement) {
+      const swiperEl = this.categorySwiperEl.nativeElement;
+      
+      // Configure the swiper for a 2-row grid
+      Object.assign(swiperEl, {
+        slidesPerView: 4,
+        grid: {
+          rows: 2,
+          fill: 'row'
+        },
+        spaceBetween: 10,
+        navigation: {
+          nextEl: '.category-nav-next',
+          prevEl: '.category-nav-prev',
+        }
+      });
+      
+      // Initialize the swiper
+      swiperEl.initialize();
+      
+      // Add event listeners for navigation arrows
+      const prevButton = document.querySelector('.category-nav-prev');
+      const nextButton = document.querySelector('.category-nav-next');
+      
+      if (prevButton) {
+        prevButton.addEventListener('click', () => {
+          swiperEl.swiper.slidePrev();
+        });
+      }
+      
+      if (nextButton) {
+        nextButton.addEventListener('click', () => {
+          swiperEl.swiper.slideNext();
+        });
+      }
+      
+      console.log('Category swiper initialized');
+    } else {
+      console.warn('Category swiper element not found');
+    }
   }
 
   // Load all data for the home page
