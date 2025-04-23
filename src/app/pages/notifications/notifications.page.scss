@@ -34,6 +34,19 @@
   p {
     font-size: 16px;
     color: var(--ion-color-medium);
+    margin-bottom: 20px;
+  }
+  
+  .demo-button {
+    margin-top: 16px;
+    max-width: 250px;
+  }
+  
+  .demo-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+    flex-wrap: wrap;
   }
 }
 

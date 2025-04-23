@@ -164,4 +164,55 @@ export class NotificationsPage implements OnInit, OnDestroy {
 
     await toast.present();
   }
+  
+  /**
+   * Generate a test notification for demonstration purposes
+   * @param type The type of notification to generate
+   */
+  generateTestNotification(type: string = 'general') {
+    // Generate a realistic-looking notification based on type
+    const now = new Date();
+    let title = 'New Notification';
+    let body = 'This is a test notification.';
+    let actionData: any = {};
+    
+    switch(type) {
+      case 'order':
+        title = 'تم شحن طلبك';
+        body = 'طلبك رقم #12345 قيد الشحن. سيصلك خلال 3-5 أيام عمل.';
+        actionData = { orderId: 12345 };
+        break;
+        
+      case 'product':
+        title = 'وصل حديثاً';
+        body = 'تشكيلة جديدة من المنتجات وصلت للتو. تفضل بالاطلاع عليها.';
+        actionData = { productId: 4567 };
+        break;
+        
+      case 'special_offer':
+        title = 'عرض خاص اليوم فقط';
+        body = 'خصم 25٪ على جميع المنتجات. استخدم الكود: SPECIAL25';
+        actionData = { couponCode: 'SPECIAL25' };
+        break;
+        
+      default:
+        title = 'إشعار جديد';
+        body = 'شكراً لتفاعلك مع تطبيقنا. نتمنى لك تجربة تسوق ممتعة.';
+    }
+    
+    // Create notification data object
+    const notification: NotificationData = {
+      id: `demo-${Date.now()}`,
+      title,
+      body,
+      type,
+      actionData,
+      isRead: false,
+      receivedAt: now
+    };
+    
+    // Store the notification using the public method
+    this.notificationService.addTestNotification(notification);
+    this.presentToast('تم إنشاء إشعار تجريبي');
+  }
 }

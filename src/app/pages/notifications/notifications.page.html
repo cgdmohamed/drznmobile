@@ -57,6 +57,16 @@
       <ion-icon name="notifications-off-outline"></ion-icon>
       <h2>No notifications</h2>
       <p>You don't have any notifications right now</p>
+      
+      <!-- Development/Demo only: Generate test notifications -->
+      <ion-button (click)="generateTestNotification('general')" expand="block" fill="outline" size="small" class="demo-button">
+        Generate Test Notification
+      </ion-button>
+      <div class="demo-buttons">
+        <ion-button (click)="generateTestNotification('order')" size="small" fill="clear">Order</ion-button>
+        <ion-button (click)="generateTestNotification('product')" size="small" fill="clear">Product</ion-button>
+        <ion-button (click)="generateTestNotification('special_offer')" size="small" fill="clear">Offer</ion-button>
+      </div>
     </div>
   </ion-list>
 </ion-content>

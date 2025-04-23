@@ -349,6 +349,15 @@ export class NotificationService {
   }
   
   /**
+   * Add a test notification (for development/demo purposes)
+   * @param notification The notification data to add
+   */
+  async addTestNotification(notification: NotificationData) {
+    await this.storeNotification(notification);
+    return notification;
+  }
+  
+  /**
    * Update notification count
    */
   private updateNotificationCount() {
