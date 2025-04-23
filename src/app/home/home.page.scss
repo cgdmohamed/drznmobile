@@ -57,6 +57,42 @@
           transform: translateY(-2px);
         }
       }
+      
+      .swiper-pagination {
+        bottom: 0px;
+        position: relative;
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+      
+      .swiper-pagination-bullet {
+        width: 8px;
+        height: 8px;
+        background: var(--ion-color-medium);
+        opacity: 0.5;
+      }
+      
+      .swiper-pagination-bullet-active {
+        background: var(--ion-color-primary);
+        opacity: 1;
+      }
+      
+      .swiper-button-next,
+      .swiper-button-prev {
+        color: var(--ion-color-primary);
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        --swiper-navigation-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .swiper-button-disabled {
+        opacity: 0.2;
+      }
     }
   }
   

@@ -71,8 +71,11 @@
                     slides-per-view="4"
                     grid="true"
                     grid-rows="2"
-                    space-between="8">
-        <swiper-slide *ngFor="let category of categories | slice:0:8" [routerLink]="['/category', category.id]">
+                    space-between="8"
+                    pagination="true"
+                    pagination-clickable="true"
+                    navigation="true">
+        <swiper-slide *ngFor="let category of categories" [routerLink]="['/category', category.id]">
           <div class="category-item">
             <div class="category-image">
               <img [src]="category.image?.src || 'https://placehold.co/200x200.jpg'" [alt]="category.name">
