@@ -193,7 +193,7 @@
         </div>
       </div>
 
-      <div class="no-products" *ngIf="products.length === 0">
+      <div class="no-products" *ngIf="products.length === 0 && !isLoading">
         <ion-icon name="basket-outline"></ion-icon>
         <h4>لا توجد منتجات في هذا القسم</h4>
       </div>
@@ -204,4 +204,12 @@
       <app-skeleton *ngFor="let i of [1,2,3,4]" type="product-card"></app-skeleton>
     </div>
   </div>
+  
+  <!-- Infinite scroll -->
+  <ion-infinite-scroll *ngIf="!isLoading && products.length > 0" threshold="100px" (ionInfinite)="loadMore($event)">
+    <ion-infinite-scroll-content
+      loadingSpinner="crescent"
+      loadingText="جاري تحميل المزيد من المنتجات...">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
 </ion-content>
