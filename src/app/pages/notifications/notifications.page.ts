@@ -48,23 +48,23 @@ export class NotificationsPage implements OnInit, OnDestroy {
 
   async markAsRead(notification: NotificationData) {
     await this.notificationService.markNotificationAsRead(notification.id);
-    this.presentToast('Notification marked as read');
+    this.presentToast('تم تحديد الإشعار كمقروء');
   }
 
   async markAllAsRead() {
     const alert = await this.alertController.create({
-      header: 'Mark All as Read',
-      message: 'Are you sure you want to mark all notifications as read?',
+      header: 'تحديد الكل كمقروء',
+      message: 'هل أنت متأكد من تحديد جميع الإشعارات كمقروءة؟',
       buttons: [
         {
-          text: 'Cancel',
+          text: 'إلغاء',
           role: 'cancel'
         },
         {
-          text: 'Mark All',
+          text: 'تحديد الكل',
           handler: async () => {
             await this.notificationService.markAllNotificationsAsRead();
-            this.presentToast('All notifications marked as read');
+            this.presentToast('تم تحديد جميع الإشعارات كمقروءة');
           }
         }
       ]
@@ -75,18 +75,18 @@ export class NotificationsPage implements OnInit, OnDestroy {
 
   async deleteNotification(notification: NotificationData) {
     const alert = await this.alertController.create({
-      header: 'Delete Notification',
-      message: 'Are you sure you want to delete this notification?',
+      header: 'حذف الإشعار',
+      message: 'هل أنت متأكد من حذف هذا الإشعار؟',
       buttons: [
         {
-          text: 'Cancel',
+          text: 'إلغاء',
           role: 'cancel'
         },
         {
-          text: 'Delete',
+          text: 'حذف',
           handler: async () => {
             await this.notificationService.deleteNotification(notification.id);
-            this.presentToast('Notification deleted');
+            this.presentToast('تم حذف الإشعار');
           }
         }
       ]
@@ -97,18 +97,18 @@ export class NotificationsPage implements OnInit, OnDestroy {
 
   async clearAllNotifications() {
     const alert = await this.alertController.create({
-      header: 'Clear All Notifications',
-      message: 'Are you sure you want to delete all notifications? This cannot be undone.',
+      header: 'حذف جميع الإشعارات',
+      message: 'هل أنت متأكد من حذف جميع الإشعارات؟ لا يمكن التراجع عن هذا الإجراء.',
       buttons: [
         {
-          text: 'Cancel',
+          text: 'إلغاء',
           role: 'cancel'
         },
         {
-          text: 'Clear All',
+          text: 'حذف الكل',
           handler: async () => {
             await this.notificationService.clearAllNotifications();
-            this.presentToast('All notifications cleared');
+            this.presentToast('تم حذف جميع الإشعارات');
           }
         }
       ]
@@ -145,13 +145,14 @@ export class NotificationsPage implements OnInit, OnDestroy {
     const diffInDays = Math.round(diffInMs / 86400000);
 
     if (diffInMin < 60) {
-      return diffInMin === 1 ? '1 minute ago' : `${diffInMin} minutes ago`;
+      return diffInMin === 1 ? 'منذ دقيقة واحدة' : `منذ ${diffInMin} دقائق`;
     } else if (diffInHours < 24) {
-      return diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`;
+      return diffInHours === 1 ? 'منذ ساعة واحدة' : `منذ ${diffInHours} ساعات`;
     } else if (diffInDays < 7) {
-      return diffInDays === 1 ? '1 day ago' : `${diffInDays} days ago`;
+      return diffInDays === 1 ? 'منذ يوم واحد' : `منذ ${diffInDays} أيام`;
     } else {
-      return receivedDate.toLocaleDateString();
+      // Format the date in Arabic-friendly format
+      return receivedDate.toLocaleDateString('ar-SA');
     }
   }
 

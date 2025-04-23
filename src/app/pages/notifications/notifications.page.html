@@ -3,7 +3,7 @@
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/home"></ion-back-button>
     </ion-buttons>
-    <ion-title>Notifications</ion-title>
+    <ion-title>الإشعارات</ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="clearAllNotifications()" *ngIf="notifications && notifications.length > 0">
         <ion-icon name="trash-outline"></ion-icon>
@@ -22,7 +22,7 @@
 
   <div *ngIf="isLoading" class="loading-container">
     <ion-spinner></ion-spinner>
-    <p>Loading notifications...</p>
+    <p>جار تحميل الإشعارات...</p>
   </div>
 
   <ion-list *ngIf="!isLoading">
@@ -55,17 +55,17 @@
 
     <div *ngIf="notifications && notifications.length === 0" class="empty-state">
       <ion-icon name="notifications-off-outline"></ion-icon>
-      <h2>No notifications</h2>
-      <p>You don't have any notifications right now</p>
+      <h2>لا توجد إشعارات</h2>
+      <p>ليس لديك أي إشعارات في الوقت الحالي</p>
       
       <!-- Development/Demo only: Generate test notifications -->
       <ion-button (click)="generateTestNotification('general')" expand="block" fill="outline" size="small" class="demo-button">
-        Generate Test Notification
+        إنشاء إشعار تجريبي
       </ion-button>
       <div class="demo-buttons">
-        <ion-button (click)="generateTestNotification('order')" size="small" fill="clear">Order</ion-button>
-        <ion-button (click)="generateTestNotification('product')" size="small" fill="clear">Product</ion-button>
-        <ion-button (click)="generateTestNotification('special_offer')" size="small" fill="clear">Offer</ion-button>
+        <ion-button (click)="generateTestNotification('order')" size="small" fill="clear">طلب</ion-button>
+        <ion-button (click)="generateTestNotification('product')" size="small" fill="clear">منتج</ion-button>
+        <ion-button (click)="generateTestNotification('special_offer')" size="small" fill="clear">عرض</ion-button>
       </div>
     </div>
   </ion-list>
