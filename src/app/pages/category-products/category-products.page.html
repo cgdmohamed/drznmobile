@@ -205,6 +205,12 @@
     </div>
   </div>
   
+  <!-- Loading indicator for infinite scroll -->
+  <div class="loading-more" *ngIf="isLoadingMore">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>جاري تحميل المزيد من المنتجات...</p>
+  </div>
+  
   <!-- Infinite scroll -->
   <ion-infinite-scroll *ngIf="!isLoading && products.length > 0" threshold="100px" (ionInfinite)="loadMore($event)">
     <ion-infinite-scroll-content

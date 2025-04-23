@@ -97,16 +97,7 @@
     }
   }
   
-  .view-all-categories {
-    display: flex;
-    justify-content: center;
-    
-    ion-button {
-      --color: var(--ion-color-danger);
-      font-size: 14px;
-      margin-top: 5px;
-    }
-  }
+  /* "View all categories" button removed */
 }
 
 // Products grid
