@@ -5,7 +5,7 @@ export const environment = {
   consumerSecret: "cs_bf2088d5f696a0b9f364d6090c48e9b4343c11a3",
   moyasarPublishableKey: "pk_test_RU3BN2JEMDqyMGS6HcEiKcCw2bGhgR9tQnU6ihmY",
   taqnyatApiKey: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-  oneSignalAppId: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+  oneSignalAppId: "2a550f67-58af-4101-a500-28a97612f69c",
   // JWT Authentication
   jwtAuthUrl: "https://app.drzn.sa/wp-json/jwt-auth/v1/token",
 };

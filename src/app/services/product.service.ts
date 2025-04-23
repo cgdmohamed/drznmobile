@@ -22,6 +22,12 @@ export class ProductService {
 
   // Get products with optional filtering
   getProducts(options: any = {}): Observable<Product[]> {
+    // In Replit demo environment or when API fails, use demo data
+    if (environment.useDemoData) {
+      console.log('Using demo products');
+      return this.getDemoProducts(options.per_page || 20);
+    }
+    
     // Connect to WooCommerce API using environment variables
     const params = {
       consumer_key: this.consumerKey,

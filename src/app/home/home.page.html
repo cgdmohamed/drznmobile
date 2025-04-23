@@ -7,16 +7,16 @@
       <ion-button (click)="showSearchPrompt()">
         <ion-icon slot="icon-only" name="search-outline"></ion-icon>
       </ion-button>
-      <ion-button routerLink="/notifications">
+      <ion-button routerLink="/notifications" class="pulse-badge" [class.active-pulse]="unreadNotificationCount > 0">
         <ion-icon slot="icon-only" name="notifications-outline"></ion-icon>
-        <ion-badge *ngIf="unreadNotificationCount > 0" color="danger">{{ unreadNotificationCount }}</ion-badge>
+        <span *ngIf="unreadNotificationCount > 0" class="notification-badge"></span>
       </ion-button>
       <ion-button routerLink="/wishlist">
         <ion-icon slot="icon-only" name="heart-outline"></ion-icon>
       </ion-button>
-      <ion-button routerLink="/cart">
+      <ion-button routerLink="/cart" class="pulse-badge" [class.active-pulse]="cartItemCount > 0">
         <ion-icon slot="icon-only" name="bag-outline"></ion-icon>
-        <ion-badge *ngIf="cartItemCount > 0" color="danger">{{ cartItemCount }}</ion-badge>
+        <span *ngIf="cartItemCount > 0" class="notification-badge"></span>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>

@@ -12,12 +12,12 @@ export const environment = {
   moyasarPublishableKey: 'pk_test_RU3BN2JEMDqyMGS6HcEiKcCw2bGhgR9tQnU6ihmY',
   // This will be loaded from environment variables in the service
   taqnyatApiKey: 'TAQNYAT_API_KEY_PLACEHOLDER',
-  oneSignalAppId: 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX',
+  oneSignalAppId: '2a550f67-58af-4101-a500-28a97612f69c',
   // JWT Authentication
   jwtAuthUrl: '/wp-json/jwt-auth/v1/token',
   
   // Fallback to demo mode if API connection fails
-  useDemoData: false
+  useDemoData: true
 };
 
 // IMPORTANT: Replace the placeholder values above with your actual API keys

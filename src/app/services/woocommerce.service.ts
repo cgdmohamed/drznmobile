@@ -23,7 +23,7 @@ export class WoocommerceService {
   private consumerSecret = 'cs_bf2088d5f696a0b9f364d6090c48e9b4343c11a3';
   
   // For demo purposes, if the API fails to connect or credentials are empty
-  private useDemo = false; // We have credentials, try to use the real API
+  private useDemo = true; // Temporarily use demo data for Replit environment
   
   constructor(
     private http: HttpClient,
