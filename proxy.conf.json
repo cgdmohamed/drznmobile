@@ -4,5 +4,14 @@
     "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"
+  },
+  "/taqnyat-api": {
+    "target": "https://api.taqnyat.sa",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/taqnyat-api": ""
+    },
+    "logLevel": "debug"
   }
 }
