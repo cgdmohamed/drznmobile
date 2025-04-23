@@ -39,66 +39,72 @@
   }
 }
 
-// Category grid with swiper
+// Category grid
 .category-grid-container {
   margin-bottom: 20px;
   padding: 0 10px;
   
-  .category-swiper {
-    width: 100%;
-    height: 180px; // Height for 2 rows of categories
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
     
-    ::ng-deep {
-      swiper-slide {
-        height: calc((100% - 8px) / 2) !important;
-        transition: transform 0.2s;
+    @media (max-width: 576px) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .category-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 5px;
+      cursor: pointer;
+      width: 100%;
+      
+      .category-image {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        overflow: hidden;
+        margin-bottom: 8px;
+        border: 2px solid #f3f3f3;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
         
         &:hover {
           transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
+        
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+      }
+      
+      h3 {
+        font-size: 12px;
+        margin: 0;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
       }
     }
   }
   
-  .category-item {
+  .view-all-categories {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 5px;
-    cursor: pointer;
-    width: 100%;
-    height: 100%;
+    justify-content: center;
     
-    .category-image {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      overflow: hidden;
-      margin-bottom: 8px;
-      border: 2px solid #f3f3f3;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-      }
-      
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-    }
-    
-    h3 {
-      font-size: 12px;
-      margin: 0;
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
+    ion-button {
+      --color: var(--ion-color-danger);
+      font-size: 14px;
+      margin-top: 5px;
     }
   }
 }
@@ -180,14 +186,6 @@
         font-size: 12px;
         text-decoration: line-through;
         color: var(--ion-color-medium);
-      }
-      
-      .currency-icon {
-        height: 14px;
-        width: auto;
-        vertical-align: middle;
-        margin-right: 2px;
-        margin-bottom: 2px;
       }
     }
     

@@ -32,7 +32,6 @@ export class CategoryProductsPage implements OnInit {
   };
   availableBrands: any[] = [];
   isLoading = true;
-  isLoadingMore = false; // New state for loading more products
   isFilterVisible = false;
   page: number = 1;
   totalPages: number = 1;
@@ -185,50 +184,12 @@ export class CategoryProductsPage implements OnInit {
       return;
     }
     
-    this.isLoadingMore = true; // Show loading indicator
     this.page++;
+    this.loadCategoryProducts(false); // Load more products without resetting
     
-    // Apply the current filters with pagination
-    const filterOptions = {
-      orderby: this.filters.orderby,
-      order: this.filters.order,
-      minPrice: this.filters.minPrice,
-      maxPrice: this.filters.maxPrice,
-      onSale: this.filters.onSale,
-      inStock: this.filters.inStock,
-      brands: this.filters.brands,
-      page: this.page,
-      per_page: 20
-    };
-    
-    this.productService.getProductsByCategory(this.categoryId, filterOptions).subscribe({
-      next: (response: any) => {
-        // Process the new products
-        let newProducts: Product[] = [];
-        
-        if (Array.isArray(response)) {
-          newProducts = response;
-          this.totalPages = newProducts.length < 20 ? this.page : this.page + 1;
-        } else if (response && response.products) {
-          newProducts = response.products;
-          this.totalPages = response.totalPages || 1;
-        }
-        
-        // Append to existing products
-        this.products = [...this.products, ...newProducts];
-        
-        // Hide loading indicator
-        this.isLoadingMore = false;
-        
-        // Complete the infinite scroll
-        event.target.complete();
-      },
-      error: (error) => {
-        console.error('Error loading more products:', error);
-        this.isLoadingMore = false;
-        event.target.complete();
-      }
-    });
+    setTimeout(() => {
+      event.target.complete();
+    }, 1000);
   }
   
   // Method to apply filters and reload products

@@ -18,7 +18,7 @@ import { register } from 'swiper/element/bundle';
   standalone: false
 })
 export class HomePage implements OnInit, OnDestroy, AfterViewInit {
-  @ViewChild('categorySwiper') categorySwiperEl: ElementRef;
+  // No longer using category swiper
   
   featuredProducts: Product[] = [];
   newProducts: Product[] = [];
@@ -147,9 +147,6 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   ngAfterViewInit() {
     // Register Swiper web components for other swiper elements in the app
     register();
-    
-    // The swiper is now initialized directly from HTML with init="true"
-    // and all configuration parameters are set as attributes
   }
 
   // Load all data for the home page
