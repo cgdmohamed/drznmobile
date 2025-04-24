@@ -62,12 +62,19 @@ export class PaymentService {
     // Load Moyasar script
     return new Promise<void>((resolve, reject) => {
       try {
+        // Load CSS first
+        const styleLink = document.createElement('link');
+        styleLink.rel = 'stylesheet';
+        styleLink.href = 'https://cdn.moyasar.com/mpf/1.15.0/moyasar.css';
+        document.head.appendChild(styleLink);
+        
+        // Then load JavaScript
         const script = document.createElement('script');
-        script.src = 'https://cdn.moyasar.com/mpf/1.7.3/moyasar.js';
+        script.src = 'https://cdn.moyasar.com/mpf/1.15.0/moyasar.js';
         script.async = true;
         
         script.onload = () => {
-          console.log('Moyasar script loaded successfully');
+          console.log('Moyasar script (v1.15.0) loaded successfully');
           resolve();
         };
         
@@ -190,26 +197,114 @@ export class PaymentService {
       // Initialize Moyasar library
       await this.initializeMoyasar();
       
-      // Initialize payment form
-      const moyasar = new Moyasar(this.moyasarPublishableKey);
-      console.log('Moyasar form initialized successfully');
+      // Create a container for the payment form
+      const container = document.createElement('div');
+      container.id = 'creditcard-form-container';
+      container.style.position = 'fixed';
+      container.style.top = '0';
+      container.style.left = '0';
+      container.style.width = '100%';
+      container.style.height = '100%';
+      container.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      container.style.zIndex = '10000';
+      container.style.display = 'flex';
+      container.style.justifyContent = 'center';
+      container.style.alignItems = 'center';
       
-      // Create payment form
+      // Create a close button
+      const closeButton = document.createElement('button');
+      closeButton.textContent = '✕';
+      closeButton.style.position = 'absolute';
+      closeButton.style.top = '20px';
+      closeButton.style.right = '20px';
+      closeButton.style.background = '#fff';
+      closeButton.style.border = 'none';
+      closeButton.style.borderRadius = '50%';
+      closeButton.style.width = '40px';
+      closeButton.style.height = '40px';
+      closeButton.style.fontSize = '20px';
+      closeButton.style.cursor = 'pointer';
+      closeButton.onclick = () => {
+        document.body.removeChild(container);
+      };
+      
+      // Create a form wrapper
+      const formWrapper = document.createElement('div');
+      formWrapper.style.width = '90%';
+      formWrapper.style.maxWidth = '500px';
+      formWrapper.style.maxHeight = '70vh';
+      formWrapper.style.overflowY = 'auto';
+      formWrapper.style.padding = '30px';
+      formWrapper.style.backgroundColor = '#fff';
+      formWrapper.style.borderRadius = '10px';
+      
+      // Add a header
+      const header = document.createElement('h2');
+      header.textContent = 'الدفع بالبطاقة الائتمانية';
+      header.style.textAlign = 'center';
+      header.style.marginBottom = '20px';
+      header.style.fontFamily = 'Tajawal, sans-serif';
+      header.style.color = '#ec1c24';
+      
+      // Add testing information for test environment
+      const testInfoContainer = document.createElement('div');
+      testInfoContainer.style.backgroundColor = '#f9f9f9';
+      testInfoContainer.style.padding = '10px 15px';
+      testInfoContainer.style.borderRadius = '8px';
+      testInfoContainer.style.marginBottom = '20px';
+      testInfoContainer.style.fontSize = '13px';
+      testInfoContainer.style.border = '1px dashed #ddd';
+      
+      const testInfo = document.createElement('p');
+      testInfo.innerHTML = '<strong>وضع الاختبار:</strong><br>' +
+        'رقم البطاقة: 4111111111111111<br>' +
+        'CVC: أي 3 أرقام | تاريخ الانتهاء: أي تاريخ مستقبلي';
+      testInfo.style.margin = '0';
+      testInfo.style.color = '#666';
+      testInfo.style.textAlign = 'center';
+      
+      testInfoContainer.appendChild(testInfo);
+      
+      // Create the form container
+      const formContainer = document.createElement('div');
+      formContainer.className = 'credit-card-form';
+      
+      // Add elements to DOM
+      formWrapper.appendChild(header);
+      formWrapper.appendChild(testInfoContainer);
+      formWrapper.appendChild(formContainer);
+      container.appendChild(closeButton);
+      container.appendChild(formWrapper);
+      document.body.appendChild(container);
+      
+      // Initialize Moyasar with the credit card method
+      const moyasar = new Moyasar(this.moyasarPublishableKey);
+      console.log('Moyasar initialized successfully');
+      
+      // Create payment form with credit card method
       const form = moyasar.createForm({
-        amount: Math.round(cart.total * 100), // Convert to smallest currency unit (piasters)
+        // Amount in the smallest currency unit (halalas)
+        amount: Math.round(cart.total * 100),
         currency: 'SAR',
         description: `طلب من متجر DARZN (${cart.items.length} منتجات)`,
         callback_url: window.location.origin + '/checkout/confirmation',
         metadata: {
           order_id: `ORDER-${Date.now()}`,
-          customer_email: billingDetails.email,
-          customer_name: `${billingDetails.first_name} ${billingDetails.last_name}`
+          customer_email: billingDetails.email || 'customer@example.com',
+          customer_name: `${billingDetails.first_name || ''} ${billingDetails.last_name || ''}`.trim()
         }
       }, {
+        // Form configuration
         saveCardOption: false,
         locale: 'ar',
         appearance: {
           direction: 'rtl',
+          theme: 'default',
+          labels: {
+            methods: {
+              creditcard: 'بطاقة ائتمان'
+            }
+          },
           element: {
             base: {
               color: '#32325d',
@@ -225,46 +320,98 @@ export class PaymentService {
               iconColor: '#fa755a'
             }
           }
+        },
+        methods: ['creditcard'], // Only show credit card method
+      });
+      
+      // Mount the form
+      form.mount('.credit-card-form');
+      
+      // Save payment ID before processing (recommended in docs)
+      form.on('initiated', async (payment: any) => {
+        console.log('Payment initiated:', payment);
+        // Store payment ID in local storage for verification
+        try {
+          localStorage.setItem('creditcard_payment_id', payment.id);
+        } catch (err) {
+          console.error('Failed to save payment ID:', err);
         }
       });
       
-      // Handle form submission and payment
-      const result = await new Promise<PaymentResult>((resolve) => {
-        form.mount('.moyasar-payment-form');
-        
+      // Handle form events
+      return new Promise<PaymentResult>((resolve) => {
+        // Handle successful payment
         form.on('completed', (payment: any) => {
+          if (container.parentNode) {
+            document.body.removeChild(container);
+          }
+          
           const paymentResult: PaymentResult = {
             success: true,
-            message: 'تم إكمال الدفع بنجاح',
+            message: 'تم الدفع بنجاح',
             transactionId: payment.id,
             data: payment
           };
           
           this._paymentResult.next(paymentResult);
+          loading.dismiss();
+          this.presentSuccessToast(paymentResult.message);
           resolve(paymentResult);
         });
         
+        // Handle payment failure
         form.on('failed', (error: any) => {
-          const paymentResult: PaymentResult = {
+          if (container.parentNode) {
+            document.body.removeChild(container);
+          }
+          
+          // Format error message
+          let errorMessage = error.message || 'فشل الدفع';
+          
+          // Map common credit card errors to Arabic
+          if (error.message?.includes('declined')) {
+            errorMessage = 'تم رفض البطاقة من قبل البنك';
+          } else if (error.message?.includes('incorrect number')) {
+            errorMessage = 'رقم البطاقة غير صحيح';
+          } else if (error.message?.includes('expired')) {
+            errorMessage = 'البطاقة منتهية الصلاحية';
+          } else if (error.message?.includes('invalid cvc')) {
+            errorMessage = 'رمز الأمان CVC غير صحيح';
+          } else if (error.message?.includes('insufficient funds')) {
+            errorMessage = 'رصيد غير كافٍ في البطاقة';
+          }
+          
+          const errorResult: PaymentResult = {
             success: false,
-            message: error.message || 'فشل الدفع',
+            message: errorMessage,
             data: error
           };
           
-          this._paymentResult.next(paymentResult);
-          resolve(paymentResult);
+          this._paymentResult.next(errorResult);
+          loading.dismiss();
+          this.presentErrorToast(errorResult.message);
+          resolve(errorResult);
+        });
+        
+        // Handle modal close (user canceled)
+        closeButton.addEventListener('click', () => {
+          const cancelResult: PaymentResult = {
+            success: false,
+            message: 'تم إلغاء الدفع',
+          };
+          
+          this._paymentResult.next(cancelResult);
+          loading.dismiss();
+          resolve(cancelResult);
         });
       });
-      
-      await loading.dismiss();
-      return result;
     } catch (error) {
       await loading.dismiss();
-      console.error('Payment error:', error);
+      console.error('Credit card payment error:', error);
       
       const errorResult: PaymentResult = {
         success: false,
-        message: 'حدث خطأ أثناء معالجة الدفع',
+        message: 'حدث خطأ أثناء معالجة الدفع بالبطاقة',
         data: error
       };
       
@@ -316,12 +463,71 @@ export class PaymentService {
       // Initialize Moyasar library
       await this.initializeMoyasar();
       
-      // Create payment object for Moyasar Apple Pay
+      // Create a container for the Apple Pay form
+      const container = document.createElement('div');
+      container.id = 'applepay-form-container';
+      container.style.position = 'fixed';
+      container.style.top = '0';
+      container.style.left = '0';
+      container.style.width = '100%';
+      container.style.height = '100%';
+      container.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      container.style.zIndex = '10000';
+      container.style.display = 'flex';
+      container.style.justifyContent = 'center';
+      container.style.alignItems = 'center';
+      
+      // Create a close button
+      const closeButton = document.createElement('button');
+      closeButton.textContent = '✕';
+      closeButton.style.position = 'absolute';
+      closeButton.style.top = '20px';
+      closeButton.style.right = '20px';
+      closeButton.style.background = '#fff';
+      closeButton.style.border = 'none';
+      closeButton.style.borderRadius = '50%';
+      closeButton.style.width = '40px';
+      closeButton.style.height = '40px';
+      closeButton.style.fontSize = '20px';
+      closeButton.style.cursor = 'pointer';
+      closeButton.onclick = () => {
+        document.body.removeChild(container);
+      };
+      
+      // Create a form wrapper
+      const formWrapper = document.createElement('div');
+      formWrapper.style.width = '90%';
+      formWrapper.style.maxWidth = '500px';
+      formWrapper.style.padding = '30px';
+      formWrapper.style.backgroundColor = '#fff';
+      formWrapper.style.borderRadius = '10px';
+      
+      // Add a header
+      const header = document.createElement('h2');
+      header.textContent = 'الدفع باستخدام Apple Pay';
+      header.style.textAlign = 'center';
+      header.style.marginBottom = '20px';
+      header.style.fontFamily = 'Tajawal, sans-serif';
+      header.style.color = '#ec1c24';
+      
+      // Create the form container
+      const formContainer = document.createElement('div');
+      formContainer.className = 'applepay-form';
+      
+      // Add elements to DOM
+      formWrapper.appendChild(header);
+      formWrapper.appendChild(formContainer);
+      container.appendChild(closeButton);
+      container.appendChild(formWrapper);
+      document.body.appendChild(container);
+      
+      // Initialize Moyasar with Apple Pay method
       const moyasar = new Moyasar(this.moyasarPublishableKey);
       
-      // Configure Apple Pay payment options
-      const applePayOptions = {
-        amount: Math.round(cart.total * 100), // Convert to smallest currency unit (halalas)
+      // Create payment form with Apple Pay method
+      const form = moyasar.createForm({
+        // Amount in the smallest currency unit (halalas)
+        amount: Math.round(cart.total * 100),
         currency: 'SAR',
         description: `طلب من متجر DARZN (${cart.items.length} منتجات)`,
         callback_url: window.location.origin + '/checkout/confirmation',
@@ -329,153 +535,127 @@ export class PaymentService {
           order_id: `ORDER-${Date.now()}`,
           customer_email: billingDetails.email || 'customer@example.com',
           customer_name: `${billingDetails.first_name || ''} ${billingDetails.last_name || ''}`.trim()
-        },
-        apple_pay: {
-          country: 'SA',
-          label: 'DARZN متجر',
-          validate_merchant_url: 'https://api.moyasar.com/v1/applepay/validate',
         }
-      };
-      
-      // Create Apple Pay payment request
-      const paymentRequest = {
-        countryCode: 'SA',
-        currencyCode: 'SAR',
-        supportedNetworks: ['visa', 'masterCard', 'mada'],
-        merchantCapabilities: ['supports3DS', 'supportsDebit', 'supportsCredit'],
-        total: {
-          label: 'DARZN متجر',
-          amount: cart.total, // Actual amount to charge
-          type: 'final'
+      }, {
+        // Form configuration
+        saveCardOption: false,
+        locale: 'ar',
+        appearance: {
+          direction: 'rtl',
+          theme: 'default',
+          labels: {
+            methods: {
+              applepay: 'Apple Pay'
+            }
+          }
         },
-        lineItems: cart.items.map(item => ({
-          label: item.product.name,
-          amount: parseFloat(item.product.price) * item.quantity,
-          type: 'final'
-        }))
-      };
-      
-      // Create Apple Pay session
-      const session = new window.ApplePaySession(6, paymentRequest); // Version 6 supports more features
-      
-      // Set up Apple Pay session event handlers
-      session.onvalidatemerchant = async (event: any) => {
-        try {
-          // Call Moyasar's validation endpoint
-          const response = await fetch('https://api.moyasar.com/v1/applepay/validate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Basic ${btoa(this.moyasarPublishableKey + ':')}`
-            },
-            body: JSON.stringify({
-              validation_url: event.validationURL,
-              domain: window.location.hostname
-            })
-          });
-          
-          if (!response.ok) {
-            throw new Error('Merchant validation failed');
-          }
-          
-          const merchantSession = await response.json();
-          session.completeMerchantValidation(merchantSession);
-        } catch (error) {
-          console.error('Merchant validation failed:', error);
-          session.abort();
+        methods: ['applepay'], // Only show Apple Pay method
+        applepay: {
+          country: 'SA', 
+          label: 'DARZN',
+          validateMerchantURL: 'https://api.moyasar.com/v1/applepay/validate',
         }
-      };
+      });
       
-      // Handle payment authorization
-      session.onpaymentauthorized = async (event: any) => {
-        try {
-          // Gather the payment token from Apple Pay response
-          const token = event.payment.token;
-          
-          // Create a payment with Moyasar using the Apple Pay token
-          const paymentResponse = await fetch('https://api.moyasar.com/v1/payments', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Basic ${btoa(this.moyasarPublishableKey + ':')}`
-            },
-            body: JSON.stringify({
-              amount: Math.round(cart.total * 100), // Convert to smallest currency unit (halalas)
-              currency: 'SAR',
-              description: `طلب من متجر DARZN (${cart.items.length} منتجات)`,
-              callback_url: window.location.origin + '/checkout/confirmation',
-              source: {
-                type: 'applepay',
-                token: JSON.stringify(token)
-              },
-              metadata: {
-                order_id: `ORDER-${Date.now()}`,
-                customer_email: billingDetails.email || 'customer@example.com',
-                customer_name: `${billingDetails.first_name || ''} ${billingDetails.last_name || ''}`.trim()
-              }
-            })
-          });
-          
-          const paymentResult = await paymentResponse.json();
-          
-          if (paymentResult.status === 'paid' || paymentResult.status === 'authorized') {
-            session.completePayment(window.ApplePaySession.STATUS_SUCCESS);
-            
-            const resultData: PaymentResult = {
-              success: true,
-              message: 'تم الدفع بنجاح عبر Apple Pay',
-              transactionId: paymentResult.id,
-              data: paymentResult
-            };
-            
-            this._paymentResult.next(resultData);
-            await loading.dismiss();
-            this.presentSuccessToast(resultData.message);
-            return resultData;
-          } else {
-            session.completePayment(window.ApplePaySession.STATUS_FAILURE);
-            
-            const errorData: PaymentResult = {
-              success: false,
-              message: paymentResult.message || 'فشل الدفع عبر Apple Pay',
-              data: paymentResult
-            };
-            
-            this._paymentResult.next(errorData);
-            await loading.dismiss();
-            this.presentErrorToast(errorData.message);
-            return errorData;
+      // Handle form events
+      return new Promise<PaymentResult>((resolve) => {
+        // Save payment ID before processing (recommended in docs)
+        form.on('initiated', async (payment: any) => {
+          console.log('Apple Pay payment initiated:', payment);
+          // Store payment ID in local storage for verification
+          try {
+            localStorage.setItem('applepay_payment_id', payment.id);
+          } catch (err) {
+            console.error('Failed to save payment ID:', err);
           }
+        });
+        
+        // Mount the form
+        try {
+          form.mount('.applepay-form');
         } catch (error) {
-          console.error('Payment processing failed:', error);
-          session.completePayment(window.ApplePaySession.STATUS_FAILURE);
+          console.error('Failed to mount Apple Pay form:', error);
+          if (container.parentNode) {
+            document.body.removeChild(container);
+          }
           
           const errorResult: PaymentResult = {
             success: false,
-            message: 'حدث خطأ أثناء معالجة الدفع عبر Apple Pay',
+            message: 'فشل في تهيئة نموذج Apple Pay',
             data: error
           };
           
           this._paymentResult.next(errorResult);
-          await loading.dismiss();
+          loading.dismiss();
           this.presentErrorToast(errorResult.message);
-          return errorResult;
+          resolve(errorResult);
+          return;
         }
-      };
-      
-      // Start the Apple Pay session
-      session.begin();
-      
-      await loading.dismiss();
-      
-      // Return initial status as the actual result will be handled by the session events
-      return {
-        success: true,
-        message: 'تم بدء جلسة Apple Pay'
-      };
+        
+        // Handle successful payment
+        form.on('completed', (payment: any) => {
+          if (container.parentNode) {
+            document.body.removeChild(container);
+          }
+          
+          const paymentResult: PaymentResult = {
+            success: true,
+            message: 'تم الدفع بنجاح عبر Apple Pay',
+            transactionId: payment.id,
+            data: payment
+          };
+          
+          this._paymentResult.next(paymentResult);
+          loading.dismiss();
+          this.presentSuccessToast(paymentResult.message);
+          resolve(paymentResult);
+        });
+        
+        // Handle payment failure
+        form.on('failed', (error: any) => {
+          if (container.parentNode) {
+            document.body.removeChild(container);
+          }
+          
+          // Format error message
+          let errorMessage = error.message || 'فشل الدفع عبر Apple Pay';
+          
+          // Map common Apple Pay errors to Arabic
+          if (error.message?.includes('canceled')) {
+            errorMessage = 'تم إلغاء الدفع بواسطة المستخدم';
+          } else if (error.message?.includes('not supported')) {
+            errorMessage = 'Apple Pay غير مدعوم على هذا الجهاز';
+          } else if (error.message?.includes('merchant validation')) {
+            errorMessage = 'فشل التحقق من التاجر';
+          }
+          
+          const errorResult: PaymentResult = {
+            success: false,
+            message: errorMessage,
+            data: error
+          };
+          
+          this._paymentResult.next(errorResult);
+          loading.dismiss();
+          this.presentErrorToast(errorResult.message);
+          resolve(errorResult);
+        });
+        
+        // Handle modal close (user canceled)
+        closeButton.addEventListener('click', () => {
+          const cancelResult: PaymentResult = {
+            success: false,
+            message: 'تم إلغاء الدفع عبر Apple Pay',
+          };
+          
+          this._paymentResult.next(cancelResult);
+          loading.dismiss();
+          resolve(cancelResult);
+        });
+      });
     } catch (error) {
       await loading.dismiss();
-      console.error('Apple Pay error:', error);
+      console.error('Apple Pay initialization error:', error);
       
       const errorResult: PaymentResult = {
         success: false,
@@ -568,7 +748,7 @@ export class PaymentService {
   }
   
   /**
-   * Process STCPay payment using Moyasar's API
+   * Process STCPay payment using Moyasar's API according to the official documentation
    * @param cart The cart to process payment for
    * @param billingDetails The billing details
    */
@@ -579,7 +759,7 @@ export class PaymentService {
     }
     
     const loading = await this.loadingController.create({
-      message: 'جاري معالجة الدفع عبر STC Pay...',
+      message: 'جاري تجهيز الدفع عبر STC Pay...',
       spinner: 'circles'
     });
     
@@ -588,35 +768,6 @@ export class PaymentService {
     try {
       // Initialize Moyasar library
       await this.initializeMoyasar();
-      
-      // Initialize Moyasar form with STCPay option
-      const moyasar = new Moyasar(this.moyasarPublishableKey);
-      
-      // Create payment form configuration for STCPay
-      const form = moyasar.createForm({
-        amount: Math.round(cart.total * 100), // Convert to smallest currency unit (halalas)
-        currency: 'SAR',
-        description: `طلب من متجر DARZN (${cart.items.length} منتجات)`,
-        callback_url: window.location.origin + '/checkout/confirmation',
-        metadata: {
-          order_id: `ORDER-${Date.now()}`,
-          customer_email: billingDetails.email || 'customer@example.com',
-          customer_name: `${billingDetails.first_name || ''} ${billingDetails.last_name || ''}`.trim()
-        }
-      }, {
-        saveCardOption: false,
-        locale: 'ar',
-        appearance: {
-          direction: 'rtl',
-          theme: 'default',
-          labels: {
-            methods: {
-              stcpay: 'STC Pay'
-            }
-          }
-        },
-        methods: ['stcpay'], // Only show STCPay method
-      });
       
       // Create a container for the payment form
       const container = document.createElement('div');
@@ -665,25 +816,89 @@ export class PaymentService {
       header.style.fontFamily = 'Tajawal, sans-serif';
       header.style.color = '#ec1c24';
       
+      // Add testing information for test environment
+      const testInfoContainer = document.createElement('div');
+      testInfoContainer.style.backgroundColor = '#f9f9f9';
+      testInfoContainer.style.padding = '10px 15px';
+      testInfoContainer.style.borderRadius = '8px';
+      testInfoContainer.style.marginBottom = '20px';
+      testInfoContainer.style.fontSize = '13px';
+      testInfoContainer.style.border = '1px dashed #ddd';
+      
+      const testInfo = document.createElement('p');
+      testInfo.innerHTML = '<strong>وضع الاختبار:</strong><br>' +
+        'استخدم رقم 0515555559 للفشل أو أي رقم آخر للنجاح.<br>' +
+        'استخدم رمز OTP: 123456 للنجاح أو 111111 للفشل.';
+      testInfo.style.margin = '0';
+      testInfo.style.color = '#666';
+      testInfo.style.textAlign = 'center';
+      
+      testInfoContainer.appendChild(testInfo);
+      
       // Create the form container
       const formContainer = document.createElement('div');
       formContainer.className = 'stcpay-form';
       
       // Add elements to DOM
       formWrapper.appendChild(header);
+      formWrapper.appendChild(testInfoContainer);
       formWrapper.appendChild(formContainer);
       container.appendChild(closeButton);
       container.appendChild(formWrapper);
       document.body.appendChild(container);
+      
+      // Initialize Moyasar with the STC Pay method
+      const moyasar = new Moyasar(this.moyasarPublishableKey);
+      
+      // Create payment form with STC Pay method
+      const form = moyasar.createForm({
+        // Amount in the smallest currency unit (halalas)
+        amount: Math.round(cart.total * 100),
+        currency: 'SAR',
+        description: `طلب من متجر DARZN (${cart.items.length} منتجات)`,
+        callback_url: window.location.origin + '/checkout/confirmation',
+        metadata: {
+          order_id: `ORDER-${Date.now()}`,
+          customer_email: billingDetails.email || 'customer@example.com',
+          customer_name: `${billingDetails.first_name || ''} ${billingDetails.last_name || ''}`.trim()
+        }
+      }, {
+        // Form configuration
+        saveCardOption: false,
+        locale: 'ar',
+        appearance: {
+          direction: 'rtl',
+          theme: 'default',
+          labels: {
+            methods: {
+              stcpay: 'STC Pay'
+            }
+          }
+        },
+        methods: ['stcpay'], // Only show STCPay method
+      });
       
       // Mount the form
       form.mount('.stcpay-form');
       
       // Handle form events
       return new Promise<PaymentResult>((resolve) => {
+        // Save payment ID before processing (recommended in docs)
+        form.on('initiated', async (payment: any) => {
+          console.log('STC Pay payment initiated:', payment);
+          // Store payment ID in local storage for verification
+          try {
+            localStorage.setItem('stcpay_payment_id', payment.id);
+          } catch (err) {
+            console.error('Failed to save payment ID:', err);
+          }
+        });
+        
         // Handle successful payment
         form.on('completed', (payment: any) => {
-          document.body.removeChild(container);
+          if (container.parentNode) {
+            document.body.removeChild(container);
+          }
           
           const paymentResult: PaymentResult = {
             success: true,
@@ -700,11 +915,39 @@ export class PaymentService {
         
         // Handle payment failure
         form.on('failed', (error: any) => {
-          document.body.removeChild(container);
+          if (container.parentNode) {
+            document.body.removeChild(container);
+          }
+          
+          // Formatted error message based on STC Pay error types
+          let errorMessage = error.message || 'فشل الدفع عبر STC Pay';
+          
+          // Map error messages to Arabic
+          if (error.message?.includes('not registered')) {
+            errorMessage = 'رقم الجوال غير مسجل في خدمة STC Pay';
+          } else if (error.message?.includes('update your information')) {
+            errorMessage = 'يرجى تحديث معلوماتك باستخدام تطبيق STC Pay قبل محاولة الدفع';
+          } else if (error.message?.includes('account status is invalid')) {
+            errorMessage = 'حالة حساب العميل غير صالحة، يرجى الاتصال بدعم STC Pay';
+          } else if (error.message?.includes('OTP attempts')) {
+            errorMessage = 'لقد استنفدت محاولات رمز التحقق، يرجى الانتظار 15 دقيقة ثم المحاولة مرة أخرى';
+          } else if (error.message?.includes('wait 60 seconds')) {
+            errorMessage = 'يرجى الانتظار 60 ثانية قبل محاولة دفع جديدة';
+          } else if (error.message?.includes('Insufficient Balance')) {
+            errorMessage = 'رصيد غير كافٍ في حساب STC Pay الخاص بك';
+          } else if (error.message?.includes('daily transaction limit')) {
+            errorMessage = 'لقد تجاوزت الحد المسموح به للمعاملات اليومية لحساب STC Pay الخاص بك';
+          } else if (error.message?.includes('maximum allowed transaction amount')) {
+            errorMessage = 'لقد تجاوزت الحد الأقصى المسموح به لمبلغ المعاملة';
+          } else if (error.message?.includes('Connection timed out')) {
+            errorMessage = 'انتهت مهلة الاتصال أثناء انتظار الرد من خدمة STC Pay';
+          } else if (error.message?.includes('Invalid OTP')) {
+            errorMessage = 'رمز التحقق غير صالح';
+          }
           
           const errorResult: PaymentResult = {
             success: false,
-            message: error.message || 'فشل الدفع عبر STC Pay',
+            message: errorMessage,
             data: error
           };
           
@@ -732,7 +975,7 @@ export class PaymentService {
       
       const errorResult: PaymentResult = {
         success: false,
-        message: 'حدث خطأ أثناء معالجة الدفع عبر STC Pay',
+        message: 'حدث خطأ أثناء تهيئة خدمة STC Pay',
         data: error
       };
       
