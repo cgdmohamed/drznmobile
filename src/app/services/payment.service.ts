@@ -36,15 +36,38 @@ export class PaymentService {
   
   /**
    * Initialize Moyasar in component where it's needed
+   * @returns Promise that resolves when Moyasar is loaded
    */
-  initializeMoyasar() {
-    if (typeof Moyasar === 'undefined') {
-      // Load Moyasar script if not already loaded
-      const script = document.createElement('script');
-      script.src = 'https://cdn.moyasar.com/mpf/1.7.3/moyasar.js';
-      script.async = true;
-      document.body.appendChild(script);
+  async initializeMoyasar(): Promise<void> {
+    // Check if Moyasar is already loaded
+    if (typeof Moyasar !== 'undefined') {
+      console.log('Moyasar already loaded');
+      return Promise.resolve();
     }
+    
+    // Load Moyasar script
+    return new Promise<void>((resolve, reject) => {
+      try {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.moyasar.com/mpf/1.7.3/moyasar.js';
+        script.async = true;
+        
+        script.onload = () => {
+          console.log('Moyasar script loaded successfully');
+          resolve();
+        };
+        
+        script.onerror = (e) => {
+          console.error('Failed to load Moyasar script:', e);
+          reject(new Error('Failed to load Moyasar script'));
+        };
+        
+        document.body.appendChild(script);
+      } catch (err) {
+        console.error('Error loading Moyasar script:', err);
+        reject(err);
+      }
+    });
   }
   
   /**
@@ -61,15 +84,19 @@ export class PaymentService {
    */
   async processCreditCardPayment(cart: Cart, billingDetails: any): Promise<PaymentResult> {
     const loading = await this.loadingController.create({
-      message: 'Processing payment...',
+      message: 'جاري معالجة الدفع...',
       spinner: 'circles'
     });
     
     await loading.present();
     
     try {
-      // Initialize the payment form
+      // Initialize Moyasar library
+      await this.initializeMoyasar();
+      
+      // Initialize payment form
       const moyasar = new Moyasar(this.moyasarPublishableKey);
+      console.log('Moyasar form initialized successfully');
       
       // Create payment form
       const form = moyasar.createForm({
@@ -185,18 +212,8 @@ export class PaymentService {
     await loading.present();
     
     try {
-      // Initialize Moyasar
-      if (typeof Moyasar === 'undefined') {
-        // Load Moyasar script if not already loaded
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.moyasar.com/mpf/1.7.3/moyasar.js';
-          script.async = true;
-          script.onload = () => resolve();
-          script.onerror = (e) => reject(e);
-          document.body.appendChild(script);
-        });
-      }
+      // Initialize Moyasar library
+      await this.initializeMoyasar();
       
       // Create payment object for Moyasar Apple Pay
       const moyasar = new Moyasar(this.moyasarPublishableKey);
@@ -441,17 +458,8 @@ export class PaymentService {
     await loading.present();
     
     try {
-      // Initialize Moyasar if not already loaded
-      if (typeof Moyasar === 'undefined') {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.moyasar.com/mpf/1.7.3/moyasar.js';
-          script.async = true;
-          script.onload = () => resolve();
-          script.onerror = (e) => reject(e);
-          document.body.appendChild(script);
-        });
-      }
+      // Initialize Moyasar library
+      await this.initializeMoyasar();
       
       // Initialize Moyasar form with STCPay option
       const moyasar = new Moyasar(this.moyasarPublishableKey);

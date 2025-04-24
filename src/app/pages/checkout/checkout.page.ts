@@ -759,32 +759,10 @@ export class CheckoutPage implements OnInit, OnDestroy {
     this.showCreditCardModal = false;
   }
 
-  // Process payment based on selected method
+  // Process credit card payment
   async processPayment() {
-    if (this.paymentMethod === 'creditCard') {
-      // For credit card, proceed to review step
-      this.step = 3;
-    } else if (this.paymentMethod === 'applePay') {
-      // For Apple Pay, verify device support first
-      if (!this.paymentService.isApplePaySupported()) {
-        this.presentToast('Apple Pay غير متوفر على هذا الجهاز', 'danger');
-        return;
-      }
-      
-      // Proceed to payment directly with Apple Pay
-      this.processApplePayPayment();
-    } else if (this.paymentMethod === 'stcPay') {
-      // For STC Pay, proceed directly to payment
-      this.processSTCPayPayment();
-    } else {
-      // For cash on delivery, verify user authentication
-      if (!this.authService.isLoggedIn && !this.otpConfirmed) {
-        this.sendOtp();
-      } else {
-        // User is logged in or OTP is confirmed, proceed to review
-        this.step = 3;
-      }
-    }
+    // Open the credit card modal to collect payment information
+    this.openCreditCardModal();
   }
   
   // Process Apple Pay payment

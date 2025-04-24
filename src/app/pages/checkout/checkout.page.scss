@@ -718,10 +718,16 @@ ion-content {
     --border-radius: 12px;
     --padding-top: 18px;
     --padding-bottom: 18px;
+    --background: var(--ion-color-primary, #ec1c24);
+    --color: var(--ion-color-primary-contrast, white);
     --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    font-weight: bold;
+    font-size: 16px;
+    letter-spacing: 0.5px;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    width: 100%;
     
     &::after {
       content: '';
