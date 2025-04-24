@@ -70,11 +70,8 @@ export class CheckoutPage implements OnInit, OnDestroy {
     this.initForm();
     this.loadUserData();
     
-    // Set default availability for Apple Pay (using user agent detection)
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    
-    // Check if this is an Apple device (iPhone, iPad, iPod)
-    this.isApplePayAvailable = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+    // Check for Apple Pay availability using proper detection
+    this.isApplePayAvailable = this.detectApplePayAvailability();
     
     // Check if we have payment callback parameters in the URL
     this.route.queryParams.subscribe(params => {
@@ -692,25 +689,49 @@ export class CheckoutPage implements OnInit, OnDestroy {
   nextStep() {
     if (this.step === 1) {
       if (this.shippingForm.valid) {
-        this.step = 2;
+        this.step = 2; // Move to payment method selection
       } else {
         this.markFormGroupTouched(this.shippingForm);
         this.presentToast('يرجى إكمال جميع الحقول المطلوبة', 'danger');
       }
     } else if (this.step === 2) {
-      // Payment method selected
-      if (this.paymentMethod === 'creditCard') {
-        // For credit card, we'll proceed to payment form
-        this.processPayment();
-      } else if (this.paymentMethod === 'cod') {
-        // For cash on delivery, we'll verify if user is logged in or OTP is verified
-        if (this.authService.isLoggedIn || this.otpConfirmed) {
-          this.step = 3; // Go to review step 
-        } else {
-          // Need to verify with OTP
-          this.sendOtp();
-        }
+      // Payment method selected - handle based on payment type
+      switch (this.paymentMethod) {
+        case 'creditCard':
+          // For credit card, open the payment modal
+          this.openCreditCardModal();
+          break;
+          
+        case 'applePay':
+          // For Apple Pay, verify device support first
+          if (!this.paymentService.isApplePaySupported()) {
+            this.presentToast('Apple Pay غير متوفر على هذا الجهاز', 'danger');
+            return;
+          }
+          
+          // Proceed to payment directly with Apple Pay
+          this.processApplePayPayment();
+          break;
+          
+        case 'stcPay':
+          // For STC Pay, proceed directly to payment
+          this.processSTCPayPayment();
+          break;
+          
+        case 'cod':
+        default:
+          // For cash on delivery, verify user authentication if needed
+          if (!this.authService.isLoggedIn && !this.otpConfirmed) {
+            this.sendOtp();
+          } else {
+            // User is logged in or OTP is confirmed, proceed to review
+            this.step = 3;
+          }
+          break;
       }
+    } else if (this.step === 3) {
+      // Review step - proceed to place order
+      this.placeOrder();
     }
   }
 
@@ -738,11 +759,23 @@ export class CheckoutPage implements OnInit, OnDestroy {
     this.showCreditCardModal = false;
   }
 
-  // Process payment
+  // Process payment based on selected method
   async processPayment() {
     if (this.paymentMethod === 'creditCard') {
       // For credit card, proceed to review step
       this.step = 3;
+    } else if (this.paymentMethod === 'applePay') {
+      // For Apple Pay, verify device support first
+      if (!this.paymentService.isApplePaySupported()) {
+        this.presentToast('Apple Pay غير متوفر على هذا الجهاز', 'danger');
+        return;
+      }
+      
+      // Proceed to payment directly with Apple Pay
+      this.processApplePayPayment();
+    } else if (this.paymentMethod === 'stcPay') {
+      // For STC Pay, proceed directly to payment
+      this.processSTCPayPayment();
     } else {
       // For cash on delivery, verify user authentication
       if (!this.authService.isLoggedIn && !this.otpConfirmed) {
@@ -752,6 +785,77 @@ export class CheckoutPage implements OnInit, OnDestroy {
         this.step = 3;
       }
     }
+  }
+  
+  // Process Apple Pay payment
+  async processApplePayPayment() {
+    if (!this.shippingForm.valid) {
+      this.presentToast('يرجى إكمال معلومات الشحن بشكل صحيح', 'danger');
+      return;
+    }
+    
+    try {
+      const billingDetails = this.extractBillingDetailsFromForm();
+      const result = await this.paymentService.processApplePay(this.cart, billingDetails);
+      
+      if (result.success) {
+        // Store payment ID for order creation
+        this.paymentId = result.transactionId || null;
+        
+        // Move to order confirmation step
+        this.step = 4;
+        
+        // Create order in WooCommerce
+        this.placeOrder();
+      }
+    } catch (error) {
+      console.error('Apple Pay payment error:', error);
+      this.presentToast('حدث خطأ أثناء معالجة الدفع', 'danger');
+    }
+  }
+  
+  // Process STC Pay payment
+  async processSTCPayPayment() {
+    if (!this.shippingForm.valid) {
+      this.presentToast('يرجى إكمال معلومات الشحن بشكل صحيح', 'danger');
+      return;
+    }
+    
+    try {
+      const billingDetails = this.extractBillingDetailsFromForm();
+      const result = await this.paymentService.processSTCPay(this.cart, billingDetails);
+      
+      if (result.success) {
+        // Store payment ID for order creation
+        this.paymentId = result.transactionId || null;
+        
+        // Move to order confirmation step
+        this.step = 4;
+        
+        // Create order in WooCommerce
+        this.placeOrder();
+      }
+    } catch (error) {
+      console.error('STC Pay payment error:', error);
+      this.presentToast('حدث خطأ أثناء معالجة الدفع', 'danger');
+    }
+  }
+  
+  // Extract billing details from the form
+  private extractBillingDetailsFromForm() {
+    return {
+      first_name: this.shippingForm.get('firstName')?.value || '',
+      last_name: this.shippingForm.get('lastName')?.value || '',
+      email: this.shippingForm.get('email')?.value || '',
+      phone: this.shippingForm.get('phone')?.value || '',
+      address_1: this.shippingForm.get('address1')?.value || '',
+      address_2: this.shippingForm.get('address2')?.value || '',
+      district: this.shippingForm.get('district')?.value || '',
+      city: this.shippingForm.get('city')?.value || '',
+      state: this.shippingForm.get('state')?.value || '',
+      postcode: this.shippingForm.get('postalCode')?.value || '',
+      country: this.shippingForm.get('country')?.value || 'SA'
+    };
   }
 
   // Send OTP verification code
@@ -849,11 +953,55 @@ export class CheckoutPage implements OnInit, OnDestroy {
       const notesControl = this.shippingForm.get('notes');
       
       // Prepare order data
+      let paymentMethod = 'cod'; // Default payment method
+      let paymentTitle = 'الدفع عند الاستلام';
+      let isPaid = false;
+      let metaData = [];
+      
+      // Set payment method and title based on selected payment option
+      switch (this.paymentMethod) {
+        case 'creditCard':
+          paymentMethod = 'moyasar_cc';
+          paymentTitle = 'بطاقة ائتمان';
+          isPaid = !!this.paymentId;
+          metaData.push({ 
+            key: 'moyasar_payment_id', 
+            value: this.paymentId 
+          });
+          break;
+          
+        case 'applePay':
+          paymentMethod = 'moyasar_applepay';
+          paymentTitle = 'Apple Pay';
+          isPaid = !!this.paymentId;
+          metaData.push({ 
+            key: 'moyasar_payment_id', 
+            value: this.paymentId 
+          });
+          break;
+          
+        case 'stcPay':
+          paymentMethod = 'moyasar_stcpay';
+          paymentTitle = 'STC Pay';
+          isPaid = !!this.paymentId;
+          metaData.push({ 
+            key: 'moyasar_payment_id', 
+            value: this.paymentId 
+          });
+          break;
+          
+        default: // cod
+          paymentMethod = 'cod';
+          paymentTitle = 'الدفع عند الاستلام';
+          isPaid = false;
+          break;
+      }
+      
       const orderData = {
-        payment_method: this.paymentMethod === 'creditCard' ? 'moyasar' : 'cod',
-        payment_method_title: this.paymentMethod === 'creditCard' ? 'بطاقة ائتمان' : 'الدفع عند الاستلام',
-        set_paid: this.paymentMethod === 'creditCard', // Mark as paid for credit card payments
-        transaction_id: this.paymentId || '', // Include payment ID for credit card payments
+        payment_method: paymentMethod,
+        payment_method_title: paymentTitle,
+        set_paid: isPaid, // Mark as paid for online payments with transaction ID
+        transaction_id: this.paymentId || '', // Include payment ID
         billing: {
           first_name: firstNameControl ? firstNameControl.value : '',
           last_name: lastNameControl ? lastNameControl.value : '',
@@ -884,11 +1032,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
           product_id: item.product.id,
           quantity: item.quantity
         })) || [],
-        meta_data: this.paymentMethod === 'creditCard' ? 
-          [{
-            key: 'moyasar_payment_id',
-            value: this.paymentId
-          }] : []
+        meta_data: metaData
       };
       
       this.orderService.createOrder(orderData).subscribe(
@@ -1036,23 +1180,19 @@ export class CheckoutPage implements OnInit, OnDestroy {
     });
   }
   
-  // Detect if Apple Pay is available based on device
+  // Detect if Apple Pay is available based on Moyasar guidelines
   private detectApplePayAvailability(): boolean {
-    // In a real application, we would use proper detection using:
-    // 1. Check if we're on iOS
-    // 2. Use browser APIs to detect Apple Pay support
-    // 3. Check with Moyasar SDK if Apple Pay is supported
+    // Check if we're running in a compatible browser environment
+    if (typeof window === 'undefined' || !window.ApplePaySession) {
+      return false;
+    }
     
-    // For demo purposes, we'll use simple platform detection
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    
-    // Check if this is an Apple device (iPhone, iPad, iPod)
-    const isAppleDevice = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
-    
-    // For testing, you can return true to show the Apple Pay option on all devices
-    // return true;
-    
-    // In production, only return true for actual Apple devices
-    return isAppleDevice;
+    try {
+      // Check if Apple Pay is available with the device
+      return window.ApplePaySession && window.ApplePaySession.canMakePayments();
+    } catch (error) {
+      console.error('Error detecting Apple Pay availability:', error);
+      return false;
+    }
   }
 }

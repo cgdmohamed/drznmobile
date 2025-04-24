@@ -160,7 +160,7 @@ export class PaymentService {
   }
 
   /**
-   * Process Apple Pay payment
+   * Process Apple Pay payment according to Moyasar guidelines
    * @param cart The cart to process payment for
    * @param billingDetails The billing details
    */
@@ -169,7 +169,7 @@ export class PaymentService {
     if (!this.isApplePaySupported()) {
       const errorResult: PaymentResult = {
         success: false,
-        message: 'Apple Pay is not available on this device',
+        message: 'Apple Pay غير متوفر على هذا الجهاز',
       };
       
       this._paymentResult.next(errorResult);
@@ -178,91 +178,182 @@ export class PaymentService {
     }
     
     const loading = await this.loadingController.create({
-      message: 'Initializing Apple Pay...',
+      message: 'جاري تجهيز Apple Pay...',
       spinner: 'circles'
     });
     
     await loading.present();
     
     try {
-      // Initialize the payment request
+      // Initialize Moyasar
+      if (typeof Moyasar === 'undefined') {
+        // Load Moyasar script if not already loaded
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.moyasar.com/mpf/1.7.3/moyasar.js';
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = (e) => reject(e);
+          document.body.appendChild(script);
+        });
+      }
+      
+      // Create payment object for Moyasar Apple Pay
+      const moyasar = new Moyasar(this.moyasarPublishableKey);
+      
+      // Configure Apple Pay payment options
+      const applePayOptions = {
+        amount: Math.round(cart.total * 100), // Convert to smallest currency unit (halalas)
+        currency: 'SAR',
+        description: `طلب من متجر DARZN (${cart.items.length} منتجات)`,
+        callback_url: window.location.origin + '/checkout/confirmation',
+        metadata: {
+          order_id: `ORDER-${Date.now()}`,
+          customer_email: billingDetails.email || 'customer@example.com',
+          customer_name: `${billingDetails.first_name || ''} ${billingDetails.last_name || ''}`.trim()
+        },
+        apple_pay: {
+          country: 'SA',
+          label: 'DARZN متجر',
+          validate_merchant_url: 'https://api.moyasar.com/v1/applepay/validate',
+        }
+      };
+      
+      // Create Apple Pay payment request
       const paymentRequest = {
         countryCode: 'SA',
         currencyCode: 'SAR',
         supportedNetworks: ['visa', 'masterCard', 'mada'],
-        merchantCapabilities: ['supports3DS'],
+        merchantCapabilities: ['supports3DS', 'supportsDebit', 'supportsCredit'],
         total: {
-          label: 'DARZN App',
-          amount: cart.total
+          label: 'DARZN متجر',
+          amount: cart.total, // Actual amount to charge
+          type: 'final'
         },
         lineItems: cart.items.map(item => ({
           label: item.product.name,
-          amount: parseFloat(item.product.price) * item.quantity
+          amount: parseFloat(item.product.price) * item.quantity,
+          type: 'final'
         }))
       };
       
       // Create Apple Pay session
-      const session = new window.ApplePaySession(3, paymentRequest);
+      const session = new window.ApplePaySession(6, paymentRequest); // Version 6 supports more features
       
-      // Handle validation
+      // Set up Apple Pay session event handlers
       session.onvalidatemerchant = async (event: any) => {
         try {
-          // This would normally call your server to validate the merchant
-          // For demo purposes, we'll simulate success
-          session.completeMerchantValidation({});
+          // Call Moyasar's validation endpoint
+          const response = await fetch('https://api.moyasar.com/v1/applepay/validate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${btoa(this.moyasarPublishableKey + ':')}`
+            },
+            body: JSON.stringify({
+              validation_url: event.validationURL,
+              domain: window.location.hostname
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Merchant validation failed');
+          }
+          
+          const merchantSession = await response.json();
+          session.completeMerchantValidation(merchantSession);
         } catch (error) {
-          session.abort();
           console.error('Merchant validation failed:', error);
+          session.abort();
         }
       };
       
       // Handle payment authorization
       session.onpaymentauthorized = async (event: any) => {
         try {
-          // This would normally call your server to process the payment
-          // For demo purposes, we'll simulate success
+          // Gather the payment token from Apple Pay response
+          const token = event.payment.token;
           
-          session.completePayment(window.ApplePaySession.STATUS_SUCCESS);
+          // Create a payment with Moyasar using the Apple Pay token
+          const paymentResponse = await fetch('https://api.moyasar.com/v1/payments', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${btoa(this.moyasarPublishableKey + ':')}`
+            },
+            body: JSON.stringify({
+              amount: Math.round(cart.total * 100), // Convert to smallest currency unit (halalas)
+              currency: 'SAR',
+              description: `طلب من متجر DARZN (${cart.items.length} منتجات)`,
+              callback_url: window.location.origin + '/checkout/confirmation',
+              source: {
+                type: 'applepay',
+                token: JSON.stringify(token)
+              },
+              metadata: {
+                order_id: `ORDER-${Date.now()}`,
+                customer_email: billingDetails.email || 'customer@example.com',
+                customer_name: `${billingDetails.first_name || ''} ${billingDetails.last_name || ''}`.trim()
+              }
+            })
+          });
           
-          const paymentResult: PaymentResult = {
-            success: true,
-            message: 'Apple Pay payment completed successfully',
-            transactionId: `AP-${Date.now()}`,
-            data: event.payment
-          };
+          const paymentResult = await paymentResponse.json();
           
-          this._paymentResult.next(paymentResult);
-          await loading.dismiss();
-          this.presentSuccessToast('Payment successful');
-          
-          return paymentResult;
+          if (paymentResult.status === 'paid' || paymentResult.status === 'authorized') {
+            session.completePayment(window.ApplePaySession.STATUS_SUCCESS);
+            
+            const resultData: PaymentResult = {
+              success: true,
+              message: 'تم الدفع بنجاح عبر Apple Pay',
+              transactionId: paymentResult.id,
+              data: paymentResult
+            };
+            
+            this._paymentResult.next(resultData);
+            await loading.dismiss();
+            this.presentSuccessToast(resultData.message);
+            return resultData;
+          } else {
+            session.completePayment(window.ApplePaySession.STATUS_FAILURE);
+            
+            const errorData: PaymentResult = {
+              success: false,
+              message: paymentResult.message || 'فشل الدفع عبر Apple Pay',
+              data: paymentResult
+            };
+            
+            this._paymentResult.next(errorData);
+            await loading.dismiss();
+            this.presentErrorToast(errorData.message);
+            return errorData;
+          }
         } catch (error) {
-          session.completePayment(window.ApplePaySession.STATUS_FAILURE);
           console.error('Payment processing failed:', error);
+          session.completePayment(window.ApplePaySession.STATUS_FAILURE);
           
           const errorResult: PaymentResult = {
             success: false,
-            message: 'Apple Pay payment failed',
+            message: 'حدث خطأ أثناء معالجة الدفع عبر Apple Pay',
             data: error
           };
           
           this._paymentResult.next(errorResult);
           await loading.dismiss();
           this.presentErrorToast(errorResult.message);
-          
           return errorResult;
         }
       };
       
-      // Start the session
+      // Start the Apple Pay session
       session.begin();
       
       await loading.dismiss();
       
-      // Return a placeholder result since the actual result will be handled in the session events
+      // Return initial status as the actual result will be handled by the session events
       return {
         success: true,
-        message: 'Apple Pay session started'
+        message: 'تم بدء جلسة Apple Pay'
       };
     } catch (error) {
       await loading.dismiss();
@@ -270,7 +361,7 @@ export class PaymentService {
       
       const errorResult: PaymentResult = {
         success: false,
-        message: 'An error occurred initializing Apple Pay',
+        message: 'حدث خطأ أثناء تهيئة Apple Pay',
         data: error
       };
       
@@ -337,42 +428,175 @@ export class PaymentService {
   }
   
   /**
-   * Process STCPay payment
+   * Process STCPay payment using Moyasar's API
    * @param cart The cart to process payment for
    * @param billingDetails The billing details
    */
   async processSTCPay(cart: Cart, billingDetails: any): Promise<PaymentResult> {
     const loading = await this.loadingController.create({
-      message: 'Processing STC Pay...',
+      message: 'جاري معالجة الدفع عبر STC Pay...',
       spinner: 'circles'
     });
     
     await loading.present();
     
     try {
-      // In a real implementation, you would integrate with the STC Pay API
-      // For this example, we'll simulate a successful payment
+      // Initialize Moyasar if not already loaded
+      if (typeof Moyasar === 'undefined') {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.moyasar.com/mpf/1.7.3/moyasar.js';
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = (e) => reject(e);
+          document.body.appendChild(script);
+        });
+      }
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Initialize Moyasar form with STCPay option
+      const moyasar = new Moyasar(this.moyasarPublishableKey);
       
-      const result: PaymentResult = {
-        success: true,
-        message: 'STC Pay payment completed successfully',
-        transactionId: `STC-${Date.now()}`
+      // Create payment form configuration for STCPay
+      const form = moyasar.createForm({
+        amount: Math.round(cart.total * 100), // Convert to smallest currency unit (halalas)
+        currency: 'SAR',
+        description: `طلب من متجر DARZN (${cart.items.length} منتجات)`,
+        callback_url: window.location.origin + '/checkout/confirmation',
+        metadata: {
+          order_id: `ORDER-${Date.now()}`,
+          customer_email: billingDetails.email || 'customer@example.com',
+          customer_name: `${billingDetails.first_name || ''} ${billingDetails.last_name || ''}`.trim()
+        }
+      }, {
+        saveCardOption: false,
+        locale: 'ar',
+        appearance: {
+          direction: 'rtl',
+          theme: 'default',
+          labels: {
+            methods: {
+              stcpay: 'STC Pay'
+            }
+          }
+        },
+        methods: ['stcpay'], // Only show STCPay method
+      });
+      
+      // Create a container for the payment form
+      const container = document.createElement('div');
+      container.id = 'stcpay-form-container';
+      container.style.position = 'fixed';
+      container.style.top = '0';
+      container.style.left = '0';
+      container.style.width = '100%';
+      container.style.height = '100%';
+      container.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      container.style.zIndex = '10000';
+      container.style.display = 'flex';
+      container.style.justifyContent = 'center';
+      container.style.alignItems = 'center';
+      
+      // Create a close button
+      const closeButton = document.createElement('button');
+      closeButton.textContent = '✕';
+      closeButton.style.position = 'absolute';
+      closeButton.style.top = '20px';
+      closeButton.style.right = '20px';
+      closeButton.style.background = '#fff';
+      closeButton.style.border = 'none';
+      closeButton.style.borderRadius = '50%';
+      closeButton.style.width = '40px';
+      closeButton.style.height = '40px';
+      closeButton.style.fontSize = '20px';
+      closeButton.style.cursor = 'pointer';
+      closeButton.onclick = () => {
+        document.body.removeChild(container);
       };
       
-      this._paymentResult.next(result);
-      await loading.dismiss();
-      this.presentSuccessToast(result.message);
-      return result;
+      // Create a form wrapper
+      const formWrapper = document.createElement('div');
+      formWrapper.style.width = '90%';
+      formWrapper.style.maxWidth = '500px';
+      formWrapper.style.padding = '30px';
+      formWrapper.style.backgroundColor = '#fff';
+      formWrapper.style.borderRadius = '10px';
+      
+      // Add a header
+      const header = document.createElement('h2');
+      header.textContent = 'الدفع باستخدام STC Pay';
+      header.style.textAlign = 'center';
+      header.style.marginBottom = '20px';
+      header.style.fontFamily = 'Tajawal, sans-serif';
+      header.style.color = '#ec1c24';
+      
+      // Create the form container
+      const formContainer = document.createElement('div');
+      formContainer.className = 'stcpay-form';
+      
+      // Add elements to DOM
+      formWrapper.appendChild(header);
+      formWrapper.appendChild(formContainer);
+      container.appendChild(closeButton);
+      container.appendChild(formWrapper);
+      document.body.appendChild(container);
+      
+      // Mount the form
+      form.mount('.stcpay-form');
+      
+      // Handle form events
+      return new Promise<PaymentResult>((resolve) => {
+        // Handle successful payment
+        form.on('completed', (payment: any) => {
+          document.body.removeChild(container);
+          
+          const paymentResult: PaymentResult = {
+            success: true,
+            message: 'تم الدفع بنجاح عبر STC Pay',
+            transactionId: payment.id,
+            data: payment
+          };
+          
+          this._paymentResult.next(paymentResult);
+          loading.dismiss();
+          this.presentSuccessToast(paymentResult.message);
+          resolve(paymentResult);
+        });
+        
+        // Handle payment failure
+        form.on('failed', (error: any) => {
+          document.body.removeChild(container);
+          
+          const errorResult: PaymentResult = {
+            success: false,
+            message: error.message || 'فشل الدفع عبر STC Pay',
+            data: error
+          };
+          
+          this._paymentResult.next(errorResult);
+          loading.dismiss();
+          this.presentErrorToast(errorResult.message);
+          resolve(errorResult);
+        });
+        
+        // Handle modal close (user canceled)
+        closeButton.addEventListener('click', () => {
+          const cancelResult: PaymentResult = {
+            success: false,
+            message: 'تم إلغاء الدفع عبر STC Pay',
+          };
+          
+          this._paymentResult.next(cancelResult);
+          loading.dismiss();
+          resolve(cancelResult);
+        });
+      });
     } catch (error) {
       await loading.dismiss();
       console.error('STC Pay error:', error);
       
       const errorResult: PaymentResult = {
         success: false,
-        message: 'An error occurred processing STC Pay payment',
+        message: 'حدث خطأ أثناء معالجة الدفع عبر STC Pay',
         data: error
       };
       
