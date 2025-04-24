@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { LoadingController, ToastController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { OtpService } from '../../services/otp.service';
+import { JwtAuthService } from '../../services/jwt-auth.service';
 
 @Component({
   selector: 'app-register',
@@ -21,6 +22,7 @@ export class RegisterPage implements OnInit {
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
+    private jwtAuthService: JwtAuthService,
     private otpService: OtpService,
     private router: Router,
     private loadingController: LoadingController,
@@ -89,17 +91,18 @@ export class RegisterPage implements OnInit {
     
     await loading.present();
     
-    const userData = {
-      first_name: firstName,
-      last_name: lastName,
+    // Prepare data for JWT registration
+    const jwtUserData = {
       email: email,
       username: email, // Use email as username
       password: password,
-      phone: phone
+      first_name: firstName,
+      last_name: lastName
     };
     
-    this.authService.register(userData).subscribe(
-      async response => {
+    // Try JWT registration first
+    this.jwtAuthService.register(jwtUserData).subscribe({
+      next: async (user) => {
         loading.dismiss();
         const toast = await this.toastController.create({
           message: 'تم إنشاء الحساب بنجاح!',
@@ -110,12 +113,39 @@ export class RegisterPage implements OnInit {
         await toast.present();
         this.router.navigateByUrl('/home');
       },
-      error => {
-        loading.dismiss();
-        this.registerError = 'حدث خطأ أثناء التسجيل. الرجاء المحاولة مرة أخرى.';
-        console.error('Registration error', error);
+      error: (error) => {
+        console.log('JWT registration failed, trying legacy registration...', error);
+        
+        // Fallback to legacy registration if JWT fails
+        const legacyUserData = {
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          username: email,
+          password: password,
+          phone: phone
+        };
+        
+        this.authService.register(legacyUserData).subscribe({
+          next: async (response) => {
+            loading.dismiss();
+            const toast = await this.toastController.create({
+              message: 'تم إنشاء الحساب بنجاح!',
+              duration: 2000,
+              position: 'bottom',
+              color: 'success'
+            });
+            await toast.present();
+            this.router.navigateByUrl('/home');
+          },
+          error: (err) => {
+            loading.dismiss();
+            this.registerError = 'حدث خطأ أثناء التسجيل. الرجاء المحاولة مرة أخرى.';
+            console.error('Registration error', err);
+          }
+        });
       }
-    );
+    });
   }
 
   // Handle user registration with mobile number

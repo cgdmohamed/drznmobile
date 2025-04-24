@@ -117,11 +117,24 @@ export class AppComponent implements OnInit, OnDestroy {
 
   initializeApp() {
     this.platform.ready().then(() => {
-      // Auto login using either auth service (will be gradually migrated to JWT)
-      this.authService.autoLogin().subscribe();
-      
-      // JWT auth is initialized automatically when injected
-      // Add jwt-based auth check/verification here if needed
+      // Try to get token from JWT auth (already loaded in constructor)
+      this.jwtAuthService.getToken().then(token => {
+        if (token) {
+          // JWT token exists, verify it - it will automatically update the current user
+          console.log('JWT token found, verifying...');
+          this.jwtAuthService.refreshToken().subscribe({
+            next: () => console.log('JWT token refreshed successfully'),
+            error: (error) => {
+              console.log('JWT token refresh failed, trying legacy login', error);
+              // Fallback to legacy auth if JWT fails
+              this.authService.autoLogin().subscribe();
+            }
+          });
+        } else {
+          // No JWT token, try legacy auth
+          this.authService.autoLogin().subscribe();
+        }
+      });
 
       // Initialize push notifications if on a device
       if (this.platform.is("capacitor") || this.platform.is("cordova")) {
@@ -136,7 +149,17 @@ export class AppComponent implements OnInit, OnDestroy {
     await this.notificationService.unregisterDevice();
     
     // Clear sessions and data
-    this.authService.logout();
+    // Try JWT logout first, then fallback to legacy logout
+    this.jwtAuthService.logout().subscribe({
+      next: () => {
+        console.log('JWT logout successful');
+      },
+      error: (error) => {
+        console.log('JWT logout failed, falling back to legacy logout', error);
+        this.authService.logout();
+      }
+    });
+    
     this.cartService.clearCart();
     this.menuController.close("main-menu");
 

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { LoadingController, AlertController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { OtpService } from '../../services/otp.service';
+import { JwtAuthService } from '../../services/jwt-auth.service';
 
 @Component({
   selector: 'app-login',
@@ -20,6 +21,7 @@ export class LoginPage implements OnInit {
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
+    private jwtAuthService: JwtAuthService,
     private otpService: OtpService,
     private router: Router,
     private loadingController: LoadingController,
@@ -73,17 +75,29 @@ export class LoginPage implements OnInit {
     
     await loading.present();
     
-    this.authService.login(username, password).subscribe(
-      () => {
+    // Try JWT login first
+    this.jwtAuthService.login(username, password).subscribe({
+      next: (user) => {
         loading.dismiss();
         this.router.navigateByUrl('/home');
       },
-      error => {
-        loading.dismiss();
-        this.loginError = 'خطأ في تسجيل الدخول. يرجى التحقق من بيانات الاعتماد الخاصة بك.';
-        console.error('Login error', error);
+      error: (error) => {
+        console.log('JWT login failed, trying legacy login...', error);
+        
+        // Fallback to legacy authentication if JWT fails
+        this.authService.login(username, password).subscribe({
+          next: () => {
+            loading.dismiss();
+            this.router.navigateByUrl('/home');
+          },
+          error: (err) => {
+            loading.dismiss();
+            this.loginError = 'خطأ في تسجيل الدخول. يرجى التحقق من بيانات الاعتماد الخاصة بك.';
+            console.error('Login error', err);
+          }
+        });
       }
-    );
+    });
   }
   
   // Handle login with mobile number

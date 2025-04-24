@@ -6,7 +6,7 @@ import {
   HttpInterceptor,
   HttpErrorResponse
 } from '@angular/common/http';
-import { Observable, throwError, BehaviorSubject } from 'rxjs';
+import { Observable, throwError, BehaviorSubject, from } from 'rxjs';
 import { catchError, filter, take, switchMap } from 'rxjs/operators';
 import { JwtAuthService } from '../services/jwt-auth.service';
 import { environment } from '../../environments/environment';
@@ -22,21 +22,23 @@ export class TokenInterceptor implements HttpInterceptor {
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     // Only intercept requests to our API
     if (request.url.startsWith(this.apiUrl)) {
-      const token = this.jwtAuthService.currentTokenValue;
-      
-      if (token) {
-        // Clone the request and add the authorization header
-        request = this.addToken(request, token);
-      }
-      
-      return next.handle(request).pipe(
-        catchError(error => {
-          if (error instanceof HttpErrorResponse && error.status === 401) {
-            // Handle token refresh and unauthorized errors
-            return this.handle401Error(request, next);
-          } else {
-            return throwError(() => error);
+      return from(this.jwtAuthService.getToken()).pipe(
+        switchMap(token => {
+          if (token) {
+            // Clone the request and add the authorization header
+            request = this.addToken(request, token as string);
           }
+          
+          return next.handle(request).pipe(
+            catchError(error => {
+              if (error instanceof HttpErrorResponse && error.status === 401) {
+                // Handle token refresh and unauthorized errors
+                return this.handle401Error(request, next);
+              } else {
+                return throwError(() => error);
+              }
+            })
+          );
         })
       );
     }

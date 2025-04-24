@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LoadingController, AlertController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
+import { JwtAuthService } from '../../services/jwt-auth.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -16,6 +17,7 @@ export class ForgotPasswordPage implements OnInit {
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
+    private jwtAuthService: JwtAuthService,
     private router: Router,
     private loadingController: LoadingController,
     private alertController: AlertController
@@ -47,17 +49,29 @@ export class ForgotPasswordPage implements OnInit {
     
     await loading.present();
     
-    this.authService.forgotPassword(email).subscribe(
-      response => {
+    // Try JWT password reset first
+    this.jwtAuthService.requestPasswordReset(email).subscribe({
+      next: (response) => {
         loading.dismiss();
         this.presentSuccessAlert();
       },
-      error => {
-        loading.dismiss();
-        this.resetError = 'حدث خطأ أثناء محاولة إعادة تعيين كلمة المرور. الرجاء المحاولة مرة أخرى.';
-        console.error('Password reset error', error);
+      error: (error) => {
+        console.log('JWT password reset failed, trying legacy reset...', error);
+        
+        // Fallback to legacy password reset if JWT fails
+        this.authService.forgotPassword(email).subscribe({
+          next: (response) => {
+            loading.dismiss();
+            this.presentSuccessAlert();
+          },
+          error: (err) => {
+            loading.dismiss();
+            this.resetError = 'حدث خطأ أثناء محاولة إعادة تعيين كلمة المرور. الرجاء المحاولة مرة أخرى.';
+            console.error('Password reset error', err);
+          }
+        });
       }
-    );
+    });
   }
 
   // Present success alert
