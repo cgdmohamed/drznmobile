@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, BehaviorSubject, from, of, throwError } from 'rxjs';
-import { map, catchError, tap, switchMap } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
 import { Storage } from '@ionic/storage-angular';
+import { BehaviorSubject, Observable, from, of, throwError } from 'rxjs';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 import { User } from '../interfaces/user.interface';
 import { Platform } from '@ionic/angular';
 import { Router } from '@angular/router';
@@ -11,7 +11,7 @@ import { Router } from '@angular/router';
 interface AuthResponse {
   success: boolean;
   data?: {
-    jwt: string;
+    jwt?: string;
     user?: User;
   };
   error?: string;
@@ -20,6 +20,9 @@ interface AuthResponse {
   jwt?: string;
   id?: number;
   roles?: string[];
+  // For simple success/error responses
+  status?: string;
+  code?: string;
 }
 
 @Injectable({
@@ -78,6 +81,54 @@ export class JwtAuthService {
   }
 
   /**
+   * Create a minimal user object with basic user data
+   */
+  private createMinimalUser(userData: {
+    email: string;
+    username?: string;
+    first_name?: string;
+    last_name?: string;
+  }): User {
+    return {
+      id: 0, // Will be updated when we fetch the full user profile
+      email: userData.email,
+      username: userData.username || userData.email,
+      first_name: userData.first_name || '',
+      last_name: userData.last_name || '',
+      date_created: new Date().toISOString(),
+      date_modified: new Date().toISOString(),
+      role: 'customer',
+      is_paying_customer: false,
+      avatar_url: '',
+      billing: {
+        first_name: userData.first_name || '',
+        last_name: userData.last_name || '',
+        company: '',
+        address_1: '',
+        address_2: '',
+        city: '',
+        state: '',
+        postcode: '',
+        country: '',
+        email: userData.email,
+        phone: ''
+      },
+      shipping: {
+        first_name: userData.first_name || '',
+        last_name: userData.last_name || '',
+        company: '',
+        address_1: '',
+        address_2: '',
+        city: '',
+        state: '',
+        postcode: '',
+        country: ''
+      },
+      meta_data: []
+    } as User;
+  }
+
+  /**
    * Log in with email/username and password
    */
   login(email: string, password: string): Observable<User> {
@@ -91,8 +142,10 @@ export class JwtAuthService {
 
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth`, formData).pipe(
       switchMap(response => {
+        console.log('Login response:', response);
+        
         if (!response.success) {
-          throw new Error(response.error || 'Login failed');
+          throw new Error(response.error || response.message || 'Login failed');
         }
 
         // Store the JWT
@@ -148,7 +201,7 @@ export class JwtAuthService {
     }
 
     return this.http.post<AuthResponse>(`${this.apiUrl}/users`, formData).pipe(
-      map(response => {
+      switchMap(response => {
         console.log('Registration response:', response);
         
         // Check for success response
@@ -156,66 +209,69 @@ export class JwtAuthService {
           throw new Error(response.error || response.message || 'Registration failed');
         }
 
-        // Store the JWT token if available
+        // If we have a success response but no JWT, we need to login to get the JWT
+        if (response.success && response.message && response.message.includes('User was')) {
+          console.log('Registration successful, attempting automatic login');
+          
+          // Auto-login after successful registration
+          const loginFormData = new FormData();
+          loginFormData.append('AUTH_KEY', this.authCode);
+          loginFormData.append('email', userData.email);
+          loginFormData.append('password', userData.password);
+          
+          return this.http.post<AuthResponse>(`${this.apiUrl}/auth`, loginFormData).pipe(
+            map(loginResponse => {
+              console.log('Auto-login response:', loginResponse);
+              
+              // Store JWT if present
+              if (loginResponse.data?.jwt) {
+                this.storage.set(this.AUTH_TOKEN_KEY, loginResponse.data.jwt);
+              }
+              
+              // Extract user data from login response if present
+              if (loginResponse.data?.user) {
+                const loggedInUser = loginResponse.data.user;
+                this.storage.set(this.AUTH_USER_KEY, loggedInUser);
+                this.currentUserSubject.next(loggedInUser);
+                return loggedInUser;
+              }
+              
+              // Use minimal user if login response doesn't include user data
+              const minimalUser = this.createMinimalUser(userData);
+              this.storage.set(this.AUTH_USER_KEY, minimalUser);
+              this.currentUserSubject.next(minimalUser);
+              return minimalUser;
+            }),
+            catchError(loginError => {
+              console.error('Auto-login after registration failed', loginError);
+              // Even if auto-login fails, registration was successful
+              // Create minimal user with provided info
+              const minimalUser = this.createMinimalUser(userData);
+              this.storage.set(this.AUTH_USER_KEY, minimalUser);
+              this.currentUserSubject.next(minimalUser);
+              return of(minimalUser);
+            })
+          );
+        }
+        
+        // Standard flow if we got JWT in registration response
         if (response && response.jwt) {
           this.storage.set(this.AUTH_TOKEN_KEY, response.jwt);
-        } else {
-          console.log('No JWT token in response, will auto-login after registration');
         }
 
-        // Extract user data
-        let user: User;
+        // Extract user data if present in registration response
         if (response && response.user) {
-          user = response.user;
+          const user = response.user;
           this.storage.set(this.AUTH_USER_KEY, user);
           this.currentUserSubject.next(user);
-          return user;
-        } 
+          return of(user);
+        }
         
-        // If we got here, registration was successful but we don't have complete user data
-        // We'll create a minimal user object with the data we provided to the registration
-        const minimalUser = {
-          id: 0, // Will be updated when we fetch the full user profile
-          email: userData.email,
-          username: userData.username || userData.email,
-          first_name: userData.first_name || '',
-          last_name: userData.last_name || '',
-          date_created: new Date().toISOString(),
-          date_modified: new Date().toISOString(),
-          role: 'customer',
-          is_paying_customer: false,
-          avatar_url: '',
-          billing: {
-            first_name: userData.first_name || '',
-            last_name: userData.last_name || '',
-            company: '',
-            address_1: '',
-            address_2: '',
-            city: '',
-            state: '',
-            postcode: '',
-            country: '',
-            email: userData.email,
-            phone: ''
-          },
-          shipping: {
-            first_name: userData.first_name || '',
-            last_name: userData.last_name || '',
-            company: '',
-            address_1: '',
-            address_2: '',
-            city: '',
-            state: '',
-            postcode: '',
-            country: ''
-          },
-          meta_data: []
-        } as User;
-        
-        // Store this minimal user data
+        // Create minimal user as fallback
+        const minimalUser = this.createMinimalUser(userData);
         this.storage.set(this.AUTH_USER_KEY, minimalUser);
         this.currentUserSubject.next(minimalUser);
-        return minimalUser;
+        return of(minimalUser);
       }),
       tap(() => {
         this.isLoadingSubject.next(false);
@@ -442,14 +498,16 @@ export class JwtAuthService {
   /**
    * Get the stored JWT token
    */
-  async getToken(): Promise<string | null> {
-    return this.storage.get(this.AUTH_TOKEN_KEY);
+  async getToken(): Promise<string> {
+    const token = await this.storage.get(this.AUTH_TOKEN_KEY);
+    return token || '';
   }
 
   /**
    * Get the stored user data
    */
-  async getUser(): Promise<User | null> {
-    return this.storage.get(this.AUTH_USER_KEY);
+  async getUser(): Promise<User> {
+    const user = await this.storage.get(this.AUTH_USER_KEY);
+    return user || null as any;
   }
 }
