@@ -49,27 +49,24 @@ export class ForgotPasswordPage implements OnInit {
     
     await loading.present();
     
-    // Try JWT password reset first
+    // Only use JWT password reset
     this.jwtAuthService.requestPasswordReset(email).subscribe({
       next: (response) => {
         loading.dismiss();
         this.presentSuccessAlert();
       },
       error: (error) => {
-        console.log('JWT password reset failed, trying legacy reset...', error);
+        console.error('JWT password reset failed', error);
+        loading.dismiss();
         
-        // Fallback to legacy password reset if JWT fails
-        this.authService.forgotPassword(email).subscribe({
-          next: (response) => {
-            loading.dismiss();
-            this.presentSuccessAlert();
-          },
-          error: (err) => {
-            loading.dismiss();
-            this.resetError = 'حدث خطأ أثناء محاولة إعادة تعيين كلمة المرور. الرجاء المحاولة مرة أخرى.';
-            console.error('Password reset error', err);
-          }
-        });
+        // Show appropriate error messages based on error type
+        if (error.status === 504 || error.status === 502 || error.status === 0) {
+          this.resetError = 'لا يمكن الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.';
+        } else if (error.status === 404) {
+          this.resetError = 'البريد الإلكتروني غير مسجل في النظام.';
+        } else {
+          this.resetError = 'حدث خطأ أثناء محاولة إعادة تعيين كلمة المرور. الرجاء المحاولة مرة أخرى.';
+        }
       }
     });
   }

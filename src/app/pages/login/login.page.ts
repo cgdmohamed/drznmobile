@@ -75,27 +75,24 @@ export class LoginPage implements OnInit {
     
     await loading.present();
     
-    // Try JWT login first
+    // Only use JWT login
     this.jwtAuthService.login(username, password).subscribe({
       next: (user) => {
         loading.dismiss();
         this.router.navigateByUrl('/home');
       },
       error: (error) => {
-        console.log('JWT login failed, trying legacy login...', error);
+        console.error('JWT login failed', error);
+        loading.dismiss();
         
-        // Fallback to legacy authentication if JWT fails
-        this.authService.login(username, password).subscribe({
-          next: () => {
-            loading.dismiss();
-            this.router.navigateByUrl('/home');
-          },
-          error: (err) => {
-            loading.dismiss();
-            this.loginError = 'خطأ في تسجيل الدخول. يرجى التحقق من بيانات الاعتماد الخاصة بك.';
-            console.error('Login error', err);
-          }
-        });
+        // Show appropriate error messages based on error type
+        if (error.status === 504 || error.status === 502 || error.status === 0) {
+          this.loginError = 'لا يمكن الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.';
+        } else if (error.status === 401 || error.status === 403) {
+          this.loginError = 'خطأ في تسجيل الدخول. يرجى التحقق من بيانات الاعتماد الخاصة بك.';
+        } else {
+          this.loginError = 'حدث خطأ أثناء تسجيل الدخول. الرجاء المحاولة مرة أخرى.';
+        }
       }
     });
   }

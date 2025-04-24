@@ -125,15 +125,12 @@ export class AppComponent implements OnInit, OnDestroy {
           this.jwtAuthService.refreshToken().subscribe({
             next: () => console.log('JWT token refreshed successfully'),
             error: (error) => {
-              console.log('JWT token refresh failed, trying legacy login', error);
-              // Fallback to legacy auth if JWT fails
-              this.authService.autoLogin().subscribe();
+              console.error('JWT token refresh failed', error);
+              // Don't fall back to legacy auth, just log the error
             }
           });
-        } else {
-          // No JWT token, try legacy auth
-          this.authService.autoLogin().subscribe();
         }
+        // Don't use legacy auth if no JWT token or if JWT fails
       });
 
       // Initialize push notifications if on a device
@@ -149,14 +146,14 @@ export class AppComponent implements OnInit, OnDestroy {
     await this.notificationService.unregisterDevice();
     
     // Clear sessions and data
-    // Try JWT logout first, then fallback to legacy logout
+    // Only use JWT logout
     this.jwtAuthService.logout().subscribe({
       next: () => {
         console.log('JWT logout successful');
       },
       error: (error) => {
-        console.log('JWT logout failed, falling back to legacy logout', error);
-        this.authService.logout();
+        console.error('JWT logout failed', error);
+        // Don't fall back to legacy logout, just log the error
       }
     });
     

@@ -100,7 +100,7 @@ export class RegisterPage implements OnInit {
       last_name: lastName
     };
     
-    // Try JWT registration first
+    // Only use JWT registration
     this.jwtAuthService.register(jwtUserData).subscribe({
       next: async (user) => {
         loading.dismiss();
@@ -114,36 +114,17 @@ export class RegisterPage implements OnInit {
         this.router.navigateByUrl('/home');
       },
       error: (error) => {
-        console.log('JWT registration failed, trying legacy registration...', error);
+        console.error('JWT registration failed', error);
+        loading.dismiss();
         
-        // Fallback to legacy registration if JWT fails
-        const legacyUserData = {
-          first_name: firstName,
-          last_name: lastName,
-          email: email,
-          username: email,
-          password: password,
-          phone: phone
-        };
-        
-        this.authService.register(legacyUserData).subscribe({
-          next: async (response) => {
-            loading.dismiss();
-            const toast = await this.toastController.create({
-              message: 'تم إنشاء الحساب بنجاح!',
-              duration: 2000,
-              position: 'bottom',
-              color: 'success'
-            });
-            await toast.present();
-            this.router.navigateByUrl('/home');
-          },
-          error: (err) => {
-            loading.dismiss();
-            this.registerError = 'حدث خطأ أثناء التسجيل. الرجاء المحاولة مرة أخرى.';
-            console.error('Registration error', err);
-          }
-        });
+        // Show more specific error message based on the error
+        if (error.status === 504 || error.status === 502 || error.status === 0) {
+          this.registerError = 'لا يمكن الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.';
+        } else if (error.status === 409) {
+          this.registerError = 'البريد الإلكتروني أو اسم المستخدم مستخدم بالفعل.';
+        } else {
+          this.registerError = 'حدث خطأ أثناء التسجيل. الرجاء المحاولة مرة أخرى.';
+        }
       }
     });
   }
