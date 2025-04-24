@@ -13,23 +13,16 @@ const routes: Routes = [
     loadChildren: () => import('./home/home.module').then(m => m.HomePageModule)
   },
   {
-    path: 'auth',
-    loadChildren: () => import('./pages/auth/auth.module').then(m => m.AuthPageModule)
-  },
-  {
     path: 'login',
-    redirectTo: 'auth',
-    pathMatch: 'full'
+    loadChildren: () => import('./pages/login/login.module').then(m => m.LoginPageModule)
   },
   {
     path: 'register',
-    redirectTo: 'auth',
-    pathMatch: 'full'
+    loadChildren: () => import('./pages/register/register.module').then(m => m.RegisterPageModule)
   },
   {
     path: 'forgot-password',
-    redirectTo: 'auth',
-    pathMatch: 'full'
+    loadChildren: () => import('./pages/forgot-password/forgot-password.module').then(m => m.ForgotPasswordPageModule)
   },
   {
     path: 'product/:id',

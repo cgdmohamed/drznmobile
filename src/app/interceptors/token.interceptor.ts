@@ -22,24 +22,21 @@ export class TokenInterceptor implements HttpInterceptor {
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     // Only intercept requests to our API
     if (request.url.startsWith(this.apiUrl)) {
-      // Get token from service asynchronously
-      return this.jwtAuthService.getToken().pipe(
-        switchMap(token => {
-          if (token) {
-            // Clone the request and add the authorization header
-            request = this.addToken(request, token);
+      const token = this.jwtAuthService.currentTokenValue;
+      
+      if (token) {
+        // Clone the request and add the authorization header
+        request = this.addToken(request, token);
+      }
+      
+      return next.handle(request).pipe(
+        catchError(error => {
+          if (error instanceof HttpErrorResponse && error.status === 401) {
+            // Handle token refresh and unauthorized errors
+            return this.handle401Error(request, next);
+          } else {
+            return throwError(() => error);
           }
-          
-          return next.handle(request).pipe(
-            catchError(error => {
-              if (error instanceof HttpErrorResponse && error.status === 401) {
-                // Handle token refresh and unauthorized errors
-                return this.handle401Error(request, next);
-              } else {
-                return throwError(() => error);
-              }
-            })
-          );
         })
       );
     }

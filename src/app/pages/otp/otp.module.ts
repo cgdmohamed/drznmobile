@@ -1,27 +1,18 @@
-import { NgModule } from '@angular/core';
+import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Routes, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
-import { ComponentsModule } from '../../components/components.module';
+import { OtpPageRoutingModule } from './otp-routing.module';
 import { OtpPage } from './otp.page';
-
-const routes: Routes = [
-  {
-    path: '',
-    component: OtpPage
-  }
-];
 
 @NgModule({
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule,
     IonicModule,
-    ComponentsModule,
-    RouterModule.forChild(routes)
+    OtpPageRoutingModule
   ],
-  declarations: [OtpPage]
+  declarations: [OtpPage],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class OtpPageModule { }
+export class OtpPageModule {}
