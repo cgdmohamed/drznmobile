@@ -117,14 +117,33 @@ export class RegisterPage implements OnInit {
         console.error('JWT registration failed', error);
         loading.dismiss();
         
-        // Show more specific error message based on the error
+        // Handle different error cases with appropriate messages
         if (error.status === 504 || error.status === 502 || error.status === 0) {
+          // Connection errors
           this.registerError = 'لا يمكن الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.';
-        } else if (error.status === 409) {
-          this.registerError = 'البريد الإلكتروني أو اسم المستخدم مستخدم بالفعل.';
+        } else if (error.status === 409 || (error.error && error.error.code === 'registration-error-email-exists')) {
+          // Email already exists
+          this.registerError = 'البريد الإلكتروني مستخدم بالفعل. يرجى استخدام بريد إلكتروني مختلف.';
+        } else if (error.error && error.error.code === 'registration-error-username-exists') {
+          // Username already exists
+          this.registerError = 'اسم المستخدم مستخدم بالفعل. يرجى استخدام اسم مستخدم مختلف.';
+        } else if (error.status === 400) {
+          // Bad request - typically validation errors
+          const errorMessage = error.error && error.error.message ? error.error.message : '';
+          if (errorMessage.includes('password')) {
+            this.registerError = 'كلمة المرور غير صالحة. يرجى استخدام كلمة مرور أقوى.';
+          } else if (errorMessage.includes('email')) {
+            this.registerError = 'البريد الإلكتروني غير صالح. يرجى التحقق من صياغة البريد الإلكتروني.';
+          } else {
+            this.registerError = 'بيانات التسجيل غير صالحة. يرجى التحقق من المعلومات المدخلة.';
+          }
         } else {
+          // Generic fallback error
           this.registerError = 'حدث خطأ أثناء التسجيل. الرجاء المحاولة مرة أخرى.';
         }
+        
+        // Display the error message as a toast for better visibility
+        this.presentErrorToast(this.registerError);
       }
     });
   }
@@ -189,5 +208,22 @@ export class RegisterPage implements OnInit {
   // Navigate to login page
   goToLogin() {
     this.router.navigateByUrl('/login');
+  }
+  
+  // Present error toast
+  async presentErrorToast(message: string) {
+    const toast = await this.toastController.create({
+      message: message,
+      duration: 3000,
+      position: 'bottom',
+      color: 'danger',
+      buttons: [
+        {
+          text: 'إغلاق',
+          role: 'cancel'
+        }
+      ]
+    });
+    await toast.present();
   }
 }

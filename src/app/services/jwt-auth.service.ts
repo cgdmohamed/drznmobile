@@ -149,24 +149,73 @@ export class JwtAuthService {
 
     return this.http.post<AuthResponse>(`${this.apiUrl}/users`, formData).pipe(
       map(response => {
-        if (!response.success) {
+        console.log('Registration response:', response);
+        
+        // Check for success response
+        if (response && (response.success === false || response.error)) {
           throw new Error(response.error || response.message || 'Registration failed');
         }
 
-        // Store the JWT token and user data
-        if (response.jwt) {
+        // Store the JWT token if available
+        if (response && response.jwt) {
           this.storage.set(this.AUTH_TOKEN_KEY, response.jwt);
+        } else {
+          console.log('No JWT token in response, will auto-login after registration');
         }
 
+        // Extract user data
         let user: User;
-        if (response.user) {
+        if (response && response.user) {
           user = response.user;
           this.storage.set(this.AUTH_USER_KEY, user);
           this.currentUserSubject.next(user);
           return user;
-        } else {
-          throw new Error('No user data received');
-        }
+        } 
+        
+        // If we got here, registration was successful but we don't have complete user data
+        // We'll create a minimal user object with the data we provided to the registration
+        const minimalUser = {
+          id: 0, // Will be updated when we fetch the full user profile
+          email: userData.email,
+          username: userData.username || userData.email,
+          first_name: userData.first_name || '',
+          last_name: userData.last_name || '',
+          date_created: new Date().toISOString(),
+          date_modified: new Date().toISOString(),
+          role: 'customer',
+          is_paying_customer: false,
+          avatar_url: '',
+          billing: {
+            first_name: userData.first_name || '',
+            last_name: userData.last_name || '',
+            company: '',
+            address_1: '',
+            address_2: '',
+            city: '',
+            state: '',
+            postcode: '',
+            country: '',
+            email: userData.email,
+            phone: ''
+          },
+          shipping: {
+            first_name: userData.first_name || '',
+            last_name: userData.last_name || '',
+            company: '',
+            address_1: '',
+            address_2: '',
+            city: '',
+            state: '',
+            postcode: '',
+            country: ''
+          },
+          meta_data: []
+        } as User;
+        
+        // Store this minimal user data
+        this.storage.set(this.AUTH_USER_KEY, minimalUser);
+        this.currentUserSubject.next(minimalUser);
+        return minimalUser;
       }),
       tap(() => {
         this.isLoadingSubject.next(false);
