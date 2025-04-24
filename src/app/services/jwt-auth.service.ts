@@ -526,7 +526,7 @@ export class JwtAuthService {
   }
   
   /**
-   * Fetch user profile from WooCommerce API using the JWT token
+   * Fetch user profile from WooCommerce API using consumer keys
    */
   private fetchUserProfile(email: string): Observable<User> {
     return from(this.getToken()).pipe(
@@ -535,12 +535,12 @@ export class JwtAuthService {
           return throwError(() => new Error('No token available to fetch user profile'));
         }
         
-        const headers = new HttpHeaders({
-          'Authorization': `Bearer ${token}`
-        });
+        // WooCommerce API requires consumer key/secret authentication
+        const consumerKey = environment.consumerKey;
+        const consumerSecret = environment.consumerSecret;
         
         // Use the WooCommerce REST API to fetch the user by email
-        return this.http.get<User>(`${environment.apiUrl}/customers?email=${email}`, { headers }).pipe(
+        return this.http.get<User>(`${environment.apiUrl}/customers?email=${email}&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`).pipe(
           map((customers: any) => {
             console.log('User profile response:', customers);
             
