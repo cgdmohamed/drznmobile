@@ -8,6 +8,7 @@ export const environment = {
   oneSignalAppId: "2a550f67-58af-4101-a500-28a97612f69c",
   // JWT Authentication
   jwtAuthUrl: "https://app.drzn.sa/wp-json/jwt-auth/v1/token",
+  authCode: "Wt9-Y+a5WPDJ7f+Uz{iKlOCs)S.J6oqMP/4M*KzJFr!NpIto5@3)hBZ9=*7#X.J", // Used for Simple JWT Login plugin
 };
 
 // IMPORTANT: Replace the placeholder values above with your actual API keys before building for production
