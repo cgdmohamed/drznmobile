@@ -30,9 +30,8 @@ export class JwtAuthService {
   private AUTH_USER_KEY = 'auth_user';
   private AUTH_REFRESH_KEY = 'jwt_refresh_token';
 
-  // Construct URL correctly without duplicating wp-json part
-  private baseUrl = environment.apiUrl.split('/wp-json')[0]; // Get the base URL without wp-json
-  private apiUrl = `${this.baseUrl}/wp-json/simple-jwt-login/v1`;
+  // Use direct URL to bypass proxy for JWT auth
+  private apiUrl = `https://app.drzn.sa/wp-json/simple-jwt-login/v1`;
   private authCode = environment.authCode;
 
   private currentUserSubject = new BehaviorSubject<User | null>(null);
@@ -83,13 +82,13 @@ export class JwtAuthService {
   login(email: string, password: string): Observable<User> {
     this.isLoadingSubject.next(true);
 
-    const payload = {
-      email,
-      password,
-      AUTH_CODE: this.authCode
-    };
+    // Create FormData object for multipart/form-data submission
+    const formData = new FormData();
+    formData.append('AUTH_KEY', this.authCode);
+    formData.append('email', email);
+    formData.append('password', password);
 
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth`, payload).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth`, formData).pipe(
       switchMap(response => {
         if (!response.success) {
           throw new Error(response.error || 'Login failed');
@@ -127,12 +126,27 @@ export class JwtAuthService {
   }): Observable<User> {
     this.isLoadingSubject.next(true);
 
-    const payload = {
-      ...userData,
-      AUTH_CODE: this.authCode
-    };
+    // Create FormData object for multipart/form-data submission
+    const formData = new FormData();
+    formData.append('AUTH_KEY', this.authCode);
+    formData.append('email', userData.email);
+    formData.append('password', userData.password);
+    
+    if (userData.first_name) {
+      formData.append('first_name', userData.first_name);
+    }
+    
+    if (userData.last_name) {
+      formData.append('last_name', userData.last_name);
+    }
+    
+    if (userData.username) {
+      formData.append('username', userData.username);
+    } else {
+      formData.append('username', userData.email); // Use email as username if not provided
+    }
 
-    return this.http.post<AuthResponse>(`${this.apiUrl}/users`, payload).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/users`, formData).pipe(
       map(response => {
         if (!response.success) {
           throw new Error(response.error || response.message || 'Registration failed');
@@ -178,12 +192,12 @@ export class JwtAuthService {
         }
 
         // Otherwise, try to revoke the token on the server
-        const payload = {
-          JWT: token,
-          AUTH_CODE: this.authCode
-        };
+        // Create FormData object for multipart/form-data submission
+        const formData = new FormData();
+        formData.append('AUTH_KEY', this.authCode);
+        formData.append('JWT', token);
 
-        return this.http.post<AuthResponse>(`${this.apiUrl}/auth/revoke`, payload).pipe(
+        return this.http.post<AuthResponse>(`${this.apiUrl}/auth/revoke`, formData).pipe(
           tap(() => this.clearAuthData()),
           map(() => true), // Return success regardless of server response
           catchError(() => {
@@ -226,12 +240,12 @@ export class JwtAuthService {
   requestPasswordReset(email: string): Observable<boolean> {
     this.isLoadingSubject.next(true);
 
-    const payload = {
-      email,
-      AUTH_CODE: this.authCode
-    };
+    // Create FormData object for multipart/form-data submission
+    const formData = new FormData();
+    formData.append('AUTH_KEY', this.authCode);
+    formData.append('email', email);
 
-    return this.http.post<AuthResponse>(`${this.apiUrl}/users/reset_password`, payload).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/users/reset_password`, formData).pipe(
       map(response => {
         if (!response.success) {
           throw new Error(response.error || response.message || 'Password reset request failed');
@@ -254,14 +268,14 @@ export class JwtAuthService {
   resetPassword(email: string, resetCode: string, newPassword: string): Observable<boolean> {
     this.isLoadingSubject.next(true);
 
-    const payload = {
-      email,
-      code: resetCode,
-      new_password: newPassword,
-      AUTH_CODE: this.authCode
-    };
+    // Create FormData object for multipart/form-data submission
+    const formData = new FormData();
+    formData.append('AUTH_KEY', this.authCode);
+    formData.append('email', email);
+    formData.append('code', resetCode);
+    formData.append('new_password', newPassword);
 
-    return this.http.post<AuthResponse>(`${this.apiUrl}/users/reset_password/code`, payload).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/users/reset_password/code`, formData).pipe(
       map(response => {
         if (!response.success) {
           throw new Error(response.error || response.message || 'Password reset failed');
@@ -294,13 +308,13 @@ export class JwtAuthService {
           'Authorization': `Bearer ${token}`
         });
 
-        const payload = {
-          old_password: oldPassword,
-          new_password: newPassword,
-          AUTH_CODE: this.authCode
-        };
+        // Create FormData object for multipart/form-data submission
+        const formData = new FormData();
+        formData.append('AUTH_KEY', this.authCode);
+        formData.append('old_password', oldPassword);
+        formData.append('new_password', newPassword);
 
-        return this.http.post<AuthResponse>(`${this.apiUrl}/users/change_password`, payload, { headers }).pipe(
+        return this.http.post<AuthResponse>(`${this.apiUrl}/users/change_password`, formData, { headers }).pipe(
           map(response => {
             if (!response.success) {
               throw new Error(response.error || response.message || 'Password change failed');
@@ -329,12 +343,12 @@ export class JwtAuthService {
           return throwError(() => new Error('No token to refresh'));
         }
 
-        const payload = {
-          JWT: token,
-          AUTH_CODE: this.authCode
-        };
+        // Create FormData object for multipart/form-data submission
+        const formData = new FormData();
+        formData.append('AUTH_KEY', this.authCode);
+        formData.append('JWT', token);
 
-        return this.http.post<AuthResponse>(`${this.apiUrl}/auth/refresh`, payload).pipe(
+        return this.http.post<AuthResponse>(`${this.apiUrl}/auth/refresh`, formData).pipe(
           map(response => {
             if (!response.success || !response.data?.jwt) {
               throw new Error(response.error || 'Failed to refresh token');
@@ -353,12 +367,12 @@ export class JwtAuthService {
    * Validate a JWT token and retrieve user information
    */
   private validateToken(token: string): Observable<User> {
-    const payload = {
-      JWT: token,
-      AUTH_CODE: this.authCode
-    };
+    // Create FormData object for multipart/form-data submission
+    const formData = new FormData();
+    formData.append('AUTH_KEY', this.authCode);
+    formData.append('JWT', token);
 
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/validate`, payload).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/validate`, formData).pipe(
       map(response => {
         if (!response.success || !response.data?.user) {
           throw new Error(response.error || 'Token validation failed');
