@@ -1,6 +1,7 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { Product } from '../../interfaces/product.interface';
 import { CartService } from '../../services/cart.service';
+import { ImageCacheService } from '../../services/image-cache.service';
 
 @Component({
   selector: 'app-product-card',
@@ -15,7 +16,10 @@ export class ProductCardComponent implements OnInit {
   
   isFavorite: boolean = false;
 
-  constructor(private cartService: CartService) { }
+  constructor(
+    private cartService: CartService,
+    private imageCacheService: ImageCacheService
+  ) { }
 
   ngOnInit() {}
 
@@ -45,5 +49,17 @@ export class ProductCardComponent implements OnInit {
       }
     }
     return 0;
+  }
+
+  /**
+   * Handle image loaded event from cached-image component
+   * This is useful for analytics or performance tracking
+   */
+  onImageLoaded(event: { success: boolean, src: string }) {
+    // You could implement analytics tracking here
+    if (!event.success) {
+      console.log('Image failed to load:', event.src);
+      // Could track failed images for reporting
+    }
   }
 }

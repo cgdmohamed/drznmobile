@@ -14,6 +14,7 @@ import { SkeletonComponent } from './skeleton/skeleton.component';
 import { CustomIconComponent } from './custom-icon/custom-icon.component';
 import { RecommendationCarouselComponent } from './recommendation-carousel/recommendation-carousel.component';
 import { PageTransitionComponent } from './page-transition/page-transition.component';
+import { CachedImageComponent } from './cached-image/cached-image.component';
 
 @NgModule({
   declarations: [
@@ -24,13 +25,15 @@ import { PageTransitionComponent } from './page-transition/page-transition.compo
     TabsComponent,
     SkeletonComponent,
     RecommendationCarouselComponent,
-    PageTransitionComponent
+    PageTransitionComponent,
+    CachedImageComponent
   ],
   imports: [
     CommonModule,
     IonicModule,
     RouterModule,
     FormsModule,
+    ReactiveFormsModule,
     CustomIconComponent
   ],
   exports: [
@@ -42,7 +45,8 @@ import { PageTransitionComponent } from './page-transition/page-transition.compo
     SkeletonComponent,
     CustomIconComponent,
     RecommendationCarouselComponent,
-    PageTransitionComponent
+    PageTransitionComponent,
+    CachedImageComponent
   ]
 })
 export class ComponentsModule { }

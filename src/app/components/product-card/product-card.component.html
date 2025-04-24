@@ -1,7 +1,15 @@
 <div class="product-card">
   <div class="product-image-container">
     <a [routerLink]="['/product', product.id]">
-      <img [src]="getPrimaryImage()" [alt]="product.name" class="product-image">
+      <app-cached-image 
+        [src]="getPrimaryImage()" 
+        [alt]="product.name" 
+        [spinner]="true"
+        spinnerColor="primary"
+        fallbackSrc="assets/icons/user-placeholder.png"
+        class="product-image"
+        (imageLoaded)="onImageLoaded($event)">
+      </app-cached-image>
     </a>
     
     <div class="favorite-button" (click)="toggleFavorite()" [class.active]="isFavorite">

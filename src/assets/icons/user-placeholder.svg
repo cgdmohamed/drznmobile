@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" fill="none">
-  <circle cx="60" cy="60" r="60" fill="#F4F4F4"/>
-  <path d="M60 57.5C71.0457 57.5 80 48.5457 80 37.5C80 26.4543 71.0457 17.5 60 17.5C48.9543 17.5 40 26.4543 40 37.5C40 48.5457 48.9543 57.5 60 57.5Z" fill="#CCCCCC"/>
-  <path d="M95 102.5C95 85.6553 81.5685 72.5 65 72.5H55C38.4315 72.5 25 85.6553 25 102.5V107.5H95V102.5Z" fill="#CCCCCC"/>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>User Placeholder</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle fill="#F8F8F8" cx="100" cy="100" r="100"></circle>
+        <g transform="translate(50.000000, 40.000000)" fill="#EEEEEE">
+            <circle cx="50" cy="35" r="35"></circle>
+            <path d="M100,120 C100,92.3857625 77.6142375,70 50,70 C22.3857625,70 0,92.3857625 0,120 L100,120 Z"></path>
+        </g>
+    </g>
 </svg>

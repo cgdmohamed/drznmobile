@@ -1,0 +1,42 @@
+/* Alexandria Font for Arabic - Google Fonts Fallback */
+@font-face {
+  font-family: 'Alexandria';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Alexandria Regular'), local('Alexandria-Regular');
+}
+
+@font-face {
+  font-family: 'Alexandria';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local('Alexandria Medium'), local('Alexandria-Medium');
+}
+
+@font-face {
+  font-family: 'Alexandria';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Alexandria SemiBold'), local('Alexandria-SemiBold');
+}
+
+@font-face {
+  font-family: 'Alexandria';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Alexandria Bold'), local('Alexandria-Bold');
+}
+
+/* Default font family */
+:root {
+  --ion-font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+/* RTL specific font family */
+:root[dir="rtl"] {
+  --ion-font-family: 'Alexandria', 'Roboto', 'Helvetica Neue', sans-serif;
+}

@@ -1,218 +1,253 @@
-/*
- * RTL (Right-to-Left) Specific Styles
- * This file contains styles specific to RTL layout for Arabic language support
+/**
+ * RTL (Right-to-Left) specific styles
+ * These styles improve the user experience for RTL languages like Arabic
  */
 
-/* General RTL adjustments */
+/* Core RTL adjustments */
 [dir="rtl"] {
-  /* Reverse margins and paddings where needed */
-  .ion-margin-start {
-    margin-right: var(--ion-margin, 16px) !important;
-    margin-left: 0 !important;
+  /* Content text alignment */
+  text-align: right;
+  
+  /* List items RTL fixes */
+  ion-item {
+    --padding-start: 16px;
+    --padding-end: 16px;
+    --inner-padding-end: 0;
+    --inner-padding-start: 8px;
+    
+    &::part(native) {
+      flex-direction: row-reverse;
+    }
+    
+    ion-label {
+      margin-left: 0;
+      margin-right: 16px;
+    }
   }
   
-  .ion-margin-end {
-    margin-left: var(--ion-margin, 16px) !important;
-    margin-right: 0 !important;
-  }
-  
-  .ion-padding-start {
-    padding-right: var(--ion-padding, 16px) !important;
-    padding-left: 0 !important;
-  }
-  
-  .ion-padding-end {
-    padding-left: var(--ion-padding, 16px) !important;
-    padding-right: 0 !important;
-  }
-
-  /* Text alignment corrections */
-  .ion-text-left {
-    text-align: right !important;
-  }
-  
-  .ion-text-right {
-    text-align: left !important;
-  }
-
-  /* Button icons placement */
-  ion-button ion-icon:first-child {
-    margin-left: 0.3em;
-    margin-right: 0;
-  }
-  
-  ion-button ion-icon:last-child {
-    margin-right: 0.3em;
-    margin-left: 0;
-  }
-
-  /* Fix item sliding actions */
+  /* Fix item sliding directions */
   ion-item-sliding ion-item-options {
-    right: auto;
-    left: 0;
+    &[side="start"] {
+      right: 100%;
+      left: auto;
+    }
+    
+    &[side="end"] {
+      left: 100%;
+      right: auto;
+    }
   }
-
-  /* Fix back button */
-  ion-back-button {
-    transform: scaleX(-1);
-  }
-
-  /* Fix input fields */
-  ion-input, ion-textarea {
+  
+  /* Input text fixes */
+  ion-input, ion-textarea, ion-searchbar {
     text-align: right;
-  }
-
-  /* Fix progress bars */
-  ion-progress-bar {
-    transform: scaleX(-1);
-  }
-
-  /* Fix checkbox for RTL layout */
-  ion-checkbox {
-    margin-right: 0;
-    margin-left: 1em;
-  }
-
-  /* Fix modal positioning */
-  ion-modal {
-    &.sheet-modal {
-      .modal-wrapper {
-        --modal-inset-start: auto;
-        --modal-inset-end: 0;
+    
+    &.rtl-input-fix {
+      input, textarea {
+        direction: rtl;
+        text-align: right;
       }
     }
   }
 
-  /* Fix alert dialog button order */
-  .alert-button-group {
-    flex-direction: row-reverse;
-  }
-
-  /* Fix swiper pagination */
-  .swiper-pagination {
-    direction: ltr;
-  }
-
-  /* Fix notification badge position for RTL */
-  .notification-badge {
-    right: auto;
-    left: 0px;
+  /* Button icons fixes */
+  ion-button ion-icon:first-child:not(:only-child) {
+    margin-right: 0;
+    margin-left: 0.3em;
   }
   
-  /* Fix swiper arrows */
-  .swiper-button-next {
-    left: 10px;
-    right: auto;
+  /* Back button fixes */
+  ion-back-button {
     transform: scaleX(-1);
   }
-
-  .swiper-button-prev {
-    right: 10px;
-    left: auto;
-    transform: scaleX(-1);
-  }
-
-  /* Fix skeleton loading animation direction */
-  .skeleton-animation {
-    background: linear-gradient(
-      90deg,
-      rgba(240, 240, 240, 0.1) 0%,
-      rgba(240, 240, 240, 0.8) 50%,
-      rgba(240, 240, 240, 0.1) 100%
-    );
-    background-size: 200% 100%;
-    animation: skeletonLoadingRTL 1.5s infinite;
-  }
-
-  @keyframes skeletonLoadingRTL {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
-  }
-
-  /* Fix search icon position in search bar */
-  ion-searchbar {
-    .searchbar-search-icon {
-      left: auto;
-      right: 12px;
+  
+  /* Toast position fixes */
+  ion-toast {
+    &.toast-top {
+      transform-origin: right top;
     }
     
-    .searchbar-clear-button {
-      right: auto;
-      left: 12px;
+    &.toast-middle {
+      transform-origin: center right;
     }
     
-    input {
-      padding-left: 12px !important;
-      padding-right: 40px !important;
-      text-align: right !important;
+    &.toast-bottom {
+      transform-origin: right bottom;
     }
   }
-
-  /* Fix card content layout */
+  
+  /* Menu side adjustments */
+  ion-menu[side="start"] {
+    --side: right;
+  }
+  
+  ion-menu[side="end"] {
+    --side: left;
+  }
+  
+  /* Fix for ion-segment buttons */
+  ion-segment-button {
+    flex-direction: row-reverse;
+  }
+  
+  /* Alert adjustments */
+  ion-alert {
+    .alert-head, .alert-message, .alert-input-group, .alert-radio-group {
+      text-align: right;
+    }
+    
+    .alert-radio-label {
+      text-align: right;
+      padding-right: 52px;
+      padding-left: 26px;
+    }
+    
+    .alert-checkbox-label {
+      text-align: right;
+      padding-right: 52px;
+      padding-left: 26px;
+    }
+    
+    .alert-tappable {
+      flex-direction: row-reverse;
+      justify-content: flex-start;
+    }
+  }
+  
+  /* Modal adjustments */
+  ion-modal ion-toolbar {
+    ion-title {
+      padding-right: 56px;
+      padding-left: 56px;
+    }
+  }
+  
+  /* Date/time picker adjustments */
+  ion-datetime {
+    direction: rtl;
+  }
+  
+  /* Progress bar animation direction */
+  ion-progress-bar {
+    --buffer-background: linear-gradient(to right, var(--ion-color-primary-tint, #3880ff) 0%, var(--ion-color-primary-tint, #3880ff) 30%, transparent 30%);
+  }
+  
+  /* Item details fixes */
+  ion-item-divider {
+    justify-content: flex-start;
+  }
+  
+  /* Card alignment */
   ion-card-header {
     text-align: right;
   }
   
-  ion-card-content {
+  /* Fix fab buttons */
+  ion-fab[horizontal="start"] {
+    left: unset;
+    right: 0;
+  }
+  
+  ion-fab[horizontal="end"] {
+    right: unset;
+    left: 0;
+  }
+  
+  /* Checkbox position */
+  ion-checkbox {
+    margin-right: 0;
+    margin-left: 16px;
+  }
+  
+  /* Range slider adaptations */
+  ion-range {
+    .range-knob-handle {
+      transform: scaleX(-1);
+    }
+  }
+  
+  /* List header */
+  ion-list-header {
     text-align: right;
   }
 
-  /* Product card specific RTL fixes */
-  .product-card {
-    .product-details {
-      text-align: right;
-    }
-    
-    .product-price {
-      direction: ltr;
-      justify-content: flex-end;
-    }
-    
-    .wishlist-button {
-      right: auto;
-      left: 8px;
-    }
+  /* Fix infinite scroll spinner placement */
+  ion-infinite-scroll {
+    flex-direction: row-reverse;
   }
+}
 
-  /* Misc UI element fixes */
-  ion-fab[vertical="bottom"] {
+/* Adapt Swiper to RTL mode */
+.swiper-container-rtl {
+  .swiper-button-prev {
+    right: 10px;
+    left: auto;
+    transform: rotate(180deg);
+  }
+  
+  .swiper-button-next {
+    left: 10px;
     right: auto;
-    left: 16px;
+    transform: rotate(180deg);
   }
   
-  ion-segment-button ion-icon {
-    margin-right: 0;
-    margin-left: 8px;
+  .swiper-pagination-progressbar .swiper-pagination-progressbar-fill {
+    transform-origin: right top;
   }
   
-  /* Fix toast positioning */
-  ion-toast {
-    &.toast-bottom {
-      text-align: right;
+  .swiper-container-3d .swiper-slide-shadow-left {
+    background-image: linear-gradient(to left, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+  }
+  
+  .swiper-container-3d .swiper-slide-shadow-right {
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+  }
+}
+
+/* Custom modal animations for RTL */
+.rtl-modal-enter {
+  transform: translateX(-100%);
+}
+
+.rtl-modal-leave {
+  transform: translateX(100%);
+}
+
+/* Custom loading indicator adjustments */
+[dir="rtl"] .loading-wrapper {
+  text-align: right;
+}
+
+/* Custom action sheet adjustments for RTL */
+[dir="rtl"] {
+  ion-action-sheet .action-sheet-group .action-sheet-button {
+    text-align: right;
+    
+    ion-icon {
+      margin-right: 0;
+      margin-left: 1rem;
     }
   }
 }
 
-/* Fix any bidirectional elements that should maintain LTR regardless of RTL setting */
-[dir="rtl"] {
-  .maintain-ltr {
-    direction: ltr !important;
-  }
-  
-  /* Keep numbers LTR */
-  .numeric {
-    direction: ltr;
-    display: inline-block;
-  }
-  
-  /* Keep prices LTR but position them correctly */
-  .price {
-    direction: ltr;
-    display: inline-block;
+/* Popover adjustments for RTL */
+[dir="rtl"] ion-popover {
+  .popover-content {
     text-align: right;
   }
+  
+  ion-item {
+    --inner-padding-start: 0;
+    --inner-padding-end: 16px;
+    
+    ion-label {
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+}
+
+/* Fix grid directions */
+[dir="rtl"] ion-grid ion-row {
+  flex-direction: row;
 }

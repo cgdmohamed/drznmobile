@@ -1,0 +1,22 @@
+<div class="cached-image-container">
+  <!-- Loading spinner -->
+  <ion-spinner *ngIf="isLoading && spinner" 
+               [name]="'circular'" 
+               [color]="spinnerColor" 
+               class="loading-spinner"></ion-spinner>
+  
+  <!-- Placeholder when loading -->
+  <div *ngIf="isLoading && loadingPlaceholder && !spinner" class="image-placeholder"></div>
+  
+  <!-- Actual image (only shown when loaded) -->
+  <img [src]="imageUrl" 
+       [alt]="alt" 
+       [style.display]="isLoading ? 'none' : 'block'"
+       (error)="handleError('Image load failed')"
+       class="cached-image">
+  
+  <!-- Error indicator if needed -->
+  <div *ngIf="hasError" class="error-container">
+    <ion-icon name="alert-circle-outline" color="danger"></ion-icon>
+  </div>
+</div>
