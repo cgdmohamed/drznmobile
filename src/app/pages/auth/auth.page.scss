@@ -1,4 +1,4 @@
-.otp-container {
+.auth-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -6,7 +6,6 @@
   padding: 16px;
   max-width: 100%;
   margin: 0 auto;
-  direction: rtl;
 }
 
 .logo-container {
@@ -21,7 +20,7 @@
   height: auto;
 }
 
-.otp-title {
+.auth-title {
   font-size: 24px;
   font-weight: 700;
   margin-bottom: 8px;
@@ -29,36 +28,28 @@
   color: var(--ion-color-primary);
 }
 
-.otp-subtitle {
+.auth-subtitle {
   font-size: 16px;
   color: var(--ion-color-medium);
   margin-bottom: 24px;
   text-align: center;
 }
 
-.otp-input {
+.auth-input {
   margin-bottom: 16px;
   --border-radius: 8px;
   --background: rgba(var(--ion-color-light-rgb), 0.7);
-  width: 100%;
-  
-  ion-input {
-    text-align: center;
-    font-size: 20px;
-    letter-spacing: 4px;
-  }
 }
 
-.otp-button {
+.auth-button {
   margin-top: 24px;
   margin-bottom: 16px;
   --border-radius: 8px;
   height: 48px;
   font-weight: 600;
-  width: 100%;
 }
 
-.otp-footer {
+.auth-footer {
   text-align: center;
   margin-top: 24px;
   
@@ -77,10 +68,46 @@
 .validation-error {
   color: var(--ion-color-danger);
   font-size: 12px;
-  margin-right: 16px;
+  margin-left: 16px;
   margin-bottom: 16px;
   margin-top: -12px;
-  text-align: right;
 }
 
-// RTL support already applied by setting direction: rtl on container
+.forgot-password {
+  text-align: right;
+  margin-bottom: 16px;
+  
+  a {
+    color: var(--ion-color-primary);
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+}
+
+.terms-checkbox {
+  margin-top: 16px;
+  
+  ion-label {
+    font-size: 14px;
+    margin-left: 8px;
+    
+    a {
+      color: var(--ion-color-primary);
+      text-decoration: none;
+      cursor: pointer;
+    }
+  }
+}
+
+// RTL support
+:host-context([dir="rtl"]) {
+  .forgot-password {
+    text-align: left;
+  }
+  
+  .validation-error {
+    margin-left: 0;
+    margin-right: 16px;
+  }
+}

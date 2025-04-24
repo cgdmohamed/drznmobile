@@ -14,7 +14,8 @@ export const environment = {
   taqnyatApiKey: 'TAQNYAT_API_KEY_PLACEHOLDER',
   oneSignalAppId: '2a550f67-58af-4101-a500-28a97612f69c',
   // JWT Authentication
-  jwtAuthUrl: '/wp-json/jwt-auth/v1/token',
+  jwtAuthUrl: '/wp-json/simple-jwt-login/v1/auth',
+  jwtAuthCode: 'your-auth-code-here', // Replace with your JWT auth code
   
   // Demo mode settings
   useDemoData: false,      // Set to false to use real API data instead of demo data

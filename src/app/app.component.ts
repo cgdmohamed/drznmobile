@@ -117,11 +117,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   initializeApp() {
     this.platform.ready().then(() => {
-      // Auto login using either auth service (will be gradually migrated to JWT)
-      this.authService.autoLogin().subscribe();
-      
       // JWT auth is initialized automatically when injected
-      // Add jwt-based auth check/verification here if needed
+      // The loadStoredAuthData method in JwtAuthService validates tokens and sets authentication state
+      
+      // For backward compatibility, also try legacy auth method
+      this.authService.autoLogin().subscribe();
 
       // Initialize push notifications if on a device
       if (this.platform.is("capacitor") || this.platform.is("cordova")) {
@@ -135,18 +135,52 @@ export class AppComponent implements OnInit, OnDestroy {
     // Unregister device from notifications
     await this.notificationService.unregisterDevice();
     
-    // Clear sessions and data
-    this.authService.logout();
-    this.cartService.clearCart();
-    this.menuController.close("main-menu");
-
-    const toast = await this.toastController.create({
-      message: "تم تسجيل الخروج بنجاح",
-      duration: 2000,
+    // First try to logout using JWT auth service
+    const loading = await this.toastController.create({
+      message: "جاري تسجيل الخروج...",
+      duration: 1000,
       position: "bottom",
-      color: "success",
+      color: "medium",
     });
-
-    await toast.present();
+    await loading.present();
+    
+    this.jwtAuthService.logout().subscribe({
+      next: () => {
+        // Fallback to legacy auth logout
+        this.authService.logout();
+        
+        // Clear sessions and data
+        this.cartService.clearCart();
+        this.menuController.close("main-menu");
+        
+        this.toastController.create({
+          message: "تم تسجيل الخروج بنجاح",
+          duration: 2000,
+          position: "bottom",
+          color: "success",
+        }).then(toast => toast.present());
+        
+        // Navigate to home page
+        this.router.navigate(['/home']);
+      },
+      error: (error) => {
+        console.error('JWT logout error:', error);
+        
+        // Fallback to legacy auth logout
+        this.authService.logout();
+        this.cartService.clearCart();
+        this.menuController.close("main-menu");
+        
+        this.toastController.create({
+          message: "تم تسجيل الخروج بنجاح",
+          duration: 2000,
+          position: "bottom",
+          color: "success",
+        }).then(toast => toast.present());
+        
+        // Navigate to home page
+        this.router.navigate(['/home']);
+      }
+    });
   }
 }
