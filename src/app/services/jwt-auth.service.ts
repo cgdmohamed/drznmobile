@@ -70,8 +70,23 @@ export class JwtAuthService {
       const token = await this.storage.get(this.AUTH_TOKEN_KEY);
       const user = await this.storage.get(this.AUTH_USER_KEY);
 
-      if (token && user) {
-        this.currentUserSubject.next(user);
+      if (token) {
+        console.log('JWT token found, verifying...');
+        
+        // Try to refresh the token to make sure it's still valid
+        this.refreshToken().subscribe({
+          next: () => {
+            console.log('JWT token refreshed successfully');
+            // If we have user data, use it
+            if (user) {
+              this.currentUserSubject.next(user);
+            }
+          },
+          error: () => {
+            console.error('JWT token is invalid, clearing auth data');
+            this.clearAuthData().subscribe();
+          }
+        });
       }
     } catch (error) {
       console.error('Error loading auth data', error);
@@ -149,14 +164,19 @@ export class JwtAuthService {
         }
 
         // Store the JWT
+        let token: string = '';
         if (response.data?.jwt) {
-          this.storage.set(this.AUTH_TOKEN_KEY, response.data.jwt);
+          token = response.data.jwt;
+          this.storage.set(this.AUTH_TOKEN_KEY, token);
+        } else if (response.jwt) {
+          token = response.jwt;
+          this.storage.set(this.AUTH_TOKEN_KEY, token);
         } else {
           throw new Error('No token received');
         }
 
-        // Fetch user info using the token
-        return this.validateToken(response.data!.jwt);
+        // Fetch user info from the WooCommerce API
+        return this.fetchUserProfile(email);
       }),
       tap(() => {
         this.isLoadingSubject.next(false);
@@ -220,27 +240,21 @@ export class JwtAuthService {
           loginFormData.append('password', userData.password);
           
           return this.http.post<AuthResponse>(`${this.apiUrl}/auth`, loginFormData).pipe(
-            map(loginResponse => {
+            switchMap(loginResponse => {
               console.log('Auto-login response:', loginResponse);
               
               // Store JWT if present
+              let token: string = '';
               if (loginResponse.data?.jwt) {
-                this.storage.set(this.AUTH_TOKEN_KEY, loginResponse.data.jwt);
+                token = loginResponse.data.jwt;
+                this.storage.set(this.AUTH_TOKEN_KEY, token);
+              } else if (loginResponse.jwt) {
+                token = loginResponse.jwt;
+                this.storage.set(this.AUTH_TOKEN_KEY, token);
               }
               
-              // Extract user data from login response if present
-              if (loginResponse.data?.user) {
-                const loggedInUser = loginResponse.data.user;
-                this.storage.set(this.AUTH_USER_KEY, loggedInUser);
-                this.currentUserSubject.next(loggedInUser);
-                return loggedInUser;
-              }
-              
-              // Use minimal user if login response doesn't include user data
-              const minimalUser = this.createMinimalUser(userData);
-              this.storage.set(this.AUTH_USER_KEY, minimalUser);
-              this.currentUserSubject.next(minimalUser);
-              return minimalUser;
+              // Fetch user profile from WooCommerce
+              return this.fetchUserProfile(userData.email);
             }),
             catchError(loginError => {
               console.error('Auto-login after registration failed', loginError);
@@ -509,5 +523,126 @@ export class JwtAuthService {
   async getUser(): Promise<User> {
     const user = await this.storage.get(this.AUTH_USER_KEY);
     return user || null as any;
+  }
+  
+  /**
+   * Fetch user profile from WooCommerce API using the JWT token
+   */
+  private fetchUserProfile(email: string): Observable<User> {
+    return from(this.getToken()).pipe(
+      switchMap(token => {
+        if (!token) {
+          return throwError(() => new Error('No token available to fetch user profile'));
+        }
+        
+        const headers = new HttpHeaders({
+          'Authorization': `Bearer ${token}`
+        });
+        
+        // Use the WooCommerce REST API to fetch the user by email
+        return this.http.get<User>(`${environment.apiUrl}/customers?email=${email}`, { headers }).pipe(
+          map((customers: any) => {
+            console.log('User profile response:', customers);
+            
+            if (Array.isArray(customers) && customers.length > 0) {
+              const user = customers[0] as User;
+              // Store the user data
+              this.storage.set(this.AUTH_USER_KEY, user);
+              this.currentUserSubject.next(user);
+              return user;
+            } else {
+              // If we can't find the user, create a minimal user profile
+              const minimalUser = {
+                id: 0,
+                email: email,
+                username: email,
+                first_name: '',
+                last_name: '',
+                date_created: new Date().toISOString(),
+                date_modified: new Date().toISOString(),
+                role: 'customer',
+                is_paying_customer: false,
+                avatar_url: '',
+                billing: {
+                  first_name: '',
+                  last_name: '',
+                  company: '',
+                  address_1: '',
+                  address_2: '',
+                  city: '',
+                  state: '',
+                  postcode: '',
+                  country: '',
+                  email: email,
+                  phone: ''
+                },
+                shipping: {
+                  first_name: '',
+                  last_name: '',
+                  company: '',
+                  address_1: '',
+                  address_2: '',
+                  city: '',
+                  state: '',
+                  postcode: '',
+                  country: ''
+                },
+                meta_data: []
+              } as User;
+              
+              this.storage.set(this.AUTH_USER_KEY, minimalUser);
+              this.currentUserSubject.next(minimalUser);
+              return minimalUser;
+            }
+          }),
+          catchError(error => {
+            console.error('Error fetching user profile:', error);
+            
+            // If the API call fails, fall back to a minimal user
+            const minimalUser = {
+              id: 0,
+              email: email,
+              username: email,
+              first_name: '',
+              last_name: '',
+              date_created: new Date().toISOString(),
+              date_modified: new Date().toISOString(),
+              role: 'customer',
+              is_paying_customer: false,
+              avatar_url: '',
+              billing: {
+                first_name: '',
+                last_name: '',
+                company: '',
+                address_1: '',
+                address_2: '',
+                city: '',
+                state: '',
+                postcode: '',
+                country: '',
+                email: email,
+                phone: ''
+              },
+              shipping: {
+                first_name: '',
+                last_name: '',
+                company: '',
+                address_1: '',
+                address_2: '',
+                city: '',
+                state: '',
+                postcode: '',
+                country: ''
+              },
+              meta_data: []
+            } as User;
+            
+            this.storage.set(this.AUTH_USER_KEY, minimalUser);
+            this.currentUserSubject.next(minimalUser);
+            return of(minimalUser);
+          })
+        );
+      })
+    );
   }
 }
