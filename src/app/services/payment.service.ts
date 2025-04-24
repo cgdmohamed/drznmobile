@@ -765,55 +765,104 @@ export class PaymentService {
     
     await loading.present();
     
+    console.log('Starting STC Pay payment process');
+    
     try {
       // Initialize Moyasar library
       await this.initializeMoyasar();
       
-      // Create a container for the payment form
+      // Create a container for the payment form - bottom sheet style
       const container = document.createElement('div');
       container.id = 'stcpay-form-container';
       container.style.position = 'fixed';
-      container.style.top = '0';
+      container.style.bottom = '0';
       container.style.left = '0';
       container.style.width = '100%';
-      container.style.height = '100%';
-      container.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      container.style.height = 'auto';
+      container.style.maxHeight = '90vh';
+      container.style.backgroundColor = 'transparent';
       container.style.zIndex = '10000';
       container.style.display = 'flex';
-      container.style.justifyContent = 'center';
-      container.style.alignItems = 'center';
+      container.style.flexDirection = 'column';
+      container.style.justifyContent = 'flex-end';
+      container.style.transition = 'all 0.3s ease-in-out';
       
-      // Create a close button
-      const closeButton = document.createElement('button');
-      closeButton.textContent = '✕';
-      closeButton.style.position = 'absolute';
-      closeButton.style.top = '20px';
-      closeButton.style.right = '20px';
-      closeButton.style.background = '#fff';
-      closeButton.style.border = 'none';
-      closeButton.style.borderRadius = '50%';
-      closeButton.style.width = '40px';
-      closeButton.style.height = '40px';
-      closeButton.style.fontSize = '20px';
-      closeButton.style.cursor = 'pointer';
-      closeButton.onclick = () => {
-        document.body.removeChild(container);
+      // Create a backdrop
+      const backdrop = document.createElement('div');
+      backdrop.style.position = 'fixed';
+      backdrop.style.top = '0';
+      backdrop.style.left = '0';
+      backdrop.style.width = '100%';
+      backdrop.style.height = '100%';
+      backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+      backdrop.style.zIndex = '9999';
+      backdrop.style.opacity = '0';
+      backdrop.style.transition = 'opacity 0.3s ease-in-out';
+      // Declare a variable to store the Promise resolver
+      let promiseResolver: (value: PaymentResult | PromiseLike<PaymentResult>) => void;
+      
+      // Set up cancellation logic
+      const cancel = () => {
+        // Animation for closing
+        formWrapper.style.transform = 'translateY(100%)';
+        backdrop.style.opacity = '0';
+        
+        // Remove after animation completes
+        setTimeout(() => {
+          if (document.body.contains(container)) {
+            document.body.removeChild(container);
+          }
+          if (document.body.contains(backdrop)) {
+            document.body.removeChild(backdrop);
+          }
+        }, 300);
+        
+        // Return cancellation result to payment flow
+        const cancelResult: PaymentResult = {
+          success: false,
+          message: 'تم إلغاء الدفع عبر STC Pay',
+        };
+        
+        this._paymentResult.next(cancelResult);
+        loading.dismiss();
+        
+        // Resolve the Promise if it was set
+        if (promiseResolver) {
+          promiseResolver(cancelResult);
+        }
+        
+        return cancelResult;
       };
+      
+      // Attach the cancel function to backdrop click
+      backdrop.onclick = cancel;
       
       // Create a form wrapper
       const formWrapper = document.createElement('div');
-      formWrapper.style.width = '90%';
-      formWrapper.style.maxWidth = '500px';
-      formWrapper.style.padding = '30px';
+      formWrapper.style.width = '100%';
       formWrapper.style.backgroundColor = '#fff';
-      formWrapper.style.borderRadius = '10px';
+      formWrapper.style.borderTopLeftRadius = '16px';
+      formWrapper.style.borderTopRightRadius = '16px';
+      formWrapper.style.padding = '20px';
+      formWrapper.style.boxShadow = '0 -2px 10px rgba(0, 0, 0, 0.1)';
+      formWrapper.style.transform = 'translateY(100%)';
+      formWrapper.style.transition = 'transform 0.3s ease-in-out';
+      
+      // Create pull indicator
+      const pullIndicator = document.createElement('div');
+      pullIndicator.style.width = '40px';
+      pullIndicator.style.height = '5px';
+      pullIndicator.style.backgroundColor = '#ddd';
+      pullIndicator.style.borderRadius = '5px';
+      pullIndicator.style.margin = '0 auto 15px auto';
       
       // Add a header
       const header = document.createElement('h2');
       header.textContent = 'الدفع باستخدام STC Pay';
       header.style.textAlign = 'center';
-      header.style.marginBottom = '20px';
+      header.style.margin = '0 0 20px 0';
       header.style.fontFamily = 'Tajawal, sans-serif';
+      header.style.fontSize = '18px';
       header.style.color = '#ec1c24';
       
       // Add testing information for test environment
@@ -822,7 +871,7 @@ export class PaymentService {
       testInfoContainer.style.padding = '10px 15px';
       testInfoContainer.style.borderRadius = '8px';
       testInfoContainer.style.marginBottom = '20px';
-      testInfoContainer.style.fontSize = '13px';
+      testInfoContainer.style.fontSize = '12px';
       testInfoContainer.style.border = '1px dashed #ddd';
       
       const testInfo = document.createElement('p');
@@ -837,21 +886,32 @@ export class PaymentService {
       
       // Create the form container
       const formContainer = document.createElement('div');
+      formContainer.id = 'stcpay-form';  // Use ID instead of class for more reliable mounting
       formContainer.className = 'stcpay-form';
       
       // Add elements to DOM
+      formWrapper.appendChild(pullIndicator);
       formWrapper.appendChild(header);
       formWrapper.appendChild(testInfoContainer);
       formWrapper.appendChild(formContainer);
-      container.appendChild(closeButton);
       container.appendChild(formWrapper);
+      document.body.appendChild(backdrop);
       document.body.appendChild(container);
       
-      // Initialize Moyasar with the STC Pay method
-      const moyasar = new Moyasar(this.moyasarPublishableKey);
+      // Animate in
+      setTimeout(() => {
+        backdrop.style.opacity = '1';
+        formWrapper.style.transform = 'translateY(0)';
+      }, 10);
       
-      // Create payment form with STC Pay method
-      const form = moyasar.createForm({
+      // Add a small delay to ensure the DOM is fully ready
+      setTimeout(() => {
+        // Initialize Moyasar with the STC Pay method
+        const moyasar = new Moyasar(this.moyasarPublishableKey);
+        console.log('Moyasar initialized for STC Pay');
+        
+        // Create payment form with STC Pay method
+        const form = moyasar.createForm({
         // Amount in the smallest currency unit (halalas)
         amount: Math.round(cart.total * 100),
         currency: 'SAR',
@@ -878,8 +938,9 @@ export class PaymentService {
         methods: ['stcpay'], // Only show STCPay method
       });
       
-      // Mount the form
-      form.mount('.stcpay-form');
+      // Mount the form - use ID selector for more reliable mounting
+      console.log('Mounting STC Pay form to element:', document.getElementById('stcpay-form'));
+      form.mount('#stcpay-form');
       
       // Handle form events
       return new Promise<PaymentResult>((resolve) => {
@@ -896,9 +957,19 @@ export class PaymentService {
         
         // Handle successful payment
         form.on('completed', (payment: any) => {
-          if (container.parentNode) {
-            document.body.removeChild(container);
-          }
+          // Animation for closing
+          formWrapper.style.transform = 'translateY(100%)';
+          backdrop.style.opacity = '0';
+          
+          // Remove after animation completes
+          setTimeout(() => {
+            if (document.body.contains(container)) {
+              document.body.removeChild(container);
+            }
+            if (document.body.contains(backdrop)) {
+              document.body.removeChild(backdrop);
+            }
+          }, 300);
           
           const paymentResult: PaymentResult = {
             success: true,
@@ -915,9 +986,19 @@ export class PaymentService {
         
         // Handle payment failure
         form.on('failed', (error: any) => {
-          if (container.parentNode) {
-            document.body.removeChild(container);
-          }
+          // Animation for closing
+          formWrapper.style.transform = 'translateY(100%)';
+          backdrop.style.opacity = '0';
+          
+          // Remove after animation completes
+          setTimeout(() => {
+            if (document.body.contains(container)) {
+              document.body.removeChild(container);
+            }
+            if (document.body.contains(backdrop)) {
+              document.body.removeChild(backdrop);
+            }
+          }, 300);
           
           // Formatted error message based on STC Pay error types
           let errorMessage = error.message || 'فشل الدفع عبر STC Pay';
@@ -957,17 +1038,14 @@ export class PaymentService {
           resolve(errorResult);
         });
         
-        // Handle modal close (user canceled)
-        closeButton.addEventListener('click', () => {
-          const cancelResult: PaymentResult = {
-            success: false,
-            message: 'تم إلغاء الدفع عبر STC Pay',
-          };
-          
-          this._paymentResult.next(cancelResult);
-          loading.dismiss();
-          resolve(cancelResult);
-        });
+        // Handle modal close is already set up in the backdrop.onclick
+      });
+      }, 100); // Close the setTimeout that was opened earlier
+      
+      // Return the promise
+      return new Promise<PaymentResult>((resolve) => {
+        // Make the resolver accessible from outside the promise
+        promiseResolver = resolve;
       });
     } catch (error) {
       await loading.dismiss();

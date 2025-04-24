@@ -1,0 +1,249 @@
+  async processSTCPay(cart: Cart, billingDetails: any): Promise<PaymentResult> {
+    // If using demo payments, show demo payment process
+    if (this.useDemoPayments) {
+      return this.showDemoPaymentProcess(cart, 'STC Pay');
+    }
+    
+    const loading = await this.loadingController.create({
+      message: 'جاري تجهيز الدفع عبر STC Pay...',
+      spinner: 'circles'
+    });
+    
+    await loading.present();
+    
+    try {
+      // Initialize Moyasar library
+      await this.initializeMoyasar();
+      
+      // Create bottom sheet container
+      const sheetContainer = document.createElement('div');
+      sheetContainer.id = 'stcpay-sheet-container';
+      sheetContainer.style.position = 'fixed';
+      sheetContainer.style.bottom = '0';
+      sheetContainer.style.left = '0';
+      sheetContainer.style.right = '0';
+      sheetContainer.style.zIndex = '10000';
+      sheetContainer.style.width = '100%';
+      
+      // Create backdrop
+      const backdrop = document.createElement('div');
+      backdrop.style.position = 'fixed';
+      backdrop.style.top = '0';
+      backdrop.style.left = '0';
+      backdrop.style.width = '100%';
+      backdrop.style.height = '100%';
+      backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+      backdrop.style.zIndex = '9999';
+      backdrop.style.opacity = '0';
+      backdrop.style.transition = 'opacity 0.3s ease';
+      
+      // Create sheet content
+      const sheet = document.createElement('div');
+      sheet.style.backgroundColor = '#ffffff';
+      sheet.style.borderTopLeftRadius = '16px';
+      sheet.style.borderTopRightRadius = '16px';
+      sheet.style.boxShadow = '0 -4px 12px rgba(0, 0, 0, 0.15)';
+      sheet.style.padding = '24px 16px';
+      sheet.style.transform = 'translateY(100%)';
+      sheet.style.transition = 'transform 0.3s ease';
+      
+      // Create drag handle
+      const handle = document.createElement('div');
+      handle.style.width = '36px';
+      handle.style.height = '4px';
+      handle.style.backgroundColor = '#e0e0e0';
+      handle.style.borderRadius = '4px';
+      handle.style.margin = '0 auto 20px';
+      
+      // Create title
+      const title = document.createElement('h3');
+      title.textContent = 'الدفع باستخدام STC Pay';
+      title.style.margin = '0 0 24px';
+      title.style.textAlign = 'center';
+      title.style.fontFamily = 'Tajawal, sans-serif';
+      title.style.fontSize = '18px';
+      title.style.fontWeight = '600';
+      title.style.color = '#ec1c24';
+      
+      // Create test info section
+      const infoBox = document.createElement('div');
+      infoBox.style.backgroundColor = '#f9f9f9';
+      infoBox.style.borderRadius = '8px';
+      infoBox.style.padding = '12px';
+      infoBox.style.marginBottom = '24px';
+      infoBox.style.fontSize = '13px';
+      infoBox.style.color = '#666';
+      infoBox.style.textAlign = 'center';
+      infoBox.style.border = '1px dashed #ddd';
+      infoBox.innerHTML = `
+        <strong>للاختبار فقط:</strong><br>
+        استخدم رقم هاتف: 051555555[5-9]<br>
+        رمز التحقق للنجاح: 123456 | للفشل: 111111
+      `;
+      
+      // Create form container
+      const formContainer = document.createElement('div');
+      formContainer.id = 'stcpay-form';
+      
+      // Assemble sheet
+      sheet.appendChild(handle);
+      sheet.appendChild(title);
+      sheet.appendChild(infoBox);
+      sheet.appendChild(formContainer);
+      sheetContainer.appendChild(sheet);
+      
+      // Add to DOM
+      document.body.appendChild(backdrop);
+      document.body.appendChild(sheetContainer);
+      
+      // Setup cancel functionality
+      const cancelPayment = () => {
+        // Animate out
+        sheet.style.transform = 'translateY(100%)';
+        backdrop.style.opacity = '0';
+        
+        // Remove after animation
+        setTimeout(() => {
+          document.body.removeChild(backdrop);
+          document.body.removeChild(sheetContainer);
+        }, 300);
+        
+        // Return cancel result
+        loading.dismiss();
+        const cancelResult: PaymentResult = {
+          success: false,
+          message: 'تم إلغاء عملية الدفع',
+        };
+        this._paymentResult.next(cancelResult);
+        return cancelResult;
+      };
+      
+      // Attach cancel to backdrop
+      backdrop.onclick = cancelPayment;
+      
+      // Initialize Moyasar
+      const moyasar = new Moyasar(this.moyasarPublishableKey);
+      
+      // Create and configure payment form
+      const form = moyasar.createForm({
+        amount: Math.round(cart.total * 100),
+        currency: 'SAR',
+        description: `طلب من المتجر (${cart.items.length} منتجات)`,
+        callback_url: window.location.origin + '/checkout/confirmation',
+        metadata: {
+          order_id: `ORDER-${Date.now()}`,
+          customer_email: billingDetails.email || 'customer@example.com',
+          customer_name: `${billingDetails.first_name || ''} ${billingDetails.last_name || ''}`.trim()
+        }
+      }, {
+        saveCardOption: false,
+        locale: 'ar',
+        appearance: {
+          direction: 'rtl',
+          theme: 'default',
+          labels: {
+            methods: {
+              stcpay: 'STC Pay'
+            }
+          }
+        },
+        methods: ['stcpay'],
+      });
+      
+      // Mount form and show sheet with animation
+      form.mount('#stcpay-form');
+      
+      // Show with animation
+      setTimeout(() => {
+        backdrop.style.opacity = '1';
+        sheet.style.transform = 'translateY(0)';
+      }, 50);
+      
+      // Dismiss loading
+      await loading.dismiss();
+      
+      // Handle form events and return promise
+      return new Promise<PaymentResult>((resolve) => {
+        // Store resolver for cancel function
+        const resolvePromise = resolve;
+        
+        // Handle successful payment
+        form.on('completed', (payment: any) => {
+          // Close sheet with animation
+          sheet.style.transform = 'translateY(100%)';
+          backdrop.style.opacity = '0';
+          
+          setTimeout(() => {
+            document.body.removeChild(backdrop);
+            document.body.removeChild(sheetContainer);
+          }, 300);
+          
+          const result: PaymentResult = {
+            success: true,
+            message: 'تم الدفع بنجاح عبر STC Pay',
+            transactionId: payment.id,
+            data: payment
+          };
+          
+          this._paymentResult.next(result);
+          this.presentSuccessToast(result.message);
+          resolvePromise(result);
+        });
+        
+        // Handle payment failure
+        form.on('failed', (error: any) => {
+          // Animation for closing
+          sheet.style.transform = 'translateY(100%)';
+          backdrop.style.opacity = '0';
+          
+          setTimeout(() => {
+            document.body.removeChild(backdrop);
+            document.body.removeChild(sheetContainer);
+          }, 300);
+          
+          // Formatted error message based on STC Pay error types
+          let errorMessage = error.message || 'فشل الدفع عبر STC Pay';
+          
+          // Map common errors to Arabic
+          if (error.message?.includes('not registered')) {
+            errorMessage = 'رقم الجوال غير مسجل في خدمة STC Pay';
+          } else if (error.message?.includes('Invalid OTP')) {
+            errorMessage = 'رمز التحقق غير صالح';
+          } else if (error.message?.includes('Insufficient Balance')) {
+            errorMessage = 'رصيد غير كافٍ في حسابك';
+          }
+          
+          const result: PaymentResult = {
+            success: false,
+            message: errorMessage,
+            data: error
+          };
+          
+          this._paymentResult.next(result);
+          this.presentErrorToast(result.message);
+          resolvePromise(result);
+        });
+        
+        // Override cancel function to also resolve promise
+        backdrop.onclick = () => {
+          const result = cancelPayment();
+          resolvePromise(result);
+        };
+      });
+      
+    } catch (error) {
+      // Handle initialization errors
+      await loading.dismiss();
+      console.error('STC Pay error:', error);
+      
+      const result: PaymentResult = {
+        success: false,
+        message: 'حدث خطأ أثناء تهيئة خدمة STC Pay',
+        data: error
+      };
+      
+      this._paymentResult.next(result);
+      this.presentErrorToast(result.message);
+      return result;
+    }
+  }
