@@ -30,8 +30,9 @@ export class JwtAuthService {
   private AUTH_USER_KEY = 'auth_user';
   private AUTH_REFRESH_KEY = 'jwt_refresh_token';
 
-  // Use direct URL to bypass proxy for JWT auth
-  private apiUrl = `https://app.drzn.sa/wp-json/simple-jwt-login/v1`;
+  // Use proxy to avoid CORS issues
+  private baseUrl = environment.apiUrl.split('/wp-json')[0]; // Get the base URL without wp-json
+  private apiUrl = `${this.baseUrl}/wp-json/simple-jwt-login/v1`;
   private authCode = environment.authCode;
 
   private currentUserSubject = new BehaviorSubject<User | null>(null);
