@@ -30,7 +30,9 @@ export class JwtAuthService {
   private AUTH_USER_KEY = 'auth_user';
   private AUTH_REFRESH_KEY = 'jwt_refresh_token';
 
-  private apiUrl = `${environment.apiUrl}/wp-json/simple-jwt-login/v1`;
+  // Construct URL correctly without duplicating wp-json part
+  private baseUrl = environment.apiUrl.split('/wp-json')[0]; // Get the base URL without wp-json
+  private apiUrl = `${this.baseUrl}/wp-json/simple-jwt-login/v1`;
   private authCode = environment.authCode;
 
   private currentUserSubject = new BehaviorSubject<User | null>(null);

@@ -15,7 +15,7 @@ export const environment = {
   oneSignalAppId: '2a550f67-58af-4101-a500-28a97612f69c',
   // JWT Authentication
   jwtAuthUrl: '/wp-json/jwt-auth/v1/token',
-  authCode: 'YOUR_AUTH_CODE', // Used for Simple JWT Login plugin
+  authCode: 'my-secret-auth-code', // Used for Simple JWT Login plugin
   
   // Demo mode settings
   useDemoData: false,      // Set to false to use real API data instead of demo data

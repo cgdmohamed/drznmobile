@@ -96,6 +96,14 @@
           <div *ngIf="registerForm.get('confirmPassword')?.errors?.required">يرجى تأكيد كلمة المرور</div>
           <div *ngIf="registerForm.get('confirmPassword')?.errors?.passwordMismatch">كلمات المرور غير متطابقة</div>
         </div>
+        
+        <ion-item lines="none" class="terms-checkbox">
+          <ion-checkbox formControlName="acceptTerms"></ion-checkbox>
+          <ion-label>أوافق على <a href="#">الشروط والأحكام</a> و <a href="#">سياسة الخصوصية</a></ion-label>
+        </ion-item>
+        <div class="validation-error" *ngIf="registerForm.get('acceptTerms')?.touched && registerForm.get('acceptTerms')?.invalid">
+          <div *ngIf="registerForm.get('acceptTerms')?.errors?.requiredTrue">يجب الموافقة على الشروط والأحكام</div>
+        </div>
       </ion-list>
       
       <div class="form-buttons">
