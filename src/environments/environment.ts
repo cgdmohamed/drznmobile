@@ -17,11 +17,11 @@ export const environment = {
   jwtAuthUrl: '/wp-json/jwt-auth/v1/token',
   
   // Demo mode settings
-  useDemoData: true,
-  useDemoPayments: false, // Set to false to use real payment gateways even in demo mode
+  useDemoData: false,      // Set to false to use real API data instead of demo data
+  useDemoPayments: false,  // Set to false to use real payment gateways
   
   // Demo data settings
-  allowDemoCheckout: true // Allow checkout flow in demo mode with demonstration UI
+  allowDemoCheckout: true  // Allow checkout flow in demo mode with demonstration UI
 };
 
 // IMPORTANT: Replace the placeholder values above with your actual API keys

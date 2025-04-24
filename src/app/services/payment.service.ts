@@ -38,8 +38,14 @@ export class PaymentService {
     private loadingController: LoadingController
   ) {
     console.log('Payment service initialized');
+    
+    // Force refresh of settings from environment
+    this.useDemoPayments = environment.useDemoPayments;
+    this.allowDemoCheckout = environment.allowDemoCheckout;
+    
     console.log('Using demo payments:', this.useDemoPayments);
     console.log('Allow demo checkout:', this.allowDemoCheckout);
+    console.log('Moyasar API key:', this.moyasarPublishableKey ? 'available' : 'not available');
   }
   
   /**

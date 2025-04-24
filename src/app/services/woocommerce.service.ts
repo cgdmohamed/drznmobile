@@ -33,6 +33,10 @@ export class WoocommerceService {
     console.log('WooCommerce service initialized');
     console.log('API URL:', this.apiUrl);
     console.log('Using demo mode:', this.useDemo);
+    
+    // Force demo mode to be refreshed from environment settings
+    this.useDemo = environment.useDemoData;
+    console.log('Demo mode updated from environment:', this.useDemo);
   }
 
   /**
