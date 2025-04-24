@@ -1,0 +1,218 @@
+/*
+ * RTL (Right-to-Left) Specific Styles
+ * This file contains styles specific to RTL layout for Arabic language support
+ */
+
+/* General RTL adjustments */
+[dir="rtl"] {
+  /* Reverse margins and paddings where needed */
+  .ion-margin-start {
+    margin-right: var(--ion-margin, 16px) !important;
+    margin-left: 0 !important;
+  }
+  
+  .ion-margin-end {
+    margin-left: var(--ion-margin, 16px) !important;
+    margin-right: 0 !important;
+  }
+  
+  .ion-padding-start {
+    padding-right: var(--ion-padding, 16px) !important;
+    padding-left: 0 !important;
+  }
+  
+  .ion-padding-end {
+    padding-left: var(--ion-padding, 16px) !important;
+    padding-right: 0 !important;
+  }
+
+  /* Text alignment corrections */
+  .ion-text-left {
+    text-align: right !important;
+  }
+  
+  .ion-text-right {
+    text-align: left !important;
+  }
+
+  /* Button icons placement */
+  ion-button ion-icon:first-child {
+    margin-left: 0.3em;
+    margin-right: 0;
+  }
+  
+  ion-button ion-icon:last-child {
+    margin-right: 0.3em;
+    margin-left: 0;
+  }
+
+  /* Fix item sliding actions */
+  ion-item-sliding ion-item-options {
+    right: auto;
+    left: 0;
+  }
+
+  /* Fix back button */
+  ion-back-button {
+    transform: scaleX(-1);
+  }
+
+  /* Fix input fields */
+  ion-input, ion-textarea {
+    text-align: right;
+  }
+
+  /* Fix progress bars */
+  ion-progress-bar {
+    transform: scaleX(-1);
+  }
+
+  /* Fix checkbox for RTL layout */
+  ion-checkbox {
+    margin-right: 0;
+    margin-left: 1em;
+  }
+
+  /* Fix modal positioning */
+  ion-modal {
+    &.sheet-modal {
+      .modal-wrapper {
+        --modal-inset-start: auto;
+        --modal-inset-end: 0;
+      }
+    }
+  }
+
+  /* Fix alert dialog button order */
+  .alert-button-group {
+    flex-direction: row-reverse;
+  }
+
+  /* Fix swiper pagination */
+  .swiper-pagination {
+    direction: ltr;
+  }
+
+  /* Fix notification badge position for RTL */
+  .notification-badge {
+    right: auto;
+    left: 0px;
+  }
+  
+  /* Fix swiper arrows */
+  .swiper-button-next {
+    left: 10px;
+    right: auto;
+    transform: scaleX(-1);
+  }
+
+  .swiper-button-prev {
+    right: 10px;
+    left: auto;
+    transform: scaleX(-1);
+  }
+
+  /* Fix skeleton loading animation direction */
+  .skeleton-animation {
+    background: linear-gradient(
+      90deg,
+      rgba(240, 240, 240, 0.1) 0%,
+      rgba(240, 240, 240, 0.8) 50%,
+      rgba(240, 240, 240, 0.1) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeletonLoadingRTL 1.5s infinite;
+  }
+
+  @keyframes skeletonLoadingRTL {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Fix search icon position in search bar */
+  ion-searchbar {
+    .searchbar-search-icon {
+      left: auto;
+      right: 12px;
+    }
+    
+    .searchbar-clear-button {
+      right: auto;
+      left: 12px;
+    }
+    
+    input {
+      padding-left: 12px !important;
+      padding-right: 40px !important;
+      text-align: right !important;
+    }
+  }
+
+  /* Fix card content layout */
+  ion-card-header {
+    text-align: right;
+  }
+  
+  ion-card-content {
+    text-align: right;
+  }
+
+  /* Product card specific RTL fixes */
+  .product-card {
+    .product-details {
+      text-align: right;
+    }
+    
+    .product-price {
+      direction: ltr;
+      justify-content: flex-end;
+    }
+    
+    .wishlist-button {
+      right: auto;
+      left: 8px;
+    }
+  }
+
+  /* Misc UI element fixes */
+  ion-fab[vertical="bottom"] {
+    right: auto;
+    left: 16px;
+  }
+  
+  ion-segment-button ion-icon {
+    margin-right: 0;
+    margin-left: 8px;
+  }
+  
+  /* Fix toast positioning */
+  ion-toast {
+    &.toast-bottom {
+      text-align: right;
+    }
+  }
+}
+
+/* Fix any bidirectional elements that should maintain LTR regardless of RTL setting */
+[dir="rtl"] {
+  .maintain-ltr {
+    direction: ltr !important;
+  }
+  
+  /* Keep numbers LTR */
+  .numeric {
+    direction: ltr;
+    display: inline-block;
+  }
+  
+  /* Keep prices LTR but position them correctly */
+  .price {
+    direction: ltr;
+    display: inline-block;
+    text-align: right;
+  }
+}

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { AlertController, ToastController } from '@ionic/angular';
-import { NotificationService, NotificationData } from '../../services/notification.service';
+import { AlertController, ModalController, ToastController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
+import { NotificationService, NotificationData } from '../../services/notification.service';
 
 @Component({
   selector: 'app-notifications',
@@ -11,72 +11,93 @@ import { Subscription } from 'rxjs';
 export class NotificationsPage implements OnInit, OnDestroy {
   notifications: NotificationData[] = [];
   isLoading = true;
-  private notificationsSubscription: Subscription;
-
+  private notificationSubscription: Subscription;
+  
   constructor(
     private notificationService: NotificationService,
     private alertController: AlertController,
+    private modalController: ModalController,
     private toastController: ToastController
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.loadNotifications();
   }
-
+  
   ngOnDestroy() {
-    if (this.notificationsSubscription) {
-      this.notificationsSubscription.unsubscribe();
+    if (this.notificationSubscription) {
+      this.notificationSubscription.unsubscribe();
     }
   }
 
+  /**
+   * Load notifications from service
+   */
   loadNotifications() {
     this.isLoading = true;
-    this.notificationsSubscription = this.notificationService.notifications.subscribe(
-      (notifications) => {
+    this.notificationSubscription = this.notificationService.notifications.subscribe(
+      notifications => {
         this.notifications = notifications;
         this.isLoading = false;
       }
     );
   }
 
-  doRefresh(event) {
-    this.loadNotifications();
-    setTimeout(() => {
-      event.target.complete();
-    }, 1000);
-  }
-
-  async markAsRead(notification: NotificationData) {
+  /**
+   * View notification details and mark as read
+   * @param notification The notification to view
+   */
+  async viewNotification(notification: NotificationData) {
+    // Mark notification as read
     await this.notificationService.markNotificationAsRead(notification.id);
-    this.presentToast('تم تحديد الإشعار كمقروء');
+    
+    // Handle navigation or action based on notification type
+    if (notification.actionId) {
+      // If notification has a specific action, handle it
+      this.handleNotificationAction(notification);
+    } else {
+      // Otherwise, just show the notification details
+      this.showNotificationDetails(notification);
+    }
   }
-
-  async markAllAsRead() {
+  
+  /**
+   * Show notification details in an alert
+   * @param notification The notification to show
+   */
+  async showNotificationDetails(notification: NotificationData) {
     const alert = await this.alertController.create({
-      header: 'تحديد الكل كمقروء',
-      message: 'هل أنت متأكد من تحديد جميع الإشعارات كمقروءة؟',
-      buttons: [
-        {
-          text: 'إلغاء',
-          role: 'cancel'
-        },
-        {
-          text: 'تحديد الكل',
-          handler: async () => {
-            await this.notificationService.markAllNotificationsAsRead();
-            this.presentToast('تم تحديد جميع الإشعارات كمقروءة');
-          }
-        }
-      ]
+      header: notification.title,
+      message: notification.body,
+      buttons: ['حسناً'],
+      cssClass: 'notification-alert'
     });
-
+    
     await alert.present();
   }
+  
+  /**
+   * Handle notification action based on type
+   * @param notification The notification to handle
+   */
+  private handleNotificationAction(notification: NotificationData) {
+    // Implementation will depend on your app's needs
+    // For now, we'll just show the notification details
+    this.showNotificationDetails(notification);
+  }
 
-  async deleteNotification(notification: NotificationData) {
+  /**
+   * Delete notification after confirmation
+   * @param notification The notification to delete
+   * @param event The click event (to stop propagation)
+   */
+  async deleteNotification(notification: NotificationData, event: Event) {
+    // Stop event propagation to prevent the item from being clicked
+    event.stopPropagation();
+    
     const alert = await this.alertController.create({
-      header: 'حذف الإشعار',
-      message: 'هل أنت متأكد من حذف هذا الإشعار؟',
+      header: 'تأكيد الحذف',
+      message: 'هل أنت متأكد من رغبتك في حذف هذا الإشعار؟',
       buttons: [
         {
           text: 'إلغاء',
@@ -86,19 +107,34 @@ export class NotificationsPage implements OnInit, OnDestroy {
           text: 'حذف',
           handler: async () => {
             await this.notificationService.deleteNotification(notification.id);
-            this.presentToast('تم حذف الإشعار');
+            
+            const toast = await this.toastController.create({
+              message: 'تم حذف الإشعار بنجاح',
+              duration: 2000,
+              position: 'bottom',
+              color: 'success'
+            });
+            
+            await toast.present();
           }
         }
       ]
     });
-
+    
     await alert.present();
   }
 
+  /**
+   * Clear all notifications after confirmation
+   */
   async clearAllNotifications() {
+    if (this.notifications.length === 0) {
+      return;
+    }
+    
     const alert = await this.alertController.create({
-      header: 'حذف جميع الإشعارات',
-      message: 'هل أنت متأكد من حذف جميع الإشعارات؟ لا يمكن التراجع عن هذا الإجراء.',
+      header: 'تأكيد الحذف',
+      message: 'هل أنت متأكد من رغبتك في حذف جميع الإشعارات؟',
       buttons: [
         {
           text: 'إلغاء',
@@ -108,112 +144,104 @@ export class NotificationsPage implements OnInit, OnDestroy {
           text: 'حذف الكل',
           handler: async () => {
             await this.notificationService.clearAllNotifications();
-            this.presentToast('تم حذف جميع الإشعارات');
+            
+            const toast = await this.toastController.create({
+              message: 'تم حذف جميع الإشعارات بنجاح',
+              duration: 2000,
+              position: 'bottom',
+              color: 'success'
+            });
+            
+            await toast.present();
           }
         }
       ]
     });
-
+    
     await alert.present();
   }
 
-  getNotificationIcon(notification: NotificationData): string {
-    const type = notification.type || 'general';
+  /**
+   * Mark all notifications as read
+   */
+  async markAllAsRead() {
+    if (this.notifications.length === 0 || !this.notifications.some(n => !n.isRead)) {
+      return;
+    }
     
-    switch (type) {
-      case 'order':
-        return 'cart';
-      case 'product':
-        return 'pricetag';
-      case 'category':
-        return 'list';
-      case 'special_offer':
-        return 'gift';
-      case 'account':
-        return 'person';
-      default:
-        return 'notifications';
-    }
-  }
-
-  getNotificationTime(notification: NotificationData): string {
-    const receivedDate = new Date(notification.receivedAt);
-    const now = new Date();
-    const diffInMs = now.getTime() - receivedDate.getTime();
-    const diffInMin = Math.round(diffInMs / 60000);
-    const diffInHours = Math.round(diffInMs / 3600000);
-    const diffInDays = Math.round(diffInMs / 86400000);
-
-    if (diffInMin < 60) {
-      return diffInMin === 1 ? 'منذ دقيقة واحدة' : `منذ ${diffInMin} دقائق`;
-    } else if (diffInHours < 24) {
-      return diffInHours === 1 ? 'منذ ساعة واحدة' : `منذ ${diffInHours} ساعات`;
-    } else if (diffInDays < 7) {
-      return diffInDays === 1 ? 'منذ يوم واحد' : `منذ ${diffInDays} أيام`;
-    } else {
-      // Format the date in Arabic-friendly format
-      return receivedDate.toLocaleDateString('ar-SA');
-    }
-  }
-
-  async presentToast(message: string) {
+    await this.notificationService.markAllNotificationsAsRead();
+    
     const toast = await this.toastController.create({
-      message: message,
+      message: 'تم تعيين جميع الإشعارات كمقروءة',
       duration: 2000,
-      position: 'bottom'
+      position: 'bottom',
+      color: 'success'
     });
-
+    
     await toast.present();
+  }
+
+  /**
+   * Refresh notifications list
+   * @param event The refresh event
+   */
+  doRefresh(event: any) {
+    this.loadNotifications();
+    setTimeout(() => {
+      event.target.complete();
+    }, 1000);
   }
   
   /**
-   * Generate a test notification for demonstration purposes
-   * @param type The type of notification to generate
+   * Format date for display
+   * @param date The date to format
    */
-  generateTestNotification(type: string = 'general') {
-    // Generate a realistic-looking notification based on type
+  formatDate(date: Date): string {
+    if (!date) return '';
+    
     const now = new Date();
-    let title = 'New Notification';
-    let body = 'This is a test notification.';
-    let actionData: any = {};
+    const notificationDate = new Date(date);
     
-    switch(type) {
-      case 'order':
-        title = 'تم شحن طلبك';
-        body = 'طلبك رقم #12345 قيد الشحن. سيصلك خلال 3-5 أيام عمل.';
-        actionData = { orderId: 12345 };
-        break;
-        
-      case 'product':
-        title = 'وصل حديثاً';
-        body = 'تشكيلة جديدة من المنتجات وصلت للتو. تفضل بالاطلاع عليها.';
-        actionData = { productId: 4567 };
-        break;
-        
-      case 'special_offer':
-        title = 'عرض خاص اليوم فقط';
-        body = 'خصم 25٪ على جميع المنتجات. استخدم الكود: SPECIAL25';
-        actionData = { couponCode: 'SPECIAL25' };
-        break;
-        
-      default:
-        title = 'إشعار جديد';
-        body = 'شكراً لتفاعلك مع تطبيقنا. نتمنى لك تجربة تسوق ممتعة.';
+    // Check if date is today
+    if (now.toDateString() === notificationDate.toDateString()) {
+      // Format as time only
+      return notificationDate.toLocaleTimeString('ar-SA', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    } else {
+      // Format as date and time
+      return notificationDate.toLocaleDateString('ar-SA', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     }
-    
-    // Create notification data object
-    const notification: NotificationData = {
-      id: `demo-${Date.now()}`,
-      title,
-      body,
-      type,
-      actionData,
+  }
+  
+  /**
+   * Add a test notification (for development only)
+   */
+  async addTestNotification() {
+    const testNotification: NotificationData = {
+      id: `test-${Date.now()}`,
+      title: 'إشعار تجريبي',
+      body: 'هذا إشعار تجريبي لاختبار وظائف الإشعارات',
+      type: 'general',
       isRead: false,
-      receivedAt: now
+      receivedAt: new Date()
     };
     
-    // Store the notification using the public method
-    this.notificationService.addTestNotification(notification);
-    this.presentToast('تم إنشاء إشعار تجريبي');
+    await this.notificationService.addTestNotification(testNotification);
+    
+    const toast = await this.toastController.create({
+      message: 'تم إضافة إشعار تجريبي',
+      duration: 2000,
+      position: 'bottom'
+    });
+    
+    await toast.present();
   }
 }

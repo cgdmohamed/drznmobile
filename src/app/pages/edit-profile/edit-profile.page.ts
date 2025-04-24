@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { NavController, LoadingController, ToastController, AlertController } from '@ionic/angular';
+import { NavController, LoadingController, ToastController, AlertController, ActionSheetController, Platform } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { User } from '../../interfaces/user.interface';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-edit-profile',
@@ -10,10 +11,15 @@ import { User } from '../../interfaces/user.interface';
   styleUrls: ['./edit-profile.page.scss'],
 })
 export class EditProfilePage implements OnInit {
+  @ViewChild('fileInput', { static: false }) fileInput: ElementRef;
+  
   profileForm: FormGroup;
   user: User | null = null;
   isLoading = false;
   formSubmitted = false;
+  profileImageUrl: SafeUrl | null = null;
+  selectedImageFile: File | null = null;
+  isMobile: boolean = false;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -21,7 +27,10 @@ export class EditProfilePage implements OnInit {
     private navCtrl: NavController,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController,
-    private alertCtrl: AlertController
+    private alertCtrl: AlertController,
+    private actionSheetCtrl: ActionSheetController,
+    private platform: Platform,
+    private sanitizer: DomSanitizer
   ) {
     this.profileForm = this.formBuilder.group({
       first_name: ['', Validators.required],
@@ -40,6 +49,7 @@ export class EditProfilePage implements OnInit {
 
   ngOnInit() {
     this.loadUserProfile();
+    this.isMobile = this.platform.is('ios') || this.platform.is('android');
   }
 
   loadUserProfile() {
@@ -82,50 +92,64 @@ export class EditProfilePage implements OnInit {
     });
     await loading.present();
     
-    const formData = this.profileForm.value;
-    
-    // Prepare the user update object with the form data
-    const userData: Partial<User> = {
-      first_name: formData.first_name,
-      last_name: formData.last_name,
-      email: formData.email,
-      billing: {
+    try {
+      // First, upload the profile image if one was selected
+      let profileImageUrl = null;
+      if (this.selectedImageFile) {
+        // In production, you'd call a real API here
+        profileImageUrl = await this.uploadProfileImage();
+      }
+      
+      const formData = this.profileForm.value;
+      
+      // Prepare the user update object with the form data
+      const userData: Partial<User> = {
         first_name: formData.first_name,
         last_name: formData.last_name,
-        company: '',
-        address_1: formData.billing_address_1,
-        address_2: formData.billing_address_2,
-        city: formData.billing_city,
-        state: formData.billing_state,
-        postcode: formData.billing_postcode,
-        country: formData.billing_country,
         email: formData.email,
-        phone: formData.phone
-      },
-      shipping: {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        company: '',
-        address_1: formData.billing_address_1,
-        address_2: formData.billing_address_2,
-        city: formData.billing_city,
-        state: formData.billing_state,
-        postcode: formData.billing_postcode,
-        country: formData.billing_country
-      }
-    };
-    
-    this.authService.updateUserProfile(userData).subscribe({
-      next: (updatedUser) => {
-        loading.dismiss();
-        this.presentToast('تم تحديث الملف الشخصي بنجاح');
-        this.navCtrl.navigateBack('/profile');
-      },
-      error: (error) => {
-        loading.dismiss();
-        this.presentErrorAlert('خطأ في تحديث الملف الشخصي', error.message);
-      }
-    });
+        billing: {
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          company: '',
+          address_1: formData.billing_address_1,
+          address_2: formData.billing_address_2,
+          city: formData.billing_city,
+          state: formData.billing_state,
+          postcode: formData.billing_postcode,
+          country: formData.billing_country,
+          email: formData.email,
+          phone: formData.phone
+        },
+        shipping: {
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          company: '',
+          address_1: formData.billing_address_1,
+          address_2: formData.billing_address_2,
+          city: formData.billing_city,
+          state: formData.billing_state,
+          postcode: formData.billing_postcode,
+          country: formData.billing_country
+        },
+        // Add avatar URL if we have one
+        ...(profileImageUrl && { avatar_url: profileImageUrl })
+      };
+      
+      this.authService.updateUserProfile(userData).subscribe({
+        next: (updatedUser) => {
+          loading.dismiss();
+          this.presentToast('تم تحديث الملف الشخصي بنجاح');
+          this.navCtrl.navigateBack('/profile');
+        },
+        error: (error) => {
+          loading.dismiss();
+          this.presentErrorAlert('خطأ في تحديث الملف الشخصي', error.message);
+        }
+      });
+    } catch (error) {
+      loading.dismiss();
+      this.presentErrorAlert('خطأ في تحميل الصورة', 'حدث خطأ أثناء رفع صورة الملف الشخصي، يرجى المحاولة مرة أخرى.');
+    }
   }
 
   async presentToast(message: string) {
@@ -158,5 +182,124 @@ export class EditProfilePage implements OnInit {
 
   goBack() {
     this.navCtrl.back();
+  }
+
+  /**
+   * Open the image selection dialog
+   */
+  async selectImage() {
+    if (this.isMobile) {
+      // On mobile, show an action sheet with camera and gallery options
+      const actionSheet = await this.actionSheetCtrl.create({
+        header: 'اختر مصدر الصورة',
+        cssClass: 'image-selection-action-sheet',
+        buttons: [
+          {
+            text: 'التقاط صورة',
+            icon: 'camera',
+            handler: () => {
+              // We'll use a file input for demo purposes
+              this.openFileInput();
+            }
+          },
+          {
+            text: 'اختيار من المعرض',
+            icon: 'image',
+            handler: () => {
+              this.openFileInput();
+            }
+          },
+          {
+            text: 'إلغاء',
+            icon: 'close',
+            role: 'cancel'
+          }
+        ]
+      });
+      await actionSheet.present();
+    } else {
+      // On desktop, just open the file picker
+      this.openFileInput();
+    }
+  }
+
+  /**
+   * Open the hidden file input
+   */
+  openFileInput() {
+    // Create a file input element programmatically
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    
+    fileInput.onchange = (event: any) => {
+      const file = event.target.files[0];
+      if (file) {
+        this.handleSelectedFile(file);
+      }
+    };
+    
+    // Trigger click to open file picker
+    fileInput.click();
+  }
+
+  /**
+   * Handle selected image file
+   */
+  handleSelectedFile(file: File) {
+    // Validate file type
+    if (!file.type.match(/image\/(jpeg|jpg|png|gif)/)) {
+      this.presentErrorAlert('خطأ في تحميل الصورة', 'يرجى اختيار صورة بتنسيق صالح (JPEG, PNG, GIF)');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      this.presentErrorAlert('خطأ في تحميل الصورة', 'حجم الصورة كبير جداً، يجب أن يكون أقل من 5 ميجابايت');
+      return;
+    }
+    
+    // Store the selected file
+    this.selectedImageFile = file;
+    
+    // Create a preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        this.profileImageUrl = this.sanitizer.bypassSecurityTrustUrl(e.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /**
+   * Upload profile image to server
+   * This method would be called when saving the profile
+   */
+  async uploadProfileImage(): Promise<string | null> {
+    if (!this.selectedImageFile) {
+      return null;
+    }
+    
+    // Create a FormData object to send the image
+    const formData = new FormData();
+    formData.append('image', this.selectedImageFile);
+    
+    // In a real implementation, we would use the AuthService to upload the image
+    // For now, we'll just return a success message
+    
+    // Simulate API success response with a placeholder URL
+    return 'https://via.placeholder.com/150';
+    
+    // Example of real implementation with API call:
+    /*
+    try {
+      const response = await this.authService.uploadProfileImage(formData).toPromise();
+      return response.imageUrl;
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
+      return null;
+    }
+    */
   }
 }
