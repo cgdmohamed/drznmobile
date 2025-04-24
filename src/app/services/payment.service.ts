@@ -28,11 +28,19 @@ export class PaymentService {
   private moyasarPublishableKey = environment.moyasarPublishableKey;
   private _paymentResult = new BehaviorSubject<PaymentResult | null>(null);
   
+  // Use environment settings to determine whether to use demo payments
+  private useDemoPayments = environment.useDemoPayments;
+  private allowDemoCheckout = environment.allowDemoCheckout;
+  
   constructor(
     private http: HttpClient,
     private toastController: ToastController,
     private loadingController: LoadingController
-  ) {}
+  ) {
+    console.log('Payment service initialized');
+    console.log('Using demo payments:', this.useDemoPayments);
+    console.log('Allow demo checkout:', this.allowDemoCheckout);
+  }
   
   /**
    * Initialize Moyasar in component where it's needed
@@ -78,11 +86,93 @@ export class PaymentService {
   }
   
   /**
+   * Show a demonstration of a payment process in demo mode
+   * @param cart The cart being processed
+   * @param paymentMethod The name of the payment method
+   * @returns A simulated payment result
+   */
+  private async showDemoPaymentProcess(cart: Cart, paymentMethod: string): Promise<PaymentResult> {
+    if (!this.allowDemoCheckout) {
+      const errorResult: PaymentResult = {
+        success: false,
+        message: 'الدفع غير متاح في الوضع التجريبي. الرجاء الاتصال بالمتجر الفعلي لإجراء عملية شراء حقيقية.',
+        data: { demoMode: true }
+      };
+      
+      this._paymentResult.next(errorResult);
+      this.presentErrorToast(errorResult.message);
+      return errorResult;
+    }
+    
+    const loading = await this.loadingController.create({
+      message: `جاري معالجة الدفع عبر ${paymentMethod}...`,
+      spinner: 'circles'
+    });
+    
+    await loading.present();
+    
+    // Simulate a processing delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Create a simulated transaction ID
+    const transactionId = `DEMO-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    
+    // Create a simulated successful payment result
+    const paymentResult: PaymentResult = {
+      success: true,
+      message: `تم إكمال الدفع بنجاح عبر ${paymentMethod}`,
+      transactionId: transactionId,
+      data: {
+        id: transactionId,
+        status: 'paid',
+        amount: Math.round(cart.total * 100),
+        fee: Math.round(cart.total * 100 * 0.0275), // Simulate 2.75% fee
+        currency: 'SAR',
+        refunded: 0,
+        refunded_at: null,
+        captured: true,
+        captured_at: new Date().toISOString(),
+        voided_at: null,
+        description: `طلب من متجر DARZN (${cart.items.length} منتجات)`,
+        amount_format: `${cart.total} SAR`,
+        fee_format: `${(cart.total * 0.0275).toFixed(2)} SAR`,
+        refunded_format: '0.00 SAR',
+        invoice_id: null,
+        ip: '127.0.0.1',
+        callback_url: window.location.origin + '/checkout/confirmation',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        metadata: {
+          order_id: `ORDER-${Date.now()}`,
+          demo_payment: true
+        },
+        source: {
+          type: paymentMethod.toLowerCase().replace(' ', '_'),
+          payment_method: paymentMethod,
+          name: 'DEMO USER',
+          transaction_id: transactionId
+        }
+      }
+    };
+    
+    await loading.dismiss();
+    this._paymentResult.next(paymentResult);
+    this.presentSuccessToast(paymentResult.message);
+    
+    return paymentResult;
+  }
+  
+  /**
    * Process a credit card payment using Moyasar
    * @param cart The cart to process payment for
    * @param billingDetails The billing details
    */
   async processCreditCardPayment(cart: Cart, billingDetails: any): Promise<PaymentResult> {
+    // Check if we're using demo payments
+    if (this.useDemoPayments) {
+      return this.showDemoPaymentProcess(cart, 'البطاقة الائتمانية');
+    }
+    
     const loading = await this.loadingController.create({
       message: 'جاري معالجة الدفع...',
       spinner: 'circles'
@@ -102,8 +192,8 @@ export class PaymentService {
       const form = moyasar.createForm({
         amount: Math.round(cart.total * 100), // Convert to smallest currency unit (piasters)
         currency: 'SAR',
-        description: `Order from DARZN App (${cart.items.length} items)`,
-        callback_url: 'https://example.com/payment/callback', // This should be your server endpoint
+        description: `طلب من متجر DARZN (${cart.items.length} منتجات)`,
+        callback_url: window.location.origin + '/checkout/confirmation',
         metadata: {
           order_id: `ORDER-${Date.now()}`,
           customer_email: billingDetails.email,
@@ -139,7 +229,7 @@ export class PaymentService {
         form.on('completed', (payment: any) => {
           const paymentResult: PaymentResult = {
             success: true,
-            message: 'Payment completed successfully',
+            message: 'تم إكمال الدفع بنجاح',
             transactionId: payment.id,
             data: payment
           };
@@ -151,7 +241,7 @@ export class PaymentService {
         form.on('failed', (error: any) => {
           const paymentResult: PaymentResult = {
             success: false,
-            message: error.message || 'Payment failed',
+            message: error.message || 'فشل الدفع',
             data: error
           };
           
@@ -168,7 +258,7 @@ export class PaymentService {
       
       const errorResult: PaymentResult = {
         success: false,
-        message: 'An error occurred during payment processing',
+        message: 'حدث خطأ أثناء معالجة الدفع',
         data: error
       };
       
@@ -192,6 +282,11 @@ export class PaymentService {
    * @param billingDetails The billing details
    */
   async processApplePay(cart: Cart, billingDetails: any): Promise<PaymentResult> {
+    // If using demo payments, show demo payment process
+    if (this.useDemoPayments) {
+      return this.showDemoPaymentProcess(cart, 'Apple Pay');
+    }
+    
     // Check if Apple Pay is available
     if (!this.isApplePaySupported()) {
       const errorResult: PaymentResult = {
@@ -432,12 +527,34 @@ export class PaymentService {
    * @param cart The cart to process payment for
    * @param billingDetails The billing details
    */
-  processCashOnDelivery(cart: Cart, billingDetails: any): PaymentResult {
+  async processCashOnDelivery(cart: Cart, billingDetails: any): Promise<PaymentResult> {
+    // Show a simple loading indicator for better UX
+    const loading = await this.loadingController.create({
+      message: 'جاري تجهيز الطلب...',
+      spinner: 'circles',
+      duration: 1500 // Auto-dismiss after 1.5 seconds
+    });
+    
+    await loading.present();
+    
+    // Create a unique transaction ID for the order
+    const transactionId = `COD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    
     const result: PaymentResult = {
       success: true,
-      message: 'Order placed successfully with Cash on Delivery',
-      transactionId: `COD-${Date.now()}`
+      message: 'تم تسجيل الطلب بنجاح. الدفع عند الاستلام',
+      transactionId: transactionId,
+      data: {
+        payment_method: 'cod',
+        payment_method_title: 'الدفع عند الاستلام',
+        transaction_id: transactionId,
+        created_at: new Date().toISOString(),
+        status: 'pending'
+      }
     };
+    
+    // Give some time for loading to show before dismissing
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     this._paymentResult.next(result);
     this.presentSuccessToast(result.message);
@@ -450,6 +567,11 @@ export class PaymentService {
    * @param billingDetails The billing details
    */
   async processSTCPay(cart: Cart, billingDetails: any): Promise<PaymentResult> {
+    // If using demo payments, show demo payment process
+    if (this.useDemoPayments) {
+      return this.showDemoPaymentProcess(cart, 'STC Pay');
+    }
+    
     const loading = await this.loadingController.create({
       message: 'جاري معالجة الدفع عبر STC Pay...',
       spinner: 'circles'

@@ -18,12 +18,12 @@ import { demoCategories } from '../demo/demo-categories';
 })
 export class WoocommerceService {
   // Use local proxy to prevent CORS issues
-  private apiUrl = '/wp-json/wc/v3';
-  private consumerKey = 'ck_6255526889b609ea53066560b71fdc41da7b866f';
-  private consumerSecret = 'cs_bf2088d5f696a0b9f364d6090c48e9b4343c11a3';
+  private apiUrl = environment.apiUrl;
+  private consumerKey = environment.consumerKey;
+  private consumerSecret = environment.consumerSecret;
   
-  // For demo purposes, if the API fails to connect or credentials are empty
-  private useDemo = true; // Temporarily use demo data for Replit environment
+  // Use environment settings for demo mode
+  private useDemo = environment.useDemoData;
   
   constructor(
     private http: HttpClient,

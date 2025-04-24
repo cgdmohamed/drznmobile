@@ -16,8 +16,12 @@ export const environment = {
   // JWT Authentication
   jwtAuthUrl: '/wp-json/jwt-auth/v1/token',
   
-  // Fallback to demo mode if API connection fails
-  useDemoData: true
+  // Demo mode settings
+  useDemoData: true,
+  useDemoPayments: false, // Set to false to use real payment gateways even in demo mode
+  
+  // Demo data settings
+  allowDemoCheckout: true // Allow checkout flow in demo mode with demonstration UI
 };
 
 // IMPORTANT: Replace the placeholder values above with your actual API keys
