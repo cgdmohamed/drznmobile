@@ -38,7 +38,7 @@ export class JwtAuthService {
   private apiUrl = `${this.baseUrl}/wp-json/simple-jwt-login/v1`;
   private authCode = environment.authCode;
 
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
+  public currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
@@ -60,6 +60,15 @@ export class JwtAuthService {
   get isAuthenticated(): boolean {
     return this.currentUserSubject.value !== null;
   }
+  
+  /**
+   * Set the current user (used for restoring session)
+   */
+  setCurrentUser(user: User): void {
+    if (user) {
+      this.currentUserSubject.next(user);
+    }
+  }
 
   /**
    * Load authentication data from storage on service initialization
@@ -70,21 +79,24 @@ export class JwtAuthService {
       const token = await this.storage.get(this.AUTH_TOKEN_KEY);
       const user = await this.storage.get(this.AUTH_USER_KEY);
 
+      // Always load user data if available, don't wait for token refresh
+      if (user) {
+        console.log('User data found in storage, restoring session');
+        this.currentUserSubject.next(user);
+      }
+
       if (token) {
         console.log('JWT token found, verifying...');
         
-        // Try to refresh the token to make sure it's still valid
+        // Try to refresh the token to make sure it's still valid, but don't block user session
         this.refreshToken().subscribe({
           next: () => {
             console.log('JWT token refreshed successfully');
-            // If we have user data, use it
-            if (user) {
-              this.currentUserSubject.next(user);
-            }
           },
-          error: () => {
-            console.error('JWT token is invalid, clearing auth data');
-            this.clearAuthData().subscribe();
+          error: (error) => {
+            console.error('JWT token refresh failed', error);
+            // Don't clear auth data on refresh failure - this might just be a temporary server issue
+            // The token might still be valid
           }
         });
       }

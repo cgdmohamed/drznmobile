@@ -116,22 +116,47 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   initializeApp() {
-    this.platform.ready().then(() => {
-      // Try to get token from JWT auth (already loaded in constructor)
-      this.jwtAuthService.getToken().then(token => {
+    this.platform.ready().then(async () => {
+      try {
+        // Try to get token and user from JWT auth
+        const token = await this.jwtAuthService.getToken();
+        const user = await this.jwtAuthService.getUser();
+        
+        // Always restore user session if we have user data, regardless of token status
+        if (user) {
+          console.log('User data found in storage, restoring session');
+          
+          // Force update of the user subject to ensure components know we're logged in
+          this.jwtAuthService.setCurrentUser(user);
+          
+          // If we're on an auth page but we're already logged in, redirect to home
+          if (this.authPages.some(page => window.location.href.includes(page))) {
+            console.log('User is already logged in, redirecting to home');
+            this.router.navigate(['/']);
+          }
+        }
+        
+        // Try to refresh token if we have one, but don't make login status dependent on it
         if (token) {
-          // JWT token exists, verify it - it will automatically update the current user
           console.log('JWT token found, verifying...');
+          
+          // Refresh token in the background
           this.jwtAuthService.refreshToken().subscribe({
-            next: () => console.log('JWT token refreshed successfully'),
+            next: () => {
+              console.log('JWT token refreshed successfully');
+            },
             error: (error) => {
               console.error('JWT token refresh failed', error);
-              // Don't fall back to legacy auth, just log the error
+              // Don't clear auth data on refresh failure - it might just be a temporary server issue
+              // The token might still be valid
             }
           });
+        } else {
+          console.log('No JWT token found');
         }
-        // Don't use legacy auth if no JWT token or if JWT fails
-      });
+      } catch (error) {
+        console.error('Error during app initialization', error);
+      }
 
       // Initialize push notifications if on a device
       if (this.platform.is("capacitor") || this.platform.is("cordova")) {
