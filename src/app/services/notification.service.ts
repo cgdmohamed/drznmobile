@@ -45,6 +45,29 @@ export class NotificationService {
     private navController: NavController,
     private toastController: ToastController
   ) {}
+  
+  /**
+   * Navigate to the notifications page
+   * This method provides a central place to handle navigation to the notifications page
+   */
+  navigateToNotificationsPage() {
+    console.log('Notification service: navigating to notifications page');
+    try {
+      // Use the NavController for a more consistent navigation experience
+      this.navController.navigateForward('/notifications');
+      console.log('Notification service: navigation command executed');
+    } catch (error) {
+      console.error('Notification service: Error navigating to notifications page:', error);
+      
+      // Fallback to basic router navigation if NavController fails
+      try {
+        console.log('Notification service: trying fallback router navigation');
+        this.router.navigateByUrl('/notifications');
+      } catch (routerError) {
+        console.error('Notification service: Router fallback navigation also failed:', routerError);
+      }
+    }
+  }
 
   /**
    * Initialize push notifications when app starts

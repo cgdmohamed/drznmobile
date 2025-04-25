@@ -7,7 +7,7 @@
       <ion-button (click)="showSearchPrompt()">
         <ion-icon slot="icon-only" name="search-outline"></ion-icon>
       </ion-button>
-      <ion-button routerLink="/notifications" class="pulse-badge" [class.active-pulse]="unreadNotificationCount > 0">
+      <ion-button (click)="navigateToNotifications()" class="pulse-badge" [class.active-pulse]="unreadNotificationCount > 0">
         <ion-icon slot="icon-only" name="notifications-outline"></ion-icon>
         <span *ngIf="unreadNotificationCount > 0" class="notification-badge"></span>
       </ion-button>

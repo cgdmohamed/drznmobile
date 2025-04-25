@@ -165,6 +165,15 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Navigate to notifications page
+  navigateToNotifications() {
+    console.log('App component: calling notification service navigation method');
+    // Close the menu first
+    this.menuController.close("main-menu");
+    // Use the centralized notification service navigation method
+    this.notificationService.navigateToNotificationsPage();
+  }
+
   // Logout method
   async logout() {
     // Unregister device from notifications

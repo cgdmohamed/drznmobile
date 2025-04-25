@@ -105,6 +105,13 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
     });
   }
   
+  // Navigate to notifications page
+  navigateToNotifications() {
+    console.log('Home component: calling notification service navigation method');
+    // Use the centralized notification service navigation method
+    this.notificationService.navigateToNotificationsPage();
+  }
+
   // Show search prompt
   async showSearchPrompt() {
     const alert = await this.alertController.create({
