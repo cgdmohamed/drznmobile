@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { LoadingController, AlertController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { OtpService } from '../../services/otp.service';
@@ -18,18 +18,36 @@ export class LoginPage implements OnInit {
   passwordVisible: boolean = false;
   loginType: string = 'email'; // Default to email login
 
+  returnUrl: string = '/home';
+
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
     private jwtAuthService: JwtAuthService,
     private otpService: OtpService,
     private router: Router,
+    private route: ActivatedRoute,
     private loadingController: LoadingController,
     private alertController: AlertController
   ) { }
 
   ngOnInit() {
     this.initForms();
+    
+    // Get return URL from query params or localStorage, or use default
+    this.route.queryParams.subscribe(params => {
+      if (params['returnUrl']) {
+        this.returnUrl = params['returnUrl'];
+      } else {
+        // Check if we have a saved redirect URL in localStorage
+        const savedRedirectUrl = localStorage.getItem('redirectUrl');
+        if (savedRedirectUrl) {
+          this.returnUrl = savedRedirectUrl;
+          // Clear the saved URL after retrieving it
+          localStorage.removeItem('redirectUrl');
+        }
+      }
+    });
   }
 
   // Initialize login forms
@@ -79,7 +97,8 @@ export class LoginPage implements OnInit {
     this.jwtAuthService.login(username, password).subscribe({
       next: (user) => {
         loading.dismiss();
-        this.router.navigateByUrl('/home');
+        console.log('Login successful, redirecting to:', this.returnUrl);
+        this.router.navigateByUrl(this.returnUrl || '/home');
       },
       error: (error) => {
         console.error('JWT login failed', error);

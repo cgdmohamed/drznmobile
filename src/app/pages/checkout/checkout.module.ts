@@ -10,7 +10,8 @@ import { ComponentsModule } from '../../components/components.module';
 const routes: Routes = [
   {
     path: '',
-    component: CheckoutPage
+    component: CheckoutPage,
+    canActivate: [AuthGuard]
   }
 ];
 

@@ -220,16 +220,9 @@ export class JwtAuthService {
       tap(user => {
         this.isLoadingSubject.next(false);
         
-        // Make sure to redirect if we're on an auth page
-        if (this.router) {
-          setTimeout(() => {
-            const currentUrl = window.location.href;
-            if (currentUrl.includes('/login') || currentUrl.includes('/register')) {
-              console.log('Redirecting to home after successful login');
-              this.router.navigate(['/']);
-            }
-          }, 500);
-        }
+        // Note: we're not handling redirects here anymore.
+        // The login page component handles redirection after successful login
+        // based on query parameters and localStorage
       }),
       catchError(error => {
         this.isLoadingSubject.next(false);
