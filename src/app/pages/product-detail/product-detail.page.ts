@@ -30,10 +30,12 @@ interface ProductReview {
 export class ProductDetailPage implements OnInit, OnDestroy {
   product: Product;
   relatedProducts: Product[] = [];
+  featuredProducts: Product[] = [];
   reviews: ProductReview[] = [];
   productId: number;
   quantity: number = 1;
   isLoading: boolean = true;
+  loadingFeaturedProducts: boolean = true;
   selectedImage: string = '';
   selectedVariantId: number = 0;
   selectedAttributes: any = {};
@@ -125,6 +127,11 @@ export class ProductDetailPage implements OnInit, OnDestroy {
     this.wishlistSubscription = this.wishlistService.wishlist.subscribe(wishlist => {
       this.isInWishlist = this.productId ? wishlist.includes(this.productId) : false;
     });
+  }
+  
+  ionViewDidEnter() {
+    // Load featured products here to ensure productId is available
+    this.loadFeaturedProducts();
   }
   
   ngOnDestroy() {
@@ -275,6 +282,36 @@ export class ProductDetailPage implements OnInit, OnDestroy {
 
   // Present share options
   async presentShareOptions() {
+    // Check if the Web Share API is available in the browser
+    if (navigator.share) {
+      try {
+        // Try to use native sharing if available
+        const productImage = this.product.images && this.product.images.length > 0 
+          ? this.product.images[0].src 
+          : '';
+        
+        await navigator.share({
+          title: this.product.name,
+          text: `${this.product.name} - ${this.product.price} ر.س.\n${this.product.short_description}`,
+          url: window.location.href
+        });
+        
+        // Track successful sharing
+        console.log('Shared successfully using Web Share API');
+        this.presentToast('تم مشاركة المنتج بنجاح');
+      } catch (error) {
+        console.error('Error sharing:', error);
+        // Fall back to action sheet if Web Share API fails
+        this.presentShareActionSheet();
+      }
+    } else {
+      // Fall back to action sheet for browsers that don't support Web Share API
+      this.presentShareActionSheet();
+    }
+  }
+
+  // Present sharing options as an action sheet
+  async presentShareActionSheet() {
     const actionSheet = await this.actionSheetController.create({
       header: 'مشاركة المنتج',
       buttons: [
@@ -300,6 +337,27 @@ export class ProductDetailPage implements OnInit, OnDestroy {
           }
         },
         {
+          text: 'انستجرام',
+          icon: 'logo-instagram',
+          handler: () => {
+            this.shareProduct('instagram');
+          }
+        },
+        {
+          text: 'تلجرام',
+          icon: 'paper-plane-outline',
+          handler: () => {
+            this.shareProduct('telegram');
+          }
+        },
+        {
+          text: 'نسخ الرابط',
+          icon: 'copy-outline',
+          handler: () => {
+            this.copyShareLink();
+          }
+        },
+        {
           text: 'إلغاء',
           icon: 'close',
           role: 'cancel'
@@ -310,19 +368,163 @@ export class ProductDetailPage implements OnInit, OnDestroy {
     await actionSheet.present();
   }
 
-  // Share product function
+  // Share product function with enhanced options
   shareProduct(platform: string) {
-    // Basic share implementation
-    const shareText = `${this.product.name} - ${this.product.price} ر.س.`;
+    // Enhanced share implementation with proper description and formatting
+    const productTitle = this.product.name;
+    const productPrice = this.product.price + ' ر.س.';
+    const shortDescription = this.product.short_description 
+      ? this.stripHtmlTags(this.product.short_description).substring(0, 100) + '...'
+      : '';
+    
+    const shareText = `${productTitle}\n${productPrice}\n${shortDescription}`;
     const shareUrl = window.location.href;
     
-    if (platform === 'whatsapp') {
-      window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`, '_blank');
-    } else if (platform === 'facebook') {
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
-    } else if (platform === 'twitter') {
-      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+    switch (platform) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`, '_blank');
+        break;
+      
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank');
+        break;
+      
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+        break;
+        
+      case 'telegram':
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+        break;
+        
+      case 'instagram':
+        // Instagram doesn't support direct sharing via URL, so we copy text and inform user
+        this.copyShareText(shareText + '\n\n' + shareUrl);
+        this.presentToast('تم نسخ النص. يمكنك الآن لصقه في انستجرام!');
+        break;
+        
+      default:
+        console.error('Unknown platform:', platform);
     }
+  }
+  
+  // Helper method to copy share link to clipboard
+  copyShareLink() {
+    const shareUrl = window.location.href;
+    this.copyToClipboard(shareUrl);
+    this.presentToast('تم نسخ الرابط إلى الحافظة');
+  }
+  
+  // Helper method to copy text to clipboard
+  copyShareText(text: string) {
+    this.copyToClipboard(text);
+  }
+  
+  // General clipboard copy function
+  copyToClipboard(text: string) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text)
+        .catch(err => {
+          console.error('Could not copy text: ', err);
+          this.fallbackCopyToClipboard(text);
+        });
+    } else {
+      this.fallbackCopyToClipboard(text);
+    }
+  }
+  
+  // Fallback copy method for browsers without clipboard API
+  fallbackCopyToClipboard(text: string) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    
+    // Make the textarea invisible
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      document.execCommand('copy');
+      this.presentToast('تم نسخ النص إلى الحافظة');
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      this.presentToast('فشل نسخ النص، حاول مرة أخرى');
+    }
+    
+    document.body.removeChild(textArea);
+  }
+  
+  // Helper to strip HTML tags from content
+  stripHtmlTags(html: string): string {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || '';
+  }
+
+  // Load featured products for the carousel
+  loadFeaturedProducts() {
+    this.loadingFeaturedProducts = true;
+    
+    // Get featured products (6 max)
+    this.productService.getFeaturedProducts(6).subscribe(
+      products => {
+        // Filter out the current product if it happens to be in the list
+        this.featuredProducts = products.filter(p => p.id !== this.productId);
+        this.loadingFeaturedProducts = false;
+      },
+      error => {
+        console.error('Error loading featured products:', error);
+        this.loadingFeaturedProducts = false;
+      }
+    );
+  }
+  
+  // Navigate to product detail page for a featured product
+  goToProduct(productId: number) {
+    // Only navigate if it's not the current product
+    if (productId !== this.productId) {
+      this.router.navigate(['/product', productId]);
+    }
+  }
+  
+  // Handle wishlist button click in the carousel
+  onWishlistButtonClick(event: Event, productId: number) {
+    // Stop event propagation to prevent navigation
+    event.stopPropagation();
+    
+    // Toggle product in wishlist
+    if (this.isProductInWishlist(productId)) {
+      this.wishlistService.removeFromWishlist(productId);
+      this.presentToast('تمت إزالة المنتج من المفضلة');
+    } else {
+      this.wishlistService.addToWishlist(productId);
+      this.presentToast('تمت إضافة المنتج إلى المفضلة');
+    }
+  }
+  
+  // Check if product is in wishlist
+  isProductInWishlist(productId: number): boolean {
+    return this.wishlistService.isInWishlist(productId);
+  }
+  
+  // Add to cart from the carousel
+  addToCartFromCarousel(event: Event, product: Product) {
+    // Stop event propagation to prevent navigation
+    event.stopPropagation();
+    
+    // Add product to cart with quantity 1
+    this.cartService.addToCart(product, 1);
+    this.presentToast('تمت إضافة المنتج إلى سلة التسوق');
+  }
+  
+  // Handle image errors
+  handleImageError(event: Event): void {
+    const target = event.target as HTMLImageElement;
+    target.src = '../assets/images/product-placeholder.svg';
   }
 
   // Track product view for recommendations

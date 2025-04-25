@@ -222,6 +222,78 @@
       description="قد تعجبك هذه المنتجات أيضاً"
       [maxItems]="6">
     </app-recommendation-carousel>
+    
+    <!-- Additional Products Carousel -->
+    <div class="extra-products-section">
+      <div class="section-header">
+        <h3>منتجات رائجة</h3>
+        <p>الأكثر مبيعاً في متجرنا</p>
+      </div>
+      
+      <div class="product-scroll" *ngIf="!loadingFeaturedProducts && featuredProducts.length > 0">
+        <swiper-container slides-per-view="2.3" space-between="10" free-mode="true">
+          <swiper-slide *ngFor="let product of featuredProducts" class="product-slide" (click)="goToProduct(product.id)">
+            <div class="product-card">
+              <div class="product-image">
+                <img 
+                  [src]="product.images && product.images.length > 0 ? product.images[0].src : '../assets/images/product-placeholder.svg'" 
+                  [alt]="product.name"
+                  (error)="handleImageError($event)">
+                  
+                <div class="product-badges">
+                  <span class="badge sale" *ngIf="product.on_sale">تخفيض</span>
+                  <span class="badge featured" *ngIf="product.featured">مميز</span>
+                </div>
+                
+                <button class="wishlist-btn" (click)="onWishlistButtonClick($event, product.id)">
+                  <ion-icon [name]="isProductInWishlist(product.id) ? 'heart' : 'heart-outline'"
+                    [color]="isProductInWishlist(product.id) ? 'danger' : ''"></ion-icon>
+                </button>
+              </div>
+              
+              <div class="product-info">
+                <h4 class="product-name">{{ product.name }}</h4>
+                
+                <div class="product-price">
+                  <span class="current-price" [class.sale]="product.on_sale">
+                    {{ product.price }} ر.س
+                  </span>
+                  <span class="original-price" *ngIf="product.on_sale">
+                    {{ product.regular_price }} ر.س
+                  </span>
+                </div>
+                
+                <div class="product-rating">
+                  <ion-icon name="star" *ngFor="let num of [1,2,3,4,5]" 
+                    [color]="num <= product.average_rating ? 'warning' : 'medium'"></ion-icon>
+                  <span class="rating-count">({{ product.rating_count }})</span>
+                </div>
+              </div>
+              
+              <ion-button 
+                expand="block" 
+                fill="solid" 
+                color="danger" 
+                class="add-to-cart-btn"
+                (click)="addToCartFromCarousel($event, product)">
+                <ion-icon name="cart-outline" slot="start"></ion-icon>
+                إضافة للسلة
+              </ion-button>
+            </div>
+          </swiper-slide>
+        </swiper-container>
+      </div>
+      
+      <!-- Loading state -->
+      <div class="loading-products" *ngIf="loadingFeaturedProducts">
+        <ion-skeleton-text animated style="width: 100%; height: 200px;"></ion-skeleton-text>
+      </div>
+      
+      <!-- Empty state -->
+      <div class="no-products" *ngIf="!loadingFeaturedProducts && featuredProducts.length === 0">
+        <p>لا توجد منتجات متاحة حالياً</p>
+      </div>
+    </div>
   </div>
   
   <!-- Error message if product not loaded -->

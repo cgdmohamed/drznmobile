@@ -123,6 +123,49 @@ export class RecommendationService {
     const views = await this.storage.get(this.VIEWED_CATEGORIES_KEY);
     return views || [];
   }
+  
+  /**
+   * Get recommendations based on the user's browsing history
+   * @param limit Maximum number of recommendations
+   * @returns Promise of products based on browsing history
+   */
+  private async getRecommendationsFromBrowsingHistory(limit: number): Promise<Product[]> {
+    try {
+      // Get browsing history
+      const history = await this.getBrowsingHistory();
+      
+      if (!history || history.length === 0) {
+        return [];
+      }
+      
+      // Get product IDs from history (removing duplicates)
+      const productIds = history.map(item => item.id);
+      
+      // Take only the requested number of products
+      const limitedIds = productIds.slice(0, limit);
+      
+      // Create a promise that resolves when all product details are fetched
+      const productPromises = limitedIds.map(id => 
+        new Promise<Product>((resolve, reject) => {
+          this.productService.getProduct(id).subscribe(
+            product => resolve(product),
+            error => reject(error)
+          );
+        })
+      );
+      
+      // Wait for all product details to be fetched
+      const products = await Promise.all(
+        productPromises.map(p => p.catch(e => null))
+      );
+      
+      // Filter out null values (failed requests) and return
+      return products.filter(product => product !== null) as Product[];
+    } catch (error) {
+      console.error('Error getting recommendations from browsing history', error);
+      return [];
+    }
+  }
 
   /**
    * Get personalized recommendations based on browsing history and preferences
@@ -130,90 +173,106 @@ export class RecommendationService {
    * @returns Observable of recommended products
    */
   getPersonalizedRecommendations(limit: number = 10): Observable<Product[]> {
-    // We'll try to get recommendations in this order:
-    // 1. Based on user's most viewed categories
-    // 2. If no categories viewed, use popular/featured products
+    // Enhanced recommendation strategy:
+    // 1. Try to get products directly from browsing history first
+    // 2. Then based on user's most viewed categories
+    // 3. If neither is available, use popular/featured products
 
     return new Observable<Product[]>(observer => {
-      this.getCategoryViews().then(categoryViews => {
-        if (categoryViews.length > 0) {
-          // Get top categories (max 3)
-          const topCategories = categoryViews
-            .slice(0, 3)
-            .map(category => category.id);
-          
-          // Get recommendations based on top categories
-          this.getRecommendationsByCategories(topCategories, limit)
-            .subscribe(
-              products => {
-                observer.next(products);
-                observer.complete();
-              },
-              error => {
-                console.error('Error getting category-based recommendations, falling back to featured products', error);
-                this.getFallbackRecommendations(limit)
-                  .subscribe(
-                    fallbackProducts => {
-                      observer.next(fallbackProducts);
-                      observer.complete();
-                    },
-                    fallbackError => {
-                      observer.error(fallbackError);
-                    }
-                  );
-              }
-            );
+      // First attempt to get recommendations based on browsing history
+      this.getRecommendationsFromBrowsingHistory(limit).then(async historyProducts => {
+        if (historyProducts && historyProducts.length >= limit / 2) {
+          // If we have at least half the requested number of products from history
+          observer.next(historyProducts);
+          observer.complete();
         } else {
-          // No category history, use fallback
-          this.getFallbackRecommendations(limit)
-            .subscribe(
-              products => {
-                observer.next(products);
-                observer.complete();
-              },
-              error => {
-                observer.error(error);
-              }
-            );
+          // If we don't have enough products from history, try category-based
+          try {
+            const categoryViews = await this.getCategoryViews();
+            
+            if (categoryViews.length > 0) {
+              // Get top categories (max 3)
+              const topCategories = categoryViews
+                .slice(0, 3)
+                .map(category => category.id);
+              
+              // Get recommendations based on top categories
+              this.productService.getProductsByCategories(topCategories, limit)
+                .subscribe({
+                  next: (categoryBasedProducts) => {
+                    // Combine with history products if any, ensuring no duplicates
+                    if (historyProducts && historyProducts.length > 0) {
+                      const combinedProducts = [...historyProducts];
+                      
+                      // Add category products that aren't in history products
+                      categoryBasedProducts.forEach(product => {
+                        if (!combinedProducts.some(p => p.id === product.id)) {
+                          combinedProducts.push(product);
+                        }
+                      });
+                      
+                      // Limit to requested size
+                      observer.next(combinedProducts.slice(0, limit));
+                    } else {
+                      observer.next(categoryBasedProducts);
+                    }
+                    observer.complete();
+                  },
+                  error: (error) => {
+                    console.error('Error getting category-based recommendations, falling back to featured products', error);
+                    this.productService.getFeaturedProducts(limit)
+                      .subscribe({
+                        next: (fallbackProducts) => {
+                          observer.next(fallbackProducts);
+                          observer.complete();
+                        },
+                        error: (fallbackError) => {
+                          observer.error(fallbackError);
+                        }
+                      });
+                  }
+                });
+            } else {
+              // No category history, use fallback
+              this.productService.getFeaturedProducts(limit)
+                .subscribe({
+                  next: (products) => {
+                    observer.next(products);
+                    observer.complete();
+                  },
+                  error: (error) => {
+                    observer.error(error);
+                  }
+                });
+            }
+          } catch (error) {
+            console.error('Error accessing recommendation data, using fallback recommendations', error);
+            this.productService.getFeaturedProducts(limit)
+              .subscribe({
+                next: (products) => {
+                  observer.next(products);
+                  observer.complete();
+                },
+                error: (fallbackError) => {
+                  observer.error(fallbackError);
+                }
+              });
+          }
         }
       }).catch(error => {
-        console.error('Error accessing category views, using fallback recommendations', error);
-        this.getFallbackRecommendations(limit)
-          .subscribe(
-            products => {
+        console.error('Error accessing browsing history, falling back to featured products', error);
+        // Continue with featured products as a fallback
+        this.productService.getFeaturedProducts(limit)
+          .subscribe({
+            next: (products) => {
               observer.next(products);
               observer.complete();
             },
-            fallbackError => {
+            error: (fallbackError) => {
               observer.error(fallbackError);
             }
-          );
+          });
       });
     });
-  }
-
-  /**
-   * Get recommendations based on specific categories
-   * @param categoryIds Array of category IDs
-   * @param limit Maximum number of recommendations
-   * @returns Observable of products in these categories
-   */
-  private getRecommendationsByCategories(categoryIds: number[], limit: number): Observable<Product[]> {
-    if (!categoryIds || categoryIds.length === 0) {
-      return throwError('No category IDs provided');
-    }
-
-    // Use the product service to get products by category
-    return this.productService.getProductsByCategories(categoryIds, limit);
-  }
-
-  /**
-   * Fallback recommendations when personalization data is not available
-   * @param limit Maximum number of recommendations
-   * @returns Observable of popular products
-   */
-  private getFallbackRecommendations(limit: number): Observable<Product[]> {
-    // Default to featured products as fallback
-    return this.productService.getFeaturedProducts(limit);
   }
 }
