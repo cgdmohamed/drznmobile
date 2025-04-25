@@ -33,7 +33,7 @@
 ion-content {
   --padding-bottom: 70px; /* Add padding for bottom tabs */
   --background: url(assets/images/bg.jpg) no-repeat top center;
-  --background-size: 100% auto;
+  --background-size: contain;
 }
 
 /* RTL Direction support */
