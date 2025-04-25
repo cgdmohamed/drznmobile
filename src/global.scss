@@ -32,7 +32,7 @@
 /* Content padding for bottom tabs */
 ion-content {
   --padding-bottom: 70px; /* Add padding for bottom tabs */
-  --background: linear-gradient(to bottom, var(--ion-color-primary) 0%, white 35%);
+  --background: linear-gradient(to bottom, var(--ion-color-primary) 0%, white 40%);
 }
 
 /* Transparent header with no shadow */
@@ -78,12 +78,6 @@ ion-toolbar {
   }
 }
 
-/* Dark theme support */
-.dark-theme {
-  --ion-color-primary: #ff6b78;
-  --ion-color-primary-rgb: 255, 107, 120;
-}
-
 /* Professional loading progress indicator */
 ion-progress-bar {
   --background: transparent;
@@ -98,7 +92,7 @@ ion-progress-bar {
   z-index: 100;
   
   /* Add slight blur effect below */
-  box-shadow: 0 1px 3px rgba(236, 28, 36, 0.2);
+  box-shadow: 0 1px 3px rgba(255, 179, 185, 0.2);
 }
 
 /* Add subtle animation to make it more professional */
@@ -116,32 +110,6 @@ ion-progress-bar {
 
 ion-progress-bar.animate {
   animation: progressPulse 1.5s infinite ease-in-out;
-}
-
-/* Dark mode additional properties */
-.dark-theme {
-  --ion-background-color: #121212;
-  --ion-background-color-rgb: 18, 18, 18;
-  --ion-text-color: #ffffff;
-  --ion-text-color-rgb: 255, 255, 255;
-  --ion-border-color: #222222;
-  --ion-item-background: #1e1e1e;
-  --ion-toolbar-background: transparent;
-  --ion-tab-bar-background: #1f1f1f;
-  --ion-card-background: #1e1e1e;
-  
-  ion-content {
-    --background: linear-gradient(to bottom, var(--ion-color-primary) 0%, #121212 100%);
-  }
-  
-  .product-card {
-    background-color: #1e1e1e;
-    border: 1px solid #333;
-  }
-  
-  .section-header h2 {
-    color: #fff;
-  }
 }
 
 /* Text sizes */
@@ -174,12 +142,12 @@ ion-progress-bar.animate {
 
 /* Primary brand color */
 :root {
-  --ion-color-primary: #E9324A;
-  --ion-color-primary-rgb: 233, 50, 74;
-  --ion-color-primary-contrast: #ffffff;
-  --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #cd2c41;
-  --ion-color-primary-tint: #eb475c;
+  --ion-color-primary: #ffb3b9;
+  --ion-color-primary-rgb: 255, 179, 185;
+  --ion-color-primary-contrast: #000000;
+  --ion-color-primary-contrast-rgb: 0, 0, 0;
+  --ion-color-primary-shade: #e09da3;
+  --ion-color-primary-tint: #ffbbc0;
 }
 
 /* Font Family (for Arabic support) */
@@ -286,7 +254,7 @@ ion-refresher.custom-refresher .custom-spinner::after {
   right: -4px;
   bottom: -4px;
   border-radius: 50%;
-  border: 2px solid rgba(236, 28, 36, 0.2);
+  border: 2px solid rgba(255, 179, 185, 0.2);
   animation: pulse 1.5s infinite ease-in-out;
 }
 
