@@ -95,23 +95,51 @@ export class CheckoutPage implements OnInit, OnDestroy {
       // Set initial step based on authentication status
       if (this.jwtAuthService.isAuthenticated || this.authService.isLoggedIn) {
         // User is logged in (via JWT or legacy auth), start at shipping info step
+        console.log('User is authenticated, setting step to 1 (shipping)');
         this.step = 1;
       } else if (this.otpConfirmed) {
         // User verified with OTP, start at shipping info step
+        console.log('OTP confirmed, setting step to 1 (shipping)');
         this.step = 1;
       } else {
         // User is not logged in and not verified with OTP, start at verification step
+        console.log('User not authenticated and OTP not confirmed, setting step to 0 (verification)');
         this.step = 0;
         this.otpVerificationInProgress = true;
-        // Show phone input if not already entered
-        const phoneControl = this.shippingForm.get('phone');
-        if (!phoneControl || !phoneControl.valid) {
-          setTimeout(() => {
-            this.showPhoneInputAlert();
-          }, 500);
-        }
       }
     });
+  }
+  
+  // Ionic lifecycle hook - will be called each time the view becomes active
+  ionViewWillEnter() {
+    console.log('Checkout page entered - checking authentication status');
+    
+    // Check authentication state when view enters
+    this.checkAuthStatus();
+    
+    // If user is authenticated, make sure step is set correctly
+    if ((this.jwtAuthService.isAuthenticated || this.authService.isLoggedIn) && this.step === 0) {
+      console.log('User is authenticated but step is 0, updating to step 1');
+      this.step = 1;
+    }
+    
+    // If cart is empty and no payment ID in URL, redirect to cart page
+    if (!this.paymentId && (!this.cart?.items || this.cart?.items.length === 0)) {
+      console.log('Cart is empty, redirecting to cart page');
+      this.router.navigate(['/cart']);
+    }
+    
+    // If step is 0 (verification) and we have a valid phone number but OTP verification 
+    // isn't in progress, show the phone input alert
+    if (this.step === 0 && !this.otpVerificationInProgress) {
+      const phoneControl = this.shippingForm.get('phone');
+      if (!phoneControl || !phoneControl.valid) {
+        console.log('Phone not valid, showing phone input alert');
+        setTimeout(() => {
+          this.showPhoneInputAlert();
+        }, 500);
+      }
+    }
   }
   
   // Check authentication status and show OTP verification if needed

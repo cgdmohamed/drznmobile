@@ -21,6 +21,8 @@ export class AuthGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
     
+    const isCheckoutRoute = state.url.includes('/checkout');
+    
     // First check if JWT auth is active (preferred method)
     if (this.jwtAuthService.isAuthenticated) {
       console.log('User authenticated via JWT');
@@ -30,6 +32,12 @@ export class AuthGuard implements CanActivate {
     // If JWT auth not active, check legacy auth service as fallback
     if (this.authService.isLoggedIn) {
       console.log('User authenticated via legacy auth');
+      return true;
+    }
+    
+    // For checkout, we'll allow access and handle OTP verification in the component
+    if (isCheckoutRoute) {
+      console.log('Allowing checkout access - will verify in component');
       return true;
     }
     
