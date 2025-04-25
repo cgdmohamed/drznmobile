@@ -784,14 +784,10 @@ export class CheckoutPage implements OnInit, OnDestroy {
           
         case 'cod':
         default:
-          // For cash on delivery, verify user authentication if needed
-          if (!this.jwtAuthService.isAuthenticated && !this.authService.isLoggedIn && !this.otpConfirmed) {
-            // Neither JWT auth nor legacy auth is active and OTP not confirmed
-            this.showAuthOptions();
-          } else {
-            // User is logged in (via any method) or OTP is confirmed, proceed to review
-            this.step = 3;
-          }
+          // For cash on delivery, always move forward regardless of authentication status
+          // Authentication checks will happen in ionViewWillEnter via checkAuthStatus
+          console.log('Cash on delivery selected, proceeding to review');
+          this.step = 3; // Move to review step always
           break;
       }
     } else if (this.step === 3) {
