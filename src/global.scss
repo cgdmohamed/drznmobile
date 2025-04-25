@@ -32,8 +32,7 @@
 /* Content padding for bottom tabs */
 ion-content {
   --padding-bottom: 70px; /* Add padding for bottom tabs */
-  --background: url(assets/images/bg.jpg) no-repeat top center;
-  --background-size: 100% auto;
+  --background: linear-gradient(to bottom, var(--ion-color-primary) 0%, white 100%);
 }
 
 /* RTL Direction support */
@@ -102,7 +101,7 @@ ion-progress-bar.animate {
   --ion-card-background: #1e1e1e;
   
   ion-content {
-    --background: #121212;
+    --background: linear-gradient(to bottom, var(--ion-color-primary) 0%, #121212 100%);
   }
   
   .product-card {
