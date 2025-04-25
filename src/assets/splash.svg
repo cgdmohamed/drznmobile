@@ -1,0 +1,18 @@
+<svg width="2732" height="2732" viewBox="0 0 2732 2732" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="2732" height="2732" fill="#ec1c24"/>
+  
+  <!-- Logo -->
+  <g transform="translate(1366, 1366) scale(6)">
+    <!-- Simplified logo placeholder - replace with actual logo -->
+    <path d="M-50 -15 L0 -45 L50 -15 L50 30 L0 45 L-50 30 Z" fill="white"/>
+    <path d="M-30 -5 L0 -25 L30 -5 L30 20 L0 30 L-30 20 Z" fill="#ec1c24"/>
+    <path d="M-10 5 L0 0 L10 5 L10 15 L0 20 L-10 15 Z" fill="white"/>
+  </g>
+  
+  <!-- App Name -->
+  <text x="1366" y="1900" fill="white" font-family="Arial, sans-serif" font-size="120" text-anchor="middle" font-weight="bold">DARZN</text>
+  
+  <!-- Tagline -->
+  <text x="1366" y="2000" fill="white" font-family="Arial, sans-serif" font-size="60" text-anchor="middle">Elegant Shopping Experience</text>
+</svg>

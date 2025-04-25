@@ -131,25 +131,5 @@ export class LoginPage implements OnInit {
     this.router.navigateByUrl('/forgot-password');
   }
 
-  // Show welcome for guest login
-  async guestLogin() {
-    const alert = await this.alertController.create({
-      header: 'تسجيل الدخول كضيف',
-      message: 'سيتم منحك وصولاً محدوداً. هل تريد المتابعة؟',
-      buttons: [
-        {
-          text: 'إلغاء',
-          role: 'cancel'
-        },
-        {
-          text: 'متابعة',
-          handler: () => {
-            this.router.navigateByUrl('/home');
-          }
-        }
-      ]
-    });
 
-    await alert.present();
-  }
 }

@@ -386,32 +386,7 @@ export class NotificationService {
     this.updateNotificationCount();
   }
   
-  /**
-   * Add a test notification (for development/demo purposes)
-   * @param notification The notification data to add (optional)
-   */
-  async addTestNotification(notification?: NotificationData) {
-    try {
-      // If no notification is provided, create a default test notification
-      if (!notification) {
-        notification = {
-          id: `test-${Date.now()}`,
-          title: 'إشعار تجريبي',
-          body: 'هذا إشعار تجريبي لاختبار وظائف الإشعارات',
-          type: 'general',
-          isRead: false,
-          receivedAt: new Date()
-        };
-      }
-      
-      // Store the notification
-      await this.storeNotification(notification);
-      return notification;
-    } catch (error) {
-      console.error('Error adding test notification:', error);
-      throw error;
-    }
-  }
+
   
   /**
    * Update notification count

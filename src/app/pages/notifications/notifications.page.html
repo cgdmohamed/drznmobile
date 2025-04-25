@@ -11,9 +11,6 @@
       <ion-button (click)="clearAllNotifications()" *ngIf="hasNotifications()">
         <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
       </ion-button>
-      <ion-button (click)="addTestNotification()">
-        <ion-icon name="add-outline" slot="icon-only"></ion-icon>
-      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
@@ -72,9 +69,6 @@
         <ion-icon name="notifications-off-outline"></ion-icon>
         <h2>لا توجد إشعارات</h2>
         <p>ستظهر هنا جميع الإشعارات الواردة</p>
-        <ion-button (click)="addTestNotification()" fill="solid" color="primary">
-          إضافة إشعار تجريبي
-        </ion-button>
       </div>
     </ng-template>
   </ng-container>
