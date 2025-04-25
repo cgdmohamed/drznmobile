@@ -19,7 +19,16 @@ export class AuthService {
     private http: HttpClient,
     private storage: Storage,
     private router: Router
-  ) {}
+  ) {
+    this.init();
+  }
+
+  // Initialize storage
+  async init() {
+    // Create the storage database
+    await this.storage.create();
+    console.log('Auth service: Storage initialized');
+  }
 
   // User observable
   get user(): Observable<User | null> {

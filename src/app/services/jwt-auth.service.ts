@@ -55,7 +55,19 @@ export class JwtAuthService {
     private platform: Platform,
     private router: Router
   ) {
-    this.loadAuthData();
+    this.init();
+  }
+  
+  /**
+   * Initialize the service
+   */
+  async init() {
+    // Create the storage database first
+    await this.storage.create();
+    console.log('JWT Auth service: Storage initialized');
+    
+    // Then load auth data
+    await this.loadAuthData();
   }
 
   get currentUserValue(): User | null {

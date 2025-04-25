@@ -148,12 +148,38 @@
       </div>
     </div>
     
+    <!-- Tracking Status -->
+    <div class="order-section tracking-section" *ngIf="isTracking">
+      <h3>متابعة حالة الطلب</h3>
+      <div class="tracking-info">
+        <div class="tracking-status active">
+          <ion-icon name="pulse-outline"></ion-icon>
+          <span>جاري متابعة الطلب تلقائياً... ستصلك إشعارات عند تغيير حالة الطلب</span>
+        </div>
+      </div>
+    </div>
+    
     <!-- Action Buttons -->
     <div class="order-actions" *ngIf="!statusUpdating && (order.status === 'pending' || order.status === 'processing' || order.status === 'on-hold')">
-      <ion-button expand="block" color="danger" (click)="requestCancellation()">
+      <!-- Cancel Order Button (shown only if within cancellation window) -->
+      <ion-button expand="block" color="danger" (click)="requestCancellation()" [disabled]="!isWithinCancellationWindow">
         <ion-icon name="close-circle-outline" slot="start"></ion-icon>
-        إلغاء الطلب
+        {{ isWithinCancellationWindow ? 'إلغاء الطلب' : 'انتهت فترة الإلغاء' }}
       </ion-button>
+      
+      <!-- Tracking Control -->
+      <ion-button expand="block" color="medium" (click)="isTracking ? stopOrderTracking() : startOrderTracking()" class="tracking-button">
+        <ion-icon [name]="isTracking ? 'stop-circle-outline' : 'pulse-outline'" slot="start"></ion-icon>
+        {{ isTracking ? 'إيقاف المتابعة التلقائية' : 'بدء المتابعة التلقائية' }}
+      </ion-button>
+    </div>
+    
+    <!-- Cancellation Window Info -->
+    <div class="cancellation-info" *ngIf="isWithinCancellationWindow && (order.status === 'pending' || order.status === 'processing' || order.status === 'on-hold')">
+      <ion-note color="danger">
+        <ion-icon name="time-outline"></ion-icon>
+        يمكن إلغاء الطلب خلال {{ cancellationWindowMinutes }} دقيقة من وقت الطلب
+      </ion-note>
     </div>
   </div>
 </ion-content>

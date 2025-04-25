@@ -298,8 +298,9 @@ export class NotificationService {
   /**
    * Store notification in local storage
    * @param notification Notification data to store
+   * @returns Promise that resolves when notification is stored
    */
-  private async storeNotification(notification: NotificationData) {
+  async storeNotification(notification: NotificationData): Promise<void> {
     try {
       console.log('Storing notification:', notification);
       

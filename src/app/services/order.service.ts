@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
-import { catchError, tap, map } from 'rxjs/operators';
+import { Observable, BehaviorSubject, of, throwError, timer } from 'rxjs';
+import { catchError, tap, map, takeUntil, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Storage } from '@ionic/storage-angular';
 import { Order } from '../interfaces/order.interface';
 import { Cart } from '../interfaces/cart.interface';
-import { ToastController } from '@ionic/angular';
+import { ToastController, AlertController } from '@ionic/angular';
 import { AuthService } from './auth.service';
+import { NotificationService, NotificationData } from './notification.service';
 import { demoProducts } from '../demo/demo-products';
 
 @Injectable({
@@ -25,7 +26,9 @@ export class OrderService {
     private http: HttpClient,
     private storage: Storage,
     private authService: AuthService,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private alertController: AlertController,
+    private notificationService: NotificationService
   ) {
     this.initialize();
   }
@@ -175,6 +178,214 @@ export class OrderService {
     );
   }
   
+  /**
+   * Track order status with periodic updates
+   * @param orderId The ID of the order to track
+   * @param intervalSeconds How often to check for updates (in seconds)
+   * @param maxDurationMinutes Maximum tracking duration (in minutes)
+   * @returns Observable that completes when tracking ends
+   */
+  trackOrderStatus(orderId: number, intervalSeconds: number = 30, maxDurationMinutes: number = 60): Observable<Order> {
+    console.log(`Starting to track order ${orderId} status...`);
+    
+    // Keep track of the last known status to detect changes
+    let lastKnownStatus: string | null = null;
+    
+    // Calculate how many attempts we'll make based on interval and max duration
+    const maxAttempts = (maxDurationMinutes * 60) / intervalSeconds;
+    let attemptCount = 0;
+    
+    // Create a timer that emits at the specified interval
+    return timer(0, intervalSeconds * 1000).pipe(
+      // Stop after maxDurationMinutes
+      takeUntil(timer(maxDurationMinutes * 60 * 1000)),
+      
+      // For each timer tick, fetch the latest order
+      switchMap(() => {
+        attemptCount++;
+        console.log(`Checking order ${orderId} status (attempt ${attemptCount}/${maxAttempts})...`);
+        
+        return this.getOrder(orderId).pipe(
+          catchError(error => {
+            console.error(`Error tracking order ${orderId}:`, error);
+            return of(null as any);  // Continue tracking despite errors
+          })
+        );
+      }),
+      
+      // Filter out null results and only emit when we have an order
+      map(order => {
+        if (!order) {
+          throw new Error(`Failed to fetch order ${orderId}`);
+        }
+        return order;
+      }),
+      
+      // Check if status changed and send notification if it did
+      tap(order => {
+        const currentStatus = order.status;
+        
+        // If this is the first check, just record the status
+        if (lastKnownStatus === null) {
+          lastKnownStatus = currentStatus;
+          console.log(`Initial order status: ${currentStatus}`);
+          return;
+        }
+        
+        // If status changed, notify the user
+        if (currentStatus !== lastKnownStatus) {
+          console.log(`Order status changed from ${lastKnownStatus} to ${currentStatus}`);
+          
+          // Send notification about status change
+          this.sendOrderStatusNotification(order);
+          
+          // Update the stored status
+          lastKnownStatus = currentStatus;
+          
+          // Update orders in storage
+          const currentOrders = this.ordersValue;
+          const updatedOrders = currentOrders.map(o => 
+            o.id === order.id ? order : o
+          );
+          this._orders.next(updatedOrders);
+          this.saveOrders(updatedOrders);
+        }
+      }),
+      
+      // Stop tracking if order reaches a final status
+      tap(order => {
+        const finalStatuses = ['completed', 'cancelled', 'refunded', 'failed', 'trash'];
+        if (finalStatuses.includes(order.status)) {
+          console.log(`Order ${orderId} reached final status: ${order.status}. Stopping tracking.`);
+          throw new Error('Order reached final status');  // Use error to complete the observable
+        }
+      }),
+      
+      catchError(error => {
+        // If it's our "final status" error, complete cleanly
+        if (error.message === 'Order reached final status') {
+          return of(null as any);
+        }
+        
+        // Otherwise, propagate the error
+        console.error('Error in order tracking:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+  
+  /**
+   * Send notification about order status change
+   * @param order The updated order
+   */
+  private sendOrderStatusNotification(order: Order) {
+    const statusMap: {[key: string]: string} = {
+      'pending': 'قيد الانتظار',
+      'processing': 'قيد المعالجة',
+      'on-hold': 'معلق',
+      'completed': 'مكتمل',
+      'cancelled': 'ملغي',
+      'refunded': 'مسترجع',
+      'failed': 'فشل',
+      'trash': 'محذوف'
+    };
+    
+    const statusText = statusMap[order.status] || order.status;
+    const orderNumber = order.number;
+    const totalItems = order.line_items.length;
+    
+    // Create notification data
+    const notification: NotificationData = {
+      id: `order_${order.id}_${Date.now()}`,
+      title: `تحديث حالة الطلب #${orderNumber}`,
+      body: `تم تحديث حالة طلبك #${orderNumber} إلى "${statusText}"`,
+      type: 'order',
+      actionId: 'view_order',
+      actionData: {
+        orderId: order.id
+      },
+      isRead: false,
+      receivedAt: new Date()
+    };
+    
+    // Store the notification
+    this.notificationService.storeNotification(notification);
+    
+    // Show toast
+    this.presentToast(`تم تحديث حالة الطلب #${orderNumber} إلى "${statusText}"`);
+  }
+  
+  /**
+   * Cancel an order within specified time window (default: 1 minute)
+   * @param orderId The ID of the order to cancel
+   * @param timeWindowMinutes Maximum time allowed for cancellation
+   */
+  async cancelOrder(orderId: number, timeWindowMinutes: number = 1): Promise<boolean> {
+    try {
+      // Get the order
+      const order = await this.getOrder(orderId).toPromise();
+      
+      if (!order) {
+        throw new Error('Order not found');
+      }
+      
+      // Check if order is in a cancelable state
+      const cancelableStatuses = ['pending', 'processing', 'on-hold'];
+      if (!cancelableStatuses.includes(order.status)) {
+        throw new Error(`Cannot cancel order in ${order.status} status`);
+      }
+      
+      // Check if the order is within the cancellation window
+      const orderDate = new Date(order.date_created);
+      const now = new Date();
+      const diffMinutes = (now.getTime() - orderDate.getTime()) / (1000 * 60);
+      
+      if (diffMinutes > timeWindowMinutes) {
+        throw new Error(`Cancellation window of ${timeWindowMinutes} minute(s) has passed`);
+      }
+      
+      // Update order status to cancelled
+      const updatedOrder = await this.updateOrderStatus(orderId, 'cancelled').toPromise();
+      
+      // Show success message
+      this.presentToast('تم إلغاء الطلب بنجاح');
+      
+      return true;
+    } catch (error: any) {
+      console.error('Error cancelling order:', error);
+      
+      // Show error message based on specific error
+      if (error.message.includes('window')) {
+        // Cancellation window passed
+        this.presentCancellationAlert('انتهت مهلة الإلغاء', 
+          'لا يمكن إلغاء الطلب بعد مرور دقيقة من وقت الطلب. يرجى التواصل مع خدمة العملاء للمساعدة.');
+      } else if (error.message.includes('status')) {
+        // Invalid status for cancellation
+        this.presentCancellationAlert('لا يمكن إلغاء الطلب', 
+          'لا يمكن إلغاء الطلب في حالته الحالية. يرجى التواصل مع خدمة العملاء للمساعدة.');
+      } else {
+        // Generic error
+        this.presentCancellationAlert('فشل إلغاء الطلب', 
+          'حدث خطأ أثناء محاولة إلغاء الطلب. يرجى المحاولة مرة أخرى لاحقاً أو التواصل مع خدمة العملاء.');
+      }
+      
+      return false;
+    }
+  }
+  
+  /**
+   * Present an alert for cancellation errors
+   */
+  private async presentCancellationAlert(header: string, message: string) {
+    const alert = await this.alertController.create({
+      header,
+      message,
+      buttons: ['حسناً']
+    });
+    
+    await alert.present();
+  }
+
   /**
    * Create a new order
    * @param orderData The order data or cart

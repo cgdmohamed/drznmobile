@@ -39,8 +39,15 @@ export class AppComponent implements OnInit, OnDestroy {
     private toastController: ToastController,
     private router: Router
   ) {
-    this.initializeApp();
-    this.setupRouterListener();
+    // Initialize storage first
+    this.storage.create().then(() => {
+      console.log('App component: Storage created successfully');
+      // After storage is initialized, proceed with app initialization
+      this.initializeApp();
+      this.setupRouterListener();
+    }).catch(error => {
+      console.error('Error creating storage:', error);
+    });
   }
   
   // Setup router event listener to toggle menu visibility
@@ -59,9 +66,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
-    // Initialize storage
-    await this.storage.create();
-    console.log('Storage initialized successfully');
+    // Storage is already initialized in constructor
 
     // Initialize services that depend on storage
     await this.themeService.initialize();
