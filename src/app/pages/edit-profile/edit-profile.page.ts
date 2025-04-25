@@ -1,7 +1,9 @@
 import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NavController, LoadingController, ToastController, AlertController, ActionSheetController, Platform } from '@ionic/angular';
+import { Storage } from '@ionic/storage-angular';
 import { AuthService } from '../../services/auth.service';
+import { JwtAuthService } from '../../services/jwt-auth.service';
 import { User } from '../../interfaces/user.interface';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
@@ -24,6 +26,8 @@ export class EditProfilePage implements OnInit {
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
+    private jwtAuthService: JwtAuthService,
+    private storage: Storage,
     private navCtrl: NavController,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController,
@@ -54,29 +58,69 @@ export class EditProfilePage implements OnInit {
 
   loadUserProfile() {
     this.isLoading = true;
-    this.authService.user.subscribe(user => {
-      this.user = user;
-      if (!user) {
-        this.navCtrl.navigateRoot('/login');
+    
+    // Try to get user from JWT auth service first
+    this.jwtAuthService.currentUser$.subscribe(jwtUser => {
+      if (jwtUser) {
+        console.log('Using JWT auth user profile');
+        this.user = jwtUser;
+        this.updateFormWithUserData(jwtUser);
+        this.isLoading = false;
         return;
       }
       
-      // Populate form with user data
-      this.profileForm.patchValue({
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        phone: user.billing?.phone || '',
-        billing_address_1: user.billing?.address_1 || '',
-        billing_address_2: user.billing?.address_2 || '',
-        billing_city: user.billing?.city || '',
-        billing_state: user.billing?.state || '',
-        billing_postcode: user.billing?.postcode || '',
-        billing_country: user.billing?.country || 'SA',
+      // Fall back to legacy auth service if JWT auth doesn't have a user
+      this.authService.user.subscribe(legacyUser => {
+        if (legacyUser) {
+          console.log('Using legacy auth user profile');
+          this.user = legacyUser;
+          this.updateFormWithUserData(legacyUser);
+          this.isLoading = false;
+          return;
+        }
+        
+        // If no user is found in either service, check storage directly
+        this.checkStoredCredentials();
       });
-      
-      this.isLoading = false;
     });
+  }
+  
+  private updateFormWithUserData(user: User) {
+    // Populate form with user data
+    this.profileForm.patchValue({
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      phone: user.billing?.phone || '',
+      billing_address_1: user.billing?.address_1 || '',
+      billing_address_2: user.billing?.address_2 || '',
+      billing_city: user.billing?.city || '',
+      billing_state: user.billing?.state || '',
+      billing_postcode: user.billing?.postcode || '',
+      billing_country: user.billing?.country || 'SA',
+    });
+  }
+  
+  private async checkStoredCredentials() {
+    try {
+      const user = await this.jwtAuthService.getUser();
+      if (user) {
+        console.log('Found user in storage, restoring session');
+        // Update the user subject
+        this.jwtAuthService.setCurrentUser(user);
+        this.user = user;
+        this.updateFormWithUserData(user);
+        this.isLoading = false;
+      } else {
+        console.log('No user found in storage, redirecting to login');
+        this.isLoading = false;
+        this.navCtrl.navigateRoot('/login');
+      }
+    } catch (error) {
+      console.error('Error checking stored credentials', error);
+      this.isLoading = false;
+      this.navCtrl.navigateRoot('/login');
+    }
   }
 
   async saveProfile() {
@@ -135,18 +179,37 @@ export class EditProfilePage implements OnInit {
         ...(profileImageUrl && { avatar_url: profileImageUrl })
       };
       
-      this.authService.updateUserProfile(userData).subscribe({
-        next: (updatedUser) => {
-          loading.dismiss();
-          this.presentToast('تم تحديث الملف الشخصي بنجاح');
-          this.navCtrl.navigateBack('/profile');
-        },
-        error: (error) => {
-          loading.dismiss();
-          this.presentErrorAlert('خطأ في تحديث الملف الشخصي', error.message);
-        }
-      });
+      // Try to use JWT auth service first if we have a user there
+      if (this.jwtAuthService.isAuthenticated) {
+        console.log('Updating profile with JWT auth service');
+        // For JWT auth we would call WooCommerce REST API directly
+        // For now, just update the user in JWT auth service
+        const currentUser = { ...this.jwtAuthService.currentUserValue };
+        const updatedUser = { ...currentUser, ...userData };
+        
+        // Use the JWT service method to update the user which will handle storage for us
+        this.jwtAuthService.updateUserData(updatedUser);
+        
+        loading.dismiss();
+        this.presentToast('تم تحديث الملف الشخصي بنجاح');
+        this.navCtrl.navigateBack('/profile');
+      } else {
+        // Fall back to legacy auth service
+        console.log('Updating profile with legacy auth service');
+        this.authService.updateUserProfile(userData).subscribe({
+          next: (updatedUser) => {
+            loading.dismiss();
+            this.presentToast('تم تحديث الملف الشخصي بنجاح');
+            this.navCtrl.navigateBack('/profile');
+          },
+          error: (error) => {
+            loading.dismiss();
+            this.presentErrorAlert('خطأ في تحديث الملف الشخصي', error.message);
+          }
+        });
+      }
     } catch (error) {
+      console.error('Error updating profile:', error);
       loading.dismiss();
       this.presentErrorAlert('خطأ في تحميل الصورة', 'حدث خطأ أثناء رفع صورة الملف الشخصي، يرجى المحاولة مرة أخرى.');
     }

@@ -69,6 +69,16 @@ export class JwtAuthService {
       this.currentUserSubject.next(user);
     }
   }
+  
+  /**
+   * Update user data in storage and current user subject
+   */
+  async updateUserData(userData: User): Promise<void> {
+    // Update the user in storage
+    await this.storage.set(this.AUTH_USER_KEY, userData);
+    // Update the current user subject
+    this.currentUserSubject.next(userData);
+  }
 
   /**
    * Load authentication data from storage on service initialization
