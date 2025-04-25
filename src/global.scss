@@ -32,7 +32,36 @@
 /* Content padding for bottom tabs */
 ion-content {
   --padding-bottom: 70px; /* Add padding for bottom tabs */
-  --background: linear-gradient(to bottom, var(--ion-color-primary) 0%, white 100%);
+  --background: linear-gradient(to bottom, var(--ion-color-primary) 0%, white 35%);
+}
+
+/* Transparent header with no shadow */
+ion-header {
+  --background: transparent;
+  --ion-color-base: transparent !important;
+}
+
+ion-toolbar {
+  --background: transparent;
+  --border-color: transparent;
+  --border-width: 0px !important;
+  --border-style: none;
+  --min-height: 56px;
+  --padding-top: 4px;
+  --padding-bottom: 4px;
+  --box-shadow: none;
+  
+  ion-title {
+    font-weight: 600;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.2);
+  }
+  
+  ion-button, ion-back-button, ion-menu-button, ion-icon {
+    --color: var(--ion-color-primary-contrast);
+    color: var(--ion-color-primary-contrast);
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.2);
+    filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.2));
+  }
 }
 
 /* RTL Direction support */
@@ -96,7 +125,7 @@ ion-progress-bar.animate {
   --ion-text-color-rgb: 255, 255, 255;
   --ion-border-color: #222222;
   --ion-item-background: #1e1e1e;
-  --ion-toolbar-background: #1e1e1e;
+  --ion-toolbar-background: transparent;
   --ion-tab-bar-background: #1f1f1f;
   --ion-card-background: #1e1e1e;
   
