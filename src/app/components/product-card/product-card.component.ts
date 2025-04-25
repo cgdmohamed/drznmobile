@@ -38,7 +38,10 @@ export class ProductCardComponent implements OnInit {
     }
     return 'assets/images/product-placeholder.svg';
   }
-
+  
+  /**
+   * Get discount percentage for product
+   */
   getDiscountPercentage(): number {
     if (this.product && this.product.on_sale) {
       const regularPrice = parseFloat(this.product.regular_price);

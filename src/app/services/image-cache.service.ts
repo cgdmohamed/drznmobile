@@ -108,13 +108,16 @@ export class ImageCacheService {
    * @param imageUrl URL of the image to fetch
    */
   private fetchAndCacheImage(imageUrl: string): Observable<string> {
-    return this.http.get(imageUrl, { responseType: 'blob' }).pipe(
+    // Encode the URL properly to handle Unicode characters (like Arabic)
+    const encodedUrl = this.encodeSpecialChars(imageUrl);
+    
+    return this.http.get(encodedUrl, { responseType: 'blob' }).pipe(
       switchMap(blob => {
         return from(new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => {
             const base64data = reader.result as string;
-            this.cacheImage(imageUrl, base64data)
+            this.cacheImage(imageUrl, base64data) // Store using original URL as key
               .then(() => resolve(base64data))
               .catch(error => reject(error));
           };
@@ -125,10 +128,68 @@ export class ImageCacheService {
         }));
       }),
       catchError(error => {
-        console.error('Error fetching image', imageUrl, error);
+        console.error('Error fetching image', encodedUrl, error);
         return throwError(() => new Error(`Failed to fetch image: ${error.message}`));
       })
     );
+  }
+  
+  /**
+   * Properly encode URL with special characters while preserving URL structure
+   * @param url The URL to encode
+   */
+  private encodeSpecialChars(url: string): string {
+    try {
+      // Parse the URL to get its components
+      const parsedUrl = new URL(url);
+      
+      // Split the pathname into segments and encode each segment separately
+      const pathSegments = parsedUrl.pathname.split('/').map((segment, index) => {
+        // Skip empty segments (like the one after the first slash)
+        if (segment === '' && index !== 0) return '';
+        
+        // Encode each segment (except for '/', which is preserved by the split/join)
+        return encodeURIComponent(segment);
+      });
+      
+      // Rebuild the pathname
+      parsedUrl.pathname = pathSegments.join('/');
+      
+      // Return the encoded URL
+      return parsedUrl.toString();
+    } catch (e) {
+      // If URL parsing fails, try a simpler encoding approach
+      console.warn('Failed to parse URL:', url, e);
+      
+      // Try to preserve the URL structure while encoding problematic parts
+      try {
+        // Split by '/' and encode each part (keeping the / unchanged)
+        const urlParts = url.split('/');
+        
+        // Find the protocol and domain parts (they don't need encoding)
+        const protocolIdx = url.indexOf('://');
+        const domainEndIdx = protocolIdx > -1 ? url.indexOf('/', protocolIdx + 3) : -1;
+        
+        // If we have a valid URL structure, preserve protocol and domain
+        if (protocolIdx > -1 && domainEndIdx > -1) {
+          const protocol = url.substring(0, protocolIdx + 3); // includes ://
+          const domain = url.substring(protocolIdx + 3, domainEndIdx);
+          const path = url.substring(domainEndIdx);
+          
+          // Encode only the path part
+          const encodedPath = path.split('/')
+            .map((part, idx) => idx === 0 ? part : encodeURIComponent(part))
+            .join('/');
+            
+          return protocol + domain + encodedPath;
+        }
+      } catch (encodingError) {
+        console.error('Error encoding URL parts:', encodingError);
+      }
+      
+      // Last resort: return the original URL
+      return url;
+    }
   }
 
   /**

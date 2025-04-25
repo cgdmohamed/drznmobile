@@ -8,15 +8,18 @@
   <!-- Placeholder when loading -->
   <div *ngIf="isLoading && loadingPlaceholder && !spinner" class="image-placeholder"></div>
   
-  <!-- Actual image (only shown when loaded) -->
-  <img [src]="imageUrl" 
+  <!-- Fallback image (shown when error occurs) -->
+  <img *ngIf="hasError" 
+       [src]="fallbackSrc" 
+       [alt]="alt"
+       class="cached-image fallback-image"
+       (error)="usePlaceholderFallback()">
+  
+  <!-- Actual image (only shown when loaded and no error) -->
+  <img *ngIf="!hasError" 
+       [src]="imageUrl" 
        [alt]="alt" 
        [style.display]="isLoading ? 'none' : 'block'"
-       (error)="handleError('Image load failed')"
+       (error)="handleImageError()"
        class="cached-image">
-  
-  <!-- Error indicator if needed -->
-  <div *ngIf="hasError" class="error-container">
-    <ion-icon name="alert-circle-outline" color="danger"></ion-icon>
-  </div>
 </div>

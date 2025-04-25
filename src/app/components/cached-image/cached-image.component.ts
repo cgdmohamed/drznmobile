@@ -77,13 +77,33 @@ export class CachedImageComponent implements OnInit, OnDestroy {
   }
   
   /**
-   * Handle image loading error
+   * Handle error on the main image
+   */
+  handleImageError() {
+    console.error('Image loading error on main image for:', this.src);
+    this.hasError = true;
+    this.isLoading = false;
+    this.imageLoaded.emit({ success: false, src: this.src });
+  }
+  
+  /**
+   * Handle error on the fallback image itself
+   * Uses a simple SVG placeholder as last resort
+   */
+  usePlaceholderFallback() {
+    console.error('Error loading fallback image:', this.fallbackSrc);
+    // Create a simple data URI SVG as a last resort fallback
+    const svgPlaceholder = `data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect fill="%23eaeaea" width="100" height="100"/%3E%3Cpath fill="%23999" d="M50 30 L70 70 L30 70 Z"/%3E%3C/svg%3E`;
+    this.fallbackSrc = svgPlaceholder;
+  }
+  
+  /**
+   * Handle image loading error - used internally
    */
   private handleError(errorMessage: string) {
     console.error('Image loading error:', errorMessage, 'for image:', this.src);
     this.hasError = true;
     this.isLoading = false;
-    this.imageUrl = this.fallbackSrc;
     this.imageLoaded.emit({ success: false, src: this.src });
   }
   
