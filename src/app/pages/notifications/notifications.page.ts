@@ -225,23 +225,36 @@ export class NotificationsPage implements OnInit, OnDestroy {
    * Add a test notification (for development only)
    */
   async addTestNotification() {
-    const testNotification: NotificationData = {
-      id: `test-${Date.now()}`,
-      title: 'إشعار تجريبي',
-      body: 'هذا إشعار تجريبي لاختبار وظائف الإشعارات',
-      type: 'general',
-      isRead: false,
-      receivedAt: new Date()
-    };
-    
-    await this.notificationService.addTestNotification(testNotification);
-    
-    const toast = await this.toastController.create({
-      message: 'تم إضافة إشعار تجريبي',
-      duration: 2000,
-      position: 'bottom'
-    });
-    
-    await toast.present();
+    try {
+      const testNotification: NotificationData = {
+        id: `test-${Date.now()}`,
+        title: 'إشعار تجريبي',
+        body: 'هذا إشعار تجريبي لاختبار وظائف الإشعارات',
+        type: 'general',
+        isRead: false,
+        receivedAt: new Date()
+      };
+      
+      await this.notificationService.addTestNotification(testNotification);
+      
+      const toast = await this.toastController.create({
+        message: 'تم إضافة إشعار تجريبي',
+        duration: 2000,
+        position: 'bottom'
+      });
+      
+      await toast.present();
+    } catch (error) {
+      console.error('Error adding test notification:', error);
+      
+      const errorToast = await this.toastController.create({
+        message: 'حدث خطأ أثناء إضافة الإشعار التجريبي',
+        duration: 2000,
+        position: 'bottom',
+        color: 'danger'
+      });
+      
+      await errorToast.present();
+    }
   }
 }
