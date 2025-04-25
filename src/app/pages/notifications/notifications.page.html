@@ -5,10 +5,10 @@
     </ion-buttons>
     <ion-title>الإشعارات</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="markAllAsRead()" *ngIf="notifications?.length > 0 && notifications.some(n => !n.isRead)">
+      <ion-button (click)="markAllAsRead()" *ngIf="hasUnreadNotifications()">
         <ion-icon name="checkmark-done-outline" slot="icon-only"></ion-icon>
       </ion-button>
-      <ion-button (click)="clearAllNotifications()" *ngIf="notifications?.length > 0">
+      <ion-button (click)="clearAllNotifications()" *ngIf="hasNotifications()">
         <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
       </ion-button>
       <ion-button (click)="addTestNotification()">
@@ -41,7 +41,7 @@
 
   <!-- Notifications list -->
   <ng-container *ngIf="!isLoading">
-    <ion-list *ngIf="notifications?.length > 0; else noNotifications">
+    <ion-list *ngIf="hasNotifications(); else noNotifications">
       <ion-item-sliding *ngFor="let notification of notifications">
         <ion-item [ngClass]="{'unread': !notification.isRead}" (click)="viewNotification(notification)" button detail="false" lines="full">
           <ion-icon *ngIf="!notification.isRead" name="ellipse" slot="start" color="danger" class="unread-dot"></ion-icon>

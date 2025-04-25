@@ -42,6 +42,20 @@ export class NotificationsPage implements OnInit, OnDestroy {
       }
     );
   }
+  
+  /**
+   * Check if there are any notifications
+   */
+  hasNotifications(): boolean {
+    return this.notifications && this.notifications.length > 0;
+  }
+  
+  /**
+   * Check if there are any unread notifications
+   */
+  hasUnreadNotifications(): boolean {
+    return this.hasNotifications() && this.notifications.some(n => !n.isRead);
+  }
 
   /**
    * View notification details and mark as read
