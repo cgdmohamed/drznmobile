@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { CartService } from '../../services/cart.service';
 import { OrderService } from '../../services/order.service';
 import { AuthService } from '../../services/auth.service';
+import { JwtAuthService } from '../../services/jwt-auth.service';
 import { PaymentService } from '../../services/payment.service';
 import { OtpService } from '../../services/otp.service';
 import { User } from '../../interfaces/user.interface';
@@ -56,6 +57,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
     private cartService: CartService,
     private orderService: OrderService,
     public authService: AuthService, // Changed to public for template access
+    public jwtAuthService: JwtAuthService, // Added JWT auth service
     private paymentService: PaymentService,
     private otpService: OtpService,
     private router: Router,
@@ -91,8 +93,8 @@ export class CheckoutPage implements OnInit, OnDestroy {
       }
       
       // Set initial step based on authentication status
-      if (this.authService.isLoggedIn) {
-        // User is logged in, start at shipping info step
+      if (this.jwtAuthService.isAuthenticated || this.authService.isLoggedIn) {
+        // User is logged in (via JWT or legacy auth), start at shipping info step
         this.step = 1;
       } else if (this.otpConfirmed) {
         // User verified with OTP, start at shipping info step
@@ -114,7 +116,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
   
   // Check authentication status and show OTP verification if needed
   checkAuthStatus() {
-    if (!this.authService.isLoggedIn && !this.otpConfirmed) {
+    if (!this.jwtAuthService.isAuthenticated && !this.authService.isLoggedIn && !this.otpConfirmed) {
       // User is not logged in and OTP is not confirmed, show OTP verification
       setTimeout(() => {
         this.showAuthOptions();
@@ -721,8 +723,9 @@ export class CheckoutPage implements OnInit, OnDestroy {
         case 'cod':
         default:
           // For cash on delivery, verify user authentication if needed
-          if (!this.authService.isLoggedIn && !this.otpConfirmed) {
-            this.sendOtp();
+          if (!this.jwtAuthService.isAuthenticated && !this.otpConfirmed) {
+            // First check JWT auth (our primary auth method)
+            this.showAuthOptions();
           } else {
             // User is logged in or OTP is confirmed, proceed to review
             this.step = 3;
