@@ -121,22 +121,46 @@ export class RegisterPage implements OnInit {
         if (error.status === 504 || error.status === 502 || error.status === 0) {
           // Connection errors
           this.registerError = 'لا يمكن الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.';
-        } else if (error.status === 409 || (error.error && error.error.code === 'registration-error-email-exists')) {
-          // Email already exists
+        } else if (error.status === 409 || 
+                 (error.error && error.error.code === 'registration-error-email-exists') ||
+                 (error.error && error.error.data && error.error.data.message && 
+                  error.error.data.message.includes('User already exists'))) {
+          // Email already exists - check for different formats of error messages
           this.registerError = 'البريد الإلكتروني مستخدم بالفعل. يرجى استخدام بريد إلكتروني مختلف.';
         } else if (error.error && error.error.code === 'registration-error-username-exists') {
           // Username already exists
           this.registerError = 'اسم المستخدم مستخدم بالفعل. يرجى استخدام اسم مستخدم مختلف.';
         } else if (error.status === 400) {
           // Bad request - typically validation errors
-          const errorMessage = error.error && error.error.message ? error.error.message : '';
-          if (errorMessage.includes('password')) {
-            this.registerError = 'كلمة المرور غير صالحة. يرجى استخدام كلمة مرور أقوى.';
-          } else if (errorMessage.includes('email')) {
-            this.registerError = 'البريد الإلكتروني غير صالح. يرجى التحقق من صياغة البريد الإلكتروني.';
+          if (error.error?.data?.message) {
+            // Handle specific error messages from JWT plugin
+            const errorMessage = error.error.data.message;
+            if (errorMessage.includes('User already exists')) {
+              this.registerError = 'البريد الإلكتروني مستخدم بالفعل. يرجى استخدام بريد إلكتروني مختلف.';
+            } else if (errorMessage.includes('password')) {
+              this.registerError = 'كلمة المرور غير صالحة. يرجى استخدام كلمة مرور أقوى.';
+            } else if (errorMessage.includes('email')) {
+              this.registerError = 'البريد الإلكتروني غير صالح. يرجى التحقق من صياغة البريد الإلكتروني.';
+            } else {
+              // Show the exact error message from the server if it's available
+              this.registerError = errorMessage;
+            }
+          } else if (error.error && error.error.message) {
+            // Simple error message
+            const errorMessage = error.error.message;
+            if (errorMessage.includes('password')) {
+              this.registerError = 'كلمة المرور غير صالحة. يرجى استخدام كلمة مرور أقوى.';
+            } else if (errorMessage.includes('email')) {
+              this.registerError = 'البريد الإلكتروني غير صالح. يرجى التحقق من صياغة البريد الإلكتروني.';
+            } else {
+              this.registerError = errorMessage;
+            }
           } else {
             this.registerError = 'بيانات التسجيل غير صالحة. يرجى التحقق من المعلومات المدخلة.';
           }
+        } else if (error.message) {
+          // If we have a clear error message, display it
+          this.registerError = error.message;
         } else {
           // Generic fallback error
           this.registerError = 'حدث خطأ أثناء التسجيل. الرجاء المحاولة مرة أخرى.';

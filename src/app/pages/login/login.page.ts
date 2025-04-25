@@ -85,11 +85,23 @@ export class LoginPage implements OnInit {
         console.error('JWT login failed', error);
         loading.dismiss();
         
-        // Show appropriate error messages based on error type
+        // Show appropriate error messages based on error type and error response
         if (error.status === 504 || error.status === 502 || error.status === 0) {
           this.loginError = 'لا يمكن الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.';
+        } else if (error.status === 400) {
+          // Check for specific error message from backend
+          if (error.error?.data?.message === 'Wrong user credentials.') {
+            this.loginError = 'اسم المستخدم أو كلمة المرور غير صحيحة، الرجاء المحاولة مرة أخرى.';
+          } else if (error.error?.message) {
+            this.loginError = error.error.message;
+          } else {
+            this.loginError = 'بيانات تسجيل الدخول غير صالحة، الرجاء التحقق والمحاولة مرة أخرى.';
+          }
         } else if (error.status === 401 || error.status === 403) {
           this.loginError = 'خطأ في تسجيل الدخول. يرجى التحقق من بيانات الاعتماد الخاصة بك.';
+        } else if (error.message) {
+          // If we have a specific error message from our service
+          this.loginError = error.message;
         } else {
           this.loginError = 'حدث خطأ أثناء تسجيل الدخول. الرجاء المحاولة مرة أخرى.';
         }
