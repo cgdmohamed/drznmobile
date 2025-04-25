@@ -190,8 +190,19 @@ export class JwtAuthService {
         // Fetch user info from the WooCommerce API
         return this.fetchUserProfile(email);
       }),
-      tap(() => {
+      tap(user => {
         this.isLoadingSubject.next(false);
+        
+        // Make sure to redirect if we're on an auth page
+        if (this.router) {
+          setTimeout(() => {
+            const currentUrl = window.location.href;
+            if (currentUrl.includes('/login') || currentUrl.includes('/register')) {
+              console.log('Redirecting to home after successful login');
+              this.router.navigate(['/']);
+            }
+          }, 500);
+        }
       }),
       catchError(error => {
         this.isLoadingSubject.next(false);
@@ -269,12 +280,24 @@ export class JwtAuthService {
               return this.fetchUserProfile(userData.email);
             }),
             catchError(loginError => {
-              console.error('Auto-login after registration failed', loginError);
+              console.warn('Auto-login after registration failed, using minimal profile', loginError);
               // Even if auto-login fails, registration was successful
               // Create minimal user with provided info
               const minimalUser = this.createMinimalUser(userData);
               this.storage.set(this.AUTH_USER_KEY, minimalUser);
               this.currentUserSubject.next(minimalUser);
+              
+              // Make sure to redirect if we're on an auth page
+              if (this.router) {
+                setTimeout(() => {
+                  const currentUrl = window.location.href;
+                  if (currentUrl.includes('/login') || currentUrl.includes('/register')) {
+                    console.log('Redirecting to home after successful registration');
+                    this.router.navigate(['/']);
+                  }
+                }, 500);
+              }
+              
               return of(minimalUser);
             })
           );
@@ -539,121 +562,66 @@ export class JwtAuthService {
   
   /**
    * Fetch user profile from WooCommerce API using consumer keys
+   * If profile fetch fails, we'll still keep the user logged in with a minimal profile
    */
   private fetchUserProfile(email: string): Observable<User> {
     return from(this.getToken()).pipe(
       switchMap(token => {
         if (!token) {
-          return throwError(() => new Error('No token available to fetch user profile'));
+          console.warn('No token available to fetch user profile, creating minimal user.');
+          const minimalUser = this.createMinimalUser({ email });
+          this.storage.set(this.AUTH_USER_KEY, minimalUser);
+          this.currentUserSubject.next(minimalUser);
+          return of(minimalUser);
         }
         
-        // WooCommerce API requires consumer key/secret authentication
-        const consumerKey = environment.consumerKey;
-        const consumerSecret = environment.consumerSecret;
-        
-        // Use the WooCommerce REST API to fetch the user by email
-        return this.http.get<User>(`${environment.apiUrl}/customers?email=${email}&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`).pipe(
-          map((customers: any) => {
-            console.log('User profile response:', customers);
-            
-            if (Array.isArray(customers) && customers.length > 0) {
-              const user = customers[0] as User;
-              // Store the user data
-              this.storage.set(this.AUTH_USER_KEY, user);
-              this.currentUserSubject.next(user);
-              return user;
-            } else {
-              // If we can't find the user, create a minimal user profile
-              const minimalUser = {
-                id: 0,
-                email: email,
-                username: email,
-                first_name: '',
-                last_name: '',
-                date_created: new Date().toISOString(),
-                date_modified: new Date().toISOString(),
-                role: 'customer',
-                is_paying_customer: false,
-                avatar_url: '',
-                billing: {
-                  first_name: '',
-                  last_name: '',
-                  company: '',
-                  address_1: '',
-                  address_2: '',
-                  city: '',
-                  state: '',
-                  postcode: '',
-                  country: '',
-                  email: email,
-                  phone: ''
-                },
-                shipping: {
-                  first_name: '',
-                  last_name: '',
-                  company: '',
-                  address_1: '',
-                  address_2: '',
-                  city: '',
-                  state: '',
-                  postcode: '',
-                  country: ''
-                },
-                meta_data: []
-              } as User;
+        try {
+          // WooCommerce API requires consumer key/secret authentication
+          const consumerKey = environment.consumerKey;
+          const consumerSecret = environment.consumerSecret;
+          
+          // Use the WooCommerce REST API to fetch the user by email
+          return this.http.get<User>(`${environment.apiUrl}/customers?email=${email}&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`).pipe(
+            map((customers: any) => {
+              console.log('User profile response:', customers);
               
+              if (Array.isArray(customers) && customers.length > 0) {
+                const user = customers[0] as User;
+                // Store the user data
+                this.storage.set(this.AUTH_USER_KEY, user);
+                this.currentUserSubject.next(user);
+                return user;
+              } else {
+                console.log('No user found with this email, creating minimal user profile');
+                // If we can't find the user, create a minimal user profile
+                const minimalUser = this.createMinimalUser({ email });
+                this.storage.set(this.AUTH_USER_KEY, minimalUser);
+                this.currentUserSubject.next(minimalUser);
+                return minimalUser;
+              }
+            }),
+            catchError(error => {
+              console.warn('Error fetching user profile, falling back to minimal user:', error);
+              const minimalUser = this.createMinimalUser({ email });
               this.storage.set(this.AUTH_USER_KEY, minimalUser);
               this.currentUserSubject.next(minimalUser);
-              return minimalUser;
-            }
-          }),
-          catchError(error => {
-            console.error('Error fetching user profile:', error);
-            
-            // If the API call fails, fall back to a minimal user
-            const minimalUser = {
-              id: 0,
-              email: email,
-              username: email,
-              first_name: '',
-              last_name: '',
-              date_created: new Date().toISOString(),
-              date_modified: new Date().toISOString(),
-              role: 'customer',
-              is_paying_customer: false,
-              avatar_url: '',
-              billing: {
-                first_name: '',
-                last_name: '',
-                company: '',
-                address_1: '',
-                address_2: '',
-                city: '',
-                state: '',
-                postcode: '',
-                country: '',
-                email: email,
-                phone: ''
-              },
-              shipping: {
-                first_name: '',
-                last_name: '',
-                company: '',
-                address_1: '',
-                address_2: '',
-                city: '',
-                state: '',
-                postcode: '',
-                country: ''
-              },
-              meta_data: []
-            } as User;
-            
-            this.storage.set(this.AUTH_USER_KEY, minimalUser);
-            this.currentUserSubject.next(minimalUser);
-            return of(minimalUser);
-          })
-        );
+              return of(minimalUser);
+            })
+          );
+        } catch (error) {
+          console.error('Exception in fetchUserProfile:', error);
+          const minimalUser = this.createMinimalUser({ email });
+          this.storage.set(this.AUTH_USER_KEY, minimalUser);
+          this.currentUserSubject.next(minimalUser);
+          return of(minimalUser);
+        }
+      }),
+      catchError(error => {
+        console.error('Unhandled error in fetchUserProfile pipe:', error);
+        const minimalUser = this.createMinimalUser({ email });
+        this.storage.set(this.AUTH_USER_KEY, minimalUser);
+        this.currentUserSubject.next(minimalUser);
+        return of(minimalUser);
       })
     );
   }
