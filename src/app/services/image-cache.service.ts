@@ -140,20 +140,47 @@ export class ImageCacheService {
    */
   private encodeSpecialChars(url: string): string {
     try {
+      // Check if the URL already contains percent encoding (common with WooCommerce images)
+      if (url.includes('%')) {
+        // The URL might be double-encoded, let's try to fix that by first decoding it fully
+        try {
+          // First, try to decode the URL to get to the raw form
+          const decodedUrl = decodeURIComponent(url);
+          
+          // Parse the decoded URL to get its components
+          const parsedUrl = new URL(decodedUrl);
+          
+          // Get the last segment of the URL (the filename)
+          const urlParts = parsedUrl.pathname.split('/');
+          const filename = urlParts[urlParts.length - 1];
+          
+          // Replace the filename with a properly encoded version
+          urlParts[urlParts.length - 1] = encodeURIComponent(filename);
+          
+          // Rebuild the pathname
+          parsedUrl.pathname = urlParts.join('/');
+          
+          // Return the properly encoded URL
+          return parsedUrl.toString();
+        } catch (decodeError) {
+          console.warn('Failed to decode and re-encode URL:', url, decodeError);
+          // Continue with normal encoding flow
+        }
+      }
+      
+      // Standard encoding for URLs without percent encoding
       // Parse the URL to get its components
       const parsedUrl = new URL(url);
       
-      // Split the pathname into segments and encode each segment separately
-      const pathSegments = parsedUrl.pathname.split('/').map((segment, index) => {
-        // Skip empty segments (like the one after the first slash)
-        if (segment === '' && index !== 0) return '';
-        
-        // Encode each segment (except for '/', which is preserved by the split/join)
-        return encodeURIComponent(segment);
-      });
+      // Get the last segment of the URL (the filename)
+      const urlParts = parsedUrl.pathname.split('/');
+      const filename = urlParts[urlParts.length - 1];
+      
+      // Replace the filename with a properly encoded version
+      urlParts[urlParts.length - 1] = encodeURIComponent(filename);
       
       // Rebuild the pathname
-      parsedUrl.pathname = pathSegments.join('/');
+      parsedUrl.pathname = urlParts.join('/');
       
       // Return the encoded URL
       return parsedUrl.toString();
@@ -163,25 +190,14 @@ export class ImageCacheService {
       
       // Try to preserve the URL structure while encoding problematic parts
       try {
-        // Split by '/' and encode each part (keeping the / unchanged)
-        const urlParts = url.split('/');
-        
-        // Find the protocol and domain parts (they don't need encoding)
-        const protocolIdx = url.indexOf('://');
-        const domainEndIdx = protocolIdx > -1 ? url.indexOf('/', protocolIdx + 3) : -1;
-        
-        // If we have a valid URL structure, preserve protocol and domain
-        if (protocolIdx > -1 && domainEndIdx > -1) {
-          const protocol = url.substring(0, protocolIdx + 3); // includes ://
-          const domain = url.substring(protocolIdx + 3, domainEndIdx);
-          const path = url.substring(domainEndIdx);
+        // Find the last segment (filename) of the URL
+        const lastSlashIndex = url.lastIndexOf('/');
+        if (lastSlashIndex > 0) {
+          const baseUrl = url.substring(0, lastSlashIndex + 1);
+          const filename = url.substring(lastSlashIndex + 1);
           
-          // Encode only the path part
-          const encodedPath = path.split('/')
-            .map((part, idx) => idx === 0 ? part : encodeURIComponent(part))
-            .join('/');
-            
-          return protocol + domain + encodedPath;
+          // Encode only the filename
+          return baseUrl + encodeURIComponent(filename);
         }
       } catch (encodingError) {
         console.error('Error encoding URL parts:', encodingError);

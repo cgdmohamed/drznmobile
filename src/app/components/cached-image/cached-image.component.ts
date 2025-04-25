@@ -81,6 +81,18 @@ export class CachedImageComponent implements OnInit, OnDestroy {
    */
   handleImageError() {
     console.error('Image loading error on main image for:', this.src);
+    
+    // Check if the URL has Arabic or special characters and try a different encoding approach
+    if (this.src && (this.containsArabic(this.src) || this.src.includes('%'))) {
+      // Try to fix the URL directly if it contains encoded characters
+      const fixedUrl = this.tryFixImageUrl(this.src);
+      if (fixedUrl !== this.src) {
+        console.log('Trying alternative encoding for image URL:', fixedUrl);
+        this.imageUrl = this.sanitizer.bypassSecurityTrustUrl(fixedUrl);
+        return; // Try with the fixed URL before showing error
+      }
+    }
+    
     this.hasError = true;
     this.isLoading = false;
     this.imageLoaded.emit({ success: false, src: this.src });
@@ -95,6 +107,52 @@ export class CachedImageComponent implements OnInit, OnDestroy {
     // Create a simple data URI SVG as a last resort fallback
     const svgPlaceholder = `data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect fill="%23eaeaea" width="100" height="100"/%3E%3Cpath fill="%23999" d="M50 30 L70 70 L30 70 Z"/%3E%3C/svg%3E`;
     this.fallbackSrc = svgPlaceholder;
+  }
+  
+  /**
+   * Check if a string contains Arabic characters
+   */
+  private containsArabic(text: string): boolean {
+    const arabicPattern = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    return arabicPattern.test(text);
+  }
+  
+  /**
+   * Try to fix problematic image URLs
+   * This is a last resort method for handling problematic URLs
+   */
+  private tryFixImageUrl(url: string): string {
+    try {
+      // If URL is already percent-encoded, try to decode it first
+      if (url.includes('%')) {
+        try {
+          const decoded = decodeURIComponent(url);
+          // Extract the filename (last part after /)
+          const lastSlashIdx = decoded.lastIndexOf('/');
+          if (lastSlashIdx !== -1) {
+            const basePath = decoded.substring(0, lastSlashIdx + 1);
+            const filename = decoded.substring(lastSlashIdx + 1);
+            // Encode just the filename
+            return basePath + encodeURIComponent(filename);
+          }
+        } catch (e) {
+          console.warn('Failed to decode URL:', e);
+        }
+      }
+      
+      // For non-encoded URLs, try a simple encoding approach
+      const lastSlashIdx = url.lastIndexOf('/');
+      if (lastSlashIdx !== -1) {
+        const basePath = url.substring(0, lastSlashIdx + 1);
+        const filename = url.substring(lastSlashIdx + 1);
+        return basePath + encodeURIComponent(filename);
+      }
+    } catch (e) {
+      console.error('Error fixing image URL:', e);
+    }
+    
+    // If all attempts fail, return the original URL
+    return url;
   }
   
   /**
