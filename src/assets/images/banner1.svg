@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="400" viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="400" fill="#ec1c24" opacity="0.1"/>
+  <rect x="0" y="0" width="1200" height="400" fill="#ec1c24" opacity="0.1"/>
+  <rect x="50" y="100" width="500" height="60" rx="4" fill="#ec1c24" opacity="0.6"/>
+  <rect x="50" y="180" width="400" height="40" rx="4" fill="#ec1c24" opacity="0.4"/>
+  <rect x="50" y="240" width="200" height="40" rx="20" fill="#ec1c24"/>
+  <text x="140" y="268" font-family="Arial" font-size="20" fill="white">تسوق الآن</text>
+  <circle cx="900" cy="200" r="180" fill="#ec1c24" opacity="0.1"/>
+  <circle cx="900" cy="200" r="150" fill="#ec1c24" opacity="0.2"/>
+  <circle cx="900" cy="200" r="120" fill="#ec1c24" opacity="0.3"/>
+</svg>

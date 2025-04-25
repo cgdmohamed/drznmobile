@@ -14,7 +14,7 @@ import { register } from 'swiper/element/bundle';
 
 @Component({
   selector: 'app-home',
-  templateUrl: 'home.page.html',
+  templateUrl: 'home.page.fix.html',
   styleUrls: ['home.page.scss'],
   standalone: false
 })
