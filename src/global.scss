@@ -39,6 +39,7 @@ ion-content {
 ion-header {
   --background: transparent;
   --ion-color-base: transparent !important;
+  box-shadow: none !important;
 }
 
 ion-toolbar {
@@ -316,15 +317,15 @@ ion-refresher.custom-refresher .custom-spinner::after {
   right: 0px;
   width: 8px;
   height: 8px;
-  background-color: #ec1c24;
+  background-color: #FFDD00; /* Bright yellow color */
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 10px;
-  color: white;
+  color: black; /* Changed to black for better contrast with yellow */
   animation: none;
-  box-shadow: 0 0 0 rgba(236, 28, 36, 0.5);
+  box-shadow: 0 0 0 rgba(255, 221, 0, 0.5);
 }
 
 /* Only add the pulsing effect when active */
@@ -335,17 +336,17 @@ ion-refresher.custom-refresher .custom-spinner::after {
 @keyframes pulseBadge {
   0% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(236, 28, 36, 0.7);
+    box-shadow: 0 0 0 0 rgba(255, 221, 0, 0.7);
   }
   
   50% {
     transform: scale(1.1);
-    box-shadow: 0 0 0 6px rgba(236, 28, 36, 0.2);
+    box-shadow: 0 0 0 6px rgba(255, 221, 0, 0.3);
   }
   
   100% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(236, 28, 36, 0);
+    box-shadow: 0 0 0 0 rgba(255, 221, 0, 0);
   }
 }
 
