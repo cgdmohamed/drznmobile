@@ -48,16 +48,38 @@ export class NotificationsPage implements OnInit, OnDestroy {
    * @param notification The notification to view
    */
   async viewNotification(notification: NotificationData) {
-    // Mark notification as read
-    await this.notificationService.markNotificationAsRead(notification.id);
-    
-    // Handle navigation or action based on notification type
-    if (notification.actionId) {
-      // If notification has a specific action, handle it
-      this.handleNotificationAction(notification);
-    } else {
-      // Otherwise, just show the notification details
-      this.showNotificationDetails(notification);
+    try {
+      console.log('Viewing notification:', notification);
+      
+      if (!notification || !notification.id) {
+        console.error('Invalid notification object:', notification);
+        throw new Error('Invalid notification: missing required fields');
+      }
+      
+      // Mark notification as read
+      await this.notificationService.markNotificationAsRead(notification.id);
+      
+      // Handle navigation or action based on notification type
+      if (notification.actionId) {
+        console.log('Handling notification with actionId:', notification.actionId);
+        // If notification has a specific action, handle it
+        this.handleNotificationAction(notification);
+      } else {
+        console.log('Showing notification details (no action)');
+        // Otherwise, just show the notification details
+        this.showNotificationDetails(notification);
+      }
+    } catch (error) {
+      console.error('Error viewing notification:', error);
+      
+      const toast = await this.toastController.create({
+        message: 'حدث خطأ أثناء عرض الإشعار',
+        duration: 2000,
+        position: 'bottom',
+        color: 'danger'
+      });
+      
+      await toast.present();
     }
   }
   
@@ -81,9 +103,47 @@ export class NotificationsPage implements OnInit, OnDestroy {
    * @param notification The notification to handle
    */
   private handleNotificationAction(notification: NotificationData) {
-    // Implementation will depend on your app's needs
-    // For now, we'll just show the notification details
-    this.showNotificationDetails(notification);
+    try {
+      console.log('Handling notification action for type:', notification.type);
+      
+      if (!notification) {
+        console.error('Invalid notification object in handleNotificationAction');
+        return;
+      }
+      
+      // Implementation will depend on your app's needs
+      switch (notification.type) {
+        case 'product':
+          console.log('Handling product notification with data:', notification.actionData);
+          // Navigate to product detail page if actionData contains productId
+          // this.router.navigate(['/product', notification.actionData?.productId]);
+          break;
+          
+        case 'order':
+          console.log('Handling order notification with data:', notification.actionData);
+          // Navigate to order detail page if actionData contains orderId
+          // this.router.navigate(['/order', notification.actionData?.orderId]);
+          break;
+          
+        case 'url':
+          console.log('Handling URL notification with data:', notification.actionData);
+          // Open URL in browser if actionData contains url
+          if (notification.actionData?.url) {
+            window.open(notification.actionData.url, '_blank');
+          }
+          break;
+          
+        default:
+          console.log('No specific action for notification type:', notification.type);
+          // Default is to show notification details
+          this.showNotificationDetails(notification);
+          break;
+      }
+    } catch (error) {
+      console.error('Error handling notification action:', error);
+      // Default is to show notification details
+      this.showNotificationDetails(notification);
+    }
   }
 
   /**
@@ -196,28 +256,40 @@ export class NotificationsPage implements OnInit, OnDestroy {
    * Format date for display
    * @param date The date to format
    */
-  formatDate(date: Date): string {
+  formatDate(date: any): string {
     if (!date) return '';
     
-    const now = new Date();
-    const notificationDate = new Date(date);
-    
-    // Check if date is today
-    if (now.toDateString() === notificationDate.toDateString()) {
-      // Format as time only
-      return notificationDate.toLocaleTimeString('ar-SA', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-    } else {
-      // Format as date and time
-      return notificationDate.toLocaleDateString('ar-SA', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+    try {
+      console.log('Formatting date:', date);
+      const now = new Date();
+      const notificationDate = new Date(date);
+      
+      if (isNaN(notificationDate.getTime())) {
+        console.error('Invalid date format:', date);
+        return '';
+      }
+      
+      // Check if date is today
+      if (now.toDateString() === notificationDate.toDateString()) {
+        // Format as time only
+        return notificationDate.toLocaleTimeString('ar-SA', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+      } else {
+        // Format as date and time
+        return notificationDate.toLocaleDateString('ar-SA', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric'
+        }) + ' ' + notificationDate.toLocaleTimeString('ar-SA', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+      }
+    } catch (error) {
+      console.error('Error formatting date:', error, date);
+      return '';
     }
   }
   
@@ -227,8 +299,23 @@ export class NotificationsPage implements OnInit, OnDestroy {
   async addTestNotification() {
     try {
       console.log('Adding test notification');
-      // Let the service create the test notification by default
-      await this.notificationService.addTestNotification();
+      // Create a test notification with all required fields
+      const testNotification = {
+        id: `test-${Date.now()}`,
+        title: 'إشعار تجريبي',
+        body: 'هذا إشعار تجريبي لاختبار وظائف الإشعارات',
+        type: 'general',
+        isRead: false,
+        receivedAt: new Date()
+      };
+      
+      console.log('Test notification payload:', testNotification);
+      
+      // Pass the fully formed notification to the service
+      await this.notificationService.addTestNotification(testNotification);
+      
+      // Refresh the notifications list to show the new notification
+      this.loadNotifications();
       
       const toast = await this.toastController.create({
         message: 'تم إضافة إشعار تجريبي',
@@ -240,9 +327,14 @@ export class NotificationsPage implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error adding test notification:', error);
       
+      let errorMessage = 'حدث خطأ أثناء إضافة الإشعار التجريبي';
+      if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+      }
+      
       const errorToast = await this.toastController.create({
-        message: 'حدث خطأ أثناء إضافة الإشعار التجريبي',
-        duration: 2000,
+        message: errorMessage,
+        duration: 3000,
         position: 'bottom',
         color: 'danger'
       });

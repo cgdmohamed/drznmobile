@@ -87,7 +87,7 @@ export class ProductService {
     };
 
     const queryString = Object.keys(params)
-      .map(key => `${key}=${params[key]}`)
+      .map(key => `${key}=${encodeURIComponent(params[key])}`)
       .join('&');
     
     console.log(`Fetching categories, page: ${params.page}, per_page: ${params.per_page}`);
@@ -96,6 +96,21 @@ export class ProductService {
       .pipe(
         catchError(error => {
           console.error('Error fetching categories from API:', error);
+          
+          // Check if it's a server connection error (502, 504, etc)
+          if (error.status >= 500) {
+            console.warn('Server connection error detected. API server may be unavailable.');
+            // Log more details about the error
+            if (error.error) {
+              console.warn('Error details:', error.error);
+            }
+            
+            // Here we could display a toast message about connection issues
+            // We'll fall back to mock data for now
+          }
+          
+          // Add telemetry - could be important for debugging
+          console.log('Falling back to demo categories due to API error');
           return this.mockDataService.getCategories();
         })
       );
@@ -329,6 +344,18 @@ export class ProductService {
     ).pipe(
       catchError(error => {
         console.error('Error fetching featured products from API:', error);
+        
+        // Check if it's a server connection error (502, 504, etc)
+        if (error.status >= 500) {
+          console.warn('Server connection error detected for featured products. API server may be unavailable.');
+          // Log more details about the error
+          if (error.error) {
+            console.warn('Error details:', error.error);
+          }
+        }
+        
+        // Add telemetry
+        console.log('Falling back to demo featured products due to API error');
         return this.mockDataService.getFeaturedProducts();
       })
     );
@@ -368,6 +395,18 @@ export class ProductService {
     ).pipe(
       catchError(error => {
         console.error('Error fetching new products from API:', error);
+        
+        // Check if it's a server connection error (502, 504, etc)
+        if (error.status >= 500) {
+          console.warn('Server connection error detected for new products. API server may be unavailable.');
+          // Log more details about the error
+          if (error.error) {
+            console.warn('Error details:', error.error);
+          }
+        }
+        
+        // Add telemetry
+        console.log('Falling back to demo new products due to API error');
         return this.mockDataService.getNewProducts();
       })
     );
@@ -400,6 +439,18 @@ export class ProductService {
     ).pipe(
       catchError(error => {
         console.error('Error fetching on-sale products from API:', error);
+        
+        // Check if it's a server connection error (502, 504, etc)
+        if (error.status >= 500) {
+          console.warn('Server connection error detected for on-sale products. API server may be unavailable.');
+          // Log more details about the error
+          if (error.error) {
+            console.warn('Error details:', error.error);
+          }
+        }
+        
+        // Add telemetry
+        console.log('Falling back to demo on-sale products due to API error');
         return this.mockDataService.getOnSaleProducts();
       })
     );
