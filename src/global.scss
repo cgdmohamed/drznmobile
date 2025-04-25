@@ -32,37 +32,6 @@
 /* Content padding for bottom tabs */
 ion-content {
   --padding-bottom: 70px; /* Add padding for bottom tabs */
-  --background: linear-gradient(to bottom, var(--ion-color-primary) 0%, white 40%);
-}
-
-/* Transparent header with no shadow */
-ion-header {
-  --background: transparent;
-  --ion-color-base: transparent !important;
-  box-shadow: none !important;
-}
-
-ion-toolbar {
-  --background: transparent;
-  --border-color: transparent;
-  --border-width: 0px !important;
-  --border-style: none;
-  --min-height: 56px;
-  --padding-top: 4px;
-  --padding-bottom: 4px;
-  --box-shadow: none;
-  
-  ion-title {
-    font-weight: 600;
-    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.2);
-  }
-  
-  ion-button, ion-back-button, ion-menu-button, ion-icon {
-    --color: var(--ion-color-primary-contrast);
-    color: var(--ion-color-primary-contrast);
-    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.2);
-    filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.2));
-  }
 }
 
 /* RTL Direction support */
@@ -76,6 +45,12 @@ ion-toolbar {
     right: 10px;
     left: auto;
   }
+}
+
+/* Dark theme support */
+.dark-theme {
+  --ion-color-primary: #ff6b78;
+  --ion-color-primary-rgb: 255, 107, 120;
 }
 
 /* Professional loading progress indicator */
@@ -92,7 +67,7 @@ ion-progress-bar {
   z-index: 100;
   
   /* Add slight blur effect below */
-  box-shadow: 0 1px 3px rgba(255, 179, 185, 0.2);
+  box-shadow: 0 1px 3px rgba(236, 28, 36, 0.2);
 }
 
 /* Add subtle animation to make it more professional */
@@ -110,6 +85,32 @@ ion-progress-bar {
 
 ion-progress-bar.animate {
   animation: progressPulse 1.5s infinite ease-in-out;
+}
+
+/* Dark mode additional properties */
+.dark-theme {
+  --ion-background-color: #121212;
+  --ion-background-color-rgb: 18, 18, 18;
+  --ion-text-color: #ffffff;
+  --ion-text-color-rgb: 255, 255, 255;
+  --ion-border-color: #222222;
+  --ion-item-background: #1e1e1e;
+  --ion-toolbar-background: #1e1e1e;
+  --ion-tab-bar-background: #1f1f1f;
+  --ion-card-background: #1e1e1e;
+  
+  ion-content {
+    --background: #121212;
+  }
+  
+  .product-card {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+  }
+  
+  .section-header h2 {
+    color: #fff;
+  }
 }
 
 /* Text sizes */
@@ -142,12 +143,12 @@ ion-progress-bar.animate {
 
 /* Primary brand color */
 :root {
-  --ion-color-primary: #ffb3b9;
-  --ion-color-primary-rgb: 255, 179, 185;
-  --ion-color-primary-contrast: #000000;
-  --ion-color-primary-contrast-rgb: 0, 0, 0;
-  --ion-color-primary-shade: #e09da3;
-  --ion-color-primary-tint: #ffbbc0;
+  --ion-color-primary: #E9324A;
+  --ion-color-primary-rgb: 233, 50, 74;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #cd2c41;
+  --ion-color-primary-tint: #eb475c;
 }
 
 /* Font Family (for Arabic support) */
@@ -254,7 +255,7 @@ ion-refresher.custom-refresher .custom-spinner::after {
   right: -4px;
   bottom: -4px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 179, 185, 0.2);
+  border: 2px solid rgba(236, 28, 36, 0.2);
   animation: pulse 1.5s infinite ease-in-out;
 }
 
@@ -285,15 +286,15 @@ ion-refresher.custom-refresher .custom-spinner::after {
   right: 0px;
   width: 8px;
   height: 8px;
-  background-color: #FFDD00; /* Bright yellow color */
+  background-color: #ec1c24;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 10px;
-  color: black; /* Changed to black for better contrast with yellow */
+  color: white;
   animation: none;
-  box-shadow: 0 0 0 rgba(255, 221, 0, 0.5);
+  box-shadow: 0 0 0 rgba(236, 28, 36, 0.5);
 }
 
 /* Only add the pulsing effect when active */
@@ -304,17 +305,17 @@ ion-refresher.custom-refresher .custom-spinner::after {
 @keyframes pulseBadge {
   0% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(255, 221, 0, 0.7);
+    box-shadow: 0 0 0 0 rgba(236, 28, 36, 0.7);
   }
   
   50% {
     transform: scale(1.1);
-    box-shadow: 0 0 0 6px rgba(255, 221, 0, 0.3);
+    box-shadow: 0 0 0 6px rgba(236, 28, 36, 0.2);
   }
   
   100% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(255, 221, 0, 0);
+    box-shadow: 0 0 0 0 rgba(236, 28, 36, 0);
   }
 }
 
