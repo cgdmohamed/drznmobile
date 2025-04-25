@@ -116,11 +116,17 @@ export class CheckoutPage implements OnInit, OnDestroy {
   
   // Check authentication status and show OTP verification if needed
   checkAuthStatus() {
+    // Check if user is authenticated with either JWT or legacy auth
     if (!this.jwtAuthService.isAuthenticated && !this.authService.isLoggedIn && !this.otpConfirmed) {
-      // User is not logged in and OTP is not confirmed, show OTP verification
+      // User is not logged in with any method and OTP is not confirmed, show OTP verification
+      console.log('User not authenticated and OTP not confirmed, showing auth options');
       setTimeout(() => {
         this.showAuthOptions();
       }, 500); // Small delay to ensure everything is loaded
+    } else {
+      console.log('User is authenticated:', 
+        this.jwtAuthService.isAuthenticated ? 'via JWT' : 
+        this.authService.isLoggedIn ? 'via legacy auth' : 'via OTP');
     }
   }
   
@@ -751,11 +757,11 @@ export class CheckoutPage implements OnInit, OnDestroy {
         case 'cod':
         default:
           // For cash on delivery, verify user authentication if needed
-          if (!this.jwtAuthService.isAuthenticated && !this.otpConfirmed) {
-            // First check JWT auth (our primary auth method)
+          if (!this.jwtAuthService.isAuthenticated && !this.authService.isLoggedIn && !this.otpConfirmed) {
+            // Neither JWT auth nor legacy auth is active and OTP not confirmed
             this.showAuthOptions();
           } else {
-            // User is logged in or OTP is confirmed, proceed to review
+            // User is logged in (via any method) or OTP is confirmed, proceed to review
             this.step = 3;
           }
           break;
