@@ -32,15 +32,22 @@
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
   
-  <!-- Product Grid -->
-  <div class="product-grid" *ngIf="!isLoading && products.length > 0">
-    <div class="product-grid-item" *ngFor="let product of products">
-      <app-product-card 
-        [product]="product"
-        (favoriteChanged)="onFavoriteChange($event)">
-      </app-product-card>
+  <!-- Product Grid with Virtual Scrolling -->
+  <cdk-virtual-scroll-viewport 
+    class="virtual-scroll-viewport" 
+    itemSize="360" 
+    minBufferPx="900" 
+    maxBufferPx="1350"
+    *ngIf="!isLoading && products.length > 0">
+    <div class="product-grid">
+      <div class="product-grid-item" *cdkVirtualFor="let product of products">
+        <app-product-card 
+          [product]="product"
+          (favoriteChanged)="onFavoriteChange($event)">
+        </app-product-card>
+      </div>
     </div>
-  </div>
+  </cdk-virtual-scroll-viewport>
   
   <!-- Loading Indicator -->
   <div class="loading-container" *ngIf="isLoading">

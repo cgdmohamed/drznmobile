@@ -70,7 +70,8 @@ export class TokenInterceptor implements HttpInterceptor {
       this.isRefreshing = true;
       this.refreshTokenSubject.next(null);
 
-      return this.jwtAuthService.refreshToken().pipe(
+      // Use force refresh to ensure we get a new token
+      return this.jwtAuthService.refreshToken(true).pipe(
         switchMap((token: string) => {
           this.isRefreshing = false;
           this.refreshTokenSubject.next(token);
@@ -78,6 +79,16 @@ export class TokenInterceptor implements HttpInterceptor {
         }),
         catchError((err) => {
           this.isRefreshing = false;
+          
+          // Check if this is a network error
+          if (err instanceof HttpErrorResponse && !err.status) {
+            console.error('Network error during token refresh. Will retry on next request.', err);
+            // Don't logout on network errors - we'll try again later
+            return throwError(() => new Error('Network error during authentication. Please check your connection.'));
+          }
+          
+          // For other errors, logout the user
+          console.error('Error refreshing token, logging out:', err);
           this.jwtAuthService.logout();
           return throwError(() => err);
         })
@@ -89,6 +100,12 @@ export class TokenInterceptor implements HttpInterceptor {
         take(1),
         switchMap(token => {
           return next.handle(this.addToken(request, token));
+        }),
+        catchError(err => {
+          // If waiting for refresh fails, try the request without a token
+          // This allows non-authenticated API calls to still work
+          console.warn('Error waiting for token refresh, continuing without token:', err);
+          return next.handle(request);
         })
       );
     }

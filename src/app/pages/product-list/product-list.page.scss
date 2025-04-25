@@ -29,11 +29,17 @@
   }
 }
 
+.virtual-scroll-viewport {
+  height: 100%;
+  width: 100%;
+}
+
 .product-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   padding: 10px;
   gap: 10px;
+  width: 100%;
 }
 
 .product-grid-item {

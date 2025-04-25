@@ -44,16 +44,16 @@
                       autoplay-delay="3000"
                       autoplay-disable-on-interaction="false">
       <swiper-slide>
-        <img src="https://placehold.co/800x300.jpg?text=Banner+1" alt="Banner 1">
+        <app-cached-image src="https://placehold.co/800x300.jpg?text=Banner+1" alt="Banner 1" [spinner]="true" spinnerColor="primary"></app-cached-image>
       </swiper-slide>
       <swiper-slide>
-        <img src="https://placehold.co/800x300.jpg?text=Banner+2" alt="Banner 2">
+        <app-cached-image src="https://placehold.co/800x300.jpg?text=Banner+2" alt="Banner 2" [spinner]="true" spinnerColor="primary"></app-cached-image>
       </swiper-slide>
       <swiper-slide>
-        <img src="https://placehold.co/800x300.jpg?text=Banner+3" alt="Banner 3">
+        <app-cached-image src="https://placehold.co/800x300.jpg?text=Banner+3" alt="Banner 3" [spinner]="true" spinnerColor="primary"></app-cached-image>
       </swiper-slide>
       <swiper-slide>
-        <img src="https://placehold.co/800x300.jpg?text=Banner+4" alt="Banner 4">
+        <app-cached-image src="https://placehold.co/800x300.jpg?text=Banner+4" alt="Banner 4" [spinner]="true" spinnerColor="primary"></app-cached-image>
       </swiper-slide>
     </swiper-container>
 
@@ -74,7 +74,7 @@
       <div class="category-grid">
         <div class="category-item" *ngFor="let category of categories | slice:0:8" [routerLink]="['/category', category.id]">
           <div class="category-image">
-            <img [src]="category.image?.src || 'https://placehold.co/200x200.jpg'" [alt]="category.name">
+            <app-cached-image [src]="category.image?.src || 'https://placehold.co/200x200.jpg'" [alt]="category.name" [spinner]="true" spinnerSize="small"></app-cached-image>
           </div>
           <h3>{{ category.name }}</h3>
         </div>
@@ -105,7 +105,7 @@
       <div class="product-card" *ngFor="let product of featuredProducts">
         <!-- Product card content -->
         <div class="product-image" [routerLink]="['/product', product.id]">
-          <img [src]="product.images && product.images.length > 0 ? product.images[0].src : 'https://placehold.co/300x300.jpg'" [alt]="product.name">
+          <app-cached-image [src]="product.images && product.images.length > 0 ? product.images[0].src : 'https://placehold.co/300x300.jpg'" [alt]="product.name" [spinner]="true" spinnerSize="small"></app-cached-image>
           <div class="product-badge" *ngIf="product.on_sale">تخفيض</div>
         </div>
         
@@ -146,7 +146,7 @@
       <div class="product-card" *ngFor="let product of newProducts">
         <!-- Product card content -->
         <div class="product-image" [routerLink]="['/product', product.id]">
-          <img [src]="product.images && product.images.length > 0 ? product.images[0].src : 'https://placehold.co/300x300.jpg'" [alt]="product.name">
+          <app-cached-image [src]="product.images && product.images.length > 0 ? product.images[0].src : 'https://placehold.co/300x300.jpg'" [alt]="product.name" [spinner]="true" spinnerSize="small"></app-cached-image>
           <div class="product-badge" *ngIf="product.on_sale">تخفيض</div>
         </div>
         
@@ -187,7 +187,7 @@
       <div class="product-card" *ngFor="let product of onSaleProducts">
         <!-- Product card content -->
         <div class="product-image" [routerLink]="['/product', product.id]">
-          <img [src]="product.images && product.images.length > 0 ? product.images[0].src : 'https://placehold.co/300x300.jpg'" [alt]="product.name">
+          <app-cached-image [src]="product.images && product.images.length > 0 ? product.images[0].src : 'https://placehold.co/300x300.jpg'" [alt]="product.name" [spinner]="true" spinnerSize="small"></app-cached-image>
           <div class="product-badge">تخفيض</div>
         </div>
         

@@ -32,11 +32,16 @@ export class JwtAuthService {
   private AUTH_TOKEN_KEY = 'jwt_token';
   private AUTH_USER_KEY = 'auth_user';
   private AUTH_REFRESH_KEY = 'jwt_refresh_token';
+  private AUTH_TOKEN_EXPIRY_KEY = 'jwt_token_expiry';
+  private TOKEN_REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 
   // Use proxy to avoid CORS issues
   private baseUrl = environment.apiUrl.split('/wp-json')[0]; // Get the base URL without wp-json
   private apiUrl = `${this.baseUrl}/wp-json/simple-jwt-login/v1`;
   private authCode = environment.authCode;
+  
+  // Token refresh timer
+  private tokenRefreshTimer: any;
 
   public currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
@@ -500,14 +505,35 @@ export class JwtAuthService {
 
   /**
    * Refresh the JWT token
+   * @param forceRefresh Force token refresh even if it's not expired
    */
-  refreshToken(): Observable<string> {
-    return from(this.getToken()).pipe(
-      switchMap(token => {
+  refreshToken(forceRefresh: boolean = false): Observable<string> {
+    // Clear any existing refresh timer
+    this.clearTokenRefreshTimer();
+    
+    return from(Promise.all([
+      this.getToken(),
+      this.storage.get(this.AUTH_TOKEN_EXPIRY_KEY)
+    ])).pipe(
+      switchMap(([token, expiryTime]) => {
         if (!token) {
           return throwError(() => new Error('No token to refresh'));
         }
 
+        // Check if token needs refreshing
+        const now = Date.now();
+        const tokenExpiry = expiryTime ? parseInt(expiryTime) : now;
+        const shouldRefresh = forceRefresh || !expiryTime || (tokenExpiry - now < this.TOKEN_REFRESH_THRESHOLD_MS);
+        
+        if (!shouldRefresh) {
+          console.log('Token is still valid, no need to refresh');
+          // Set up refresh timer for future refresh
+          this.scheduleTokenRefresh(tokenExpiry);
+          return of(token);
+        }
+
+        console.log('Refreshing token...');
+        
         // Create FormData object for multipart/form-data submission
         const formData = new FormData();
         formData.append('AUTH_KEY', this.authCode);
@@ -519,13 +545,66 @@ export class JwtAuthService {
               throw new Error(response.error || 'Failed to refresh token');
             }
 
-            // Store the new token
+            // Calculate token expiry (default to 24 hours from now if not provided)
+            // JWT standard is to have an 'exp' claim in seconds
+            // But our server might not provide this, so we estimate
+            const newExpiryTime = Date.now() + (24 * 60 * 60 * 1000); // 24 hours in milliseconds
+            
+            // Store the new token and its expiry time
             this.storage.set(this.AUTH_TOKEN_KEY, response.data.jwt);
+            this.storage.set(this.AUTH_TOKEN_EXPIRY_KEY, newExpiryTime.toString());
+            
+            // Schedule the next token refresh
+            this.scheduleTokenRefresh(newExpiryTime);
+            
+            console.log('Token refreshed successfully');
             return response.data.jwt;
+          }),
+          catchError(error => {
+            console.error('Token refresh failed:', error);
+            // Don't throw here - the caller should decide what to do with the error
+            return throwError(() => error);
           })
         );
       })
     );
+  }
+  
+  /**
+   * Schedule token refresh before it expires
+   * @param expiryTime Timestamp when the token expires
+   */
+  private scheduleTokenRefresh(expiryTime: number): void {
+    // Clear any existing timer
+    this.clearTokenRefreshTimer();
+    
+    // Calculate time until refresh (5 minutes before expiry)
+    const now = Date.now();
+    const refreshTime = expiryTime - this.TOKEN_REFRESH_THRESHOLD_MS;
+    const timeUntilRefresh = Math.max(0, refreshTime - now);
+    
+    if (timeUntilRefresh > 0) {
+      console.log(`Scheduling token refresh in ${timeUntilRefresh/1000} seconds`);
+      
+      // Set timer to refresh token
+      this.tokenRefreshTimer = setTimeout(() => {
+        console.log('Auto refreshing token...');
+        this.refreshToken().subscribe({
+          next: () => console.log('Automatic token refresh successful'),
+          error: (error) => console.error('Automatic token refresh failed:', error)
+        });
+      }, timeUntilRefresh);
+    }
+  }
+  
+  /**
+   * Clear token refresh timer
+   */
+  private clearTokenRefreshTimer(): void {
+    if (this.tokenRefreshTimer) {
+      clearTimeout(this.tokenRefreshTimer);
+      this.tokenRefreshTimer = null;
+    }
   }
 
   /**

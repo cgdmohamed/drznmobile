@@ -5,6 +5,7 @@ import { IonicModule } from '@ionic/angular';
 import { ProductListPageRoutingModule } from './product-list-routing.module';
 import { ProductListPage } from './product-list.page';
 import { ComponentsModule } from '../../components/components.module';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 
 @NgModule({
   imports: [
@@ -12,7 +13,8 @@ import { ComponentsModule } from '../../components/components.module';
     FormsModule,
     IonicModule,
     ProductListPageRoutingModule,
-    ComponentsModule
+    ComponentsModule,
+    ScrollingModule
   ],
   declarations: [ProductListPage]
 })

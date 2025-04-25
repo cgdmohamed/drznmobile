@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ModalController } from '@ionic/angular';
 import { ProductService } from '../../services/product.service';
 import { Product } from '../../interfaces/product.interface';
 import { FilterModalComponent } from '../../components/filter-modal/filter-modal.component';
+import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 
 @Component({
   selector: 'app-product-list',
@@ -11,6 +12,8 @@ import { FilterModalComponent } from '../../components/filter-modal/filter-modal
   styleUrls: ['./product-list.page.scss'],
 })
 export class ProductListPage implements OnInit {
+  @ViewChild(CdkVirtualScrollViewport) viewport: CdkVirtualScrollViewport;
+  
   products: Product[] = [];
   categoryId: number;
   categoryName: string = '';
@@ -24,7 +27,8 @@ export class ProductListPage implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private productService: ProductService,
-    private modalCtrl: ModalController
+    private modalCtrl: ModalController,
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
@@ -57,9 +61,12 @@ export class ProductListPage implements OnInit {
     this.isLoading = true;
     this.categoryName = 'All Products';
     
+    // Using larger page size for virtual scrolling
+    const pageSize = 20;
+    
     const options = {
       page: this.currentPage,
-      per_page: 10,
+      per_page: pageSize,
       ...this.currentFilters
     };
     
@@ -67,6 +74,14 @@ export class ProductListPage implements OnInit {
       (products) => {
         this.products = products;
         this.isLoading = false;
+        
+        // Allow time for the viewport to render, then check its size
+        setTimeout(() => {
+          if (this.viewport) {
+            this.viewport.checkViewportSize();
+            this.cdr.detectChanges();
+          }
+        }, 100);
       },
       (error) => {
         console.error('Error loading products', error);
@@ -89,9 +104,12 @@ export class ProductListPage implements OnInit {
       }
     );
     
+    // Using larger page size for virtual scrolling
+    const pageSize = 20;
+    
     const options = {
       page: this.currentPage,
-      per_page: 10,
+      per_page: pageSize,
       ...this.currentFilters
     };
     
@@ -99,6 +117,14 @@ export class ProductListPage implements OnInit {
       (products) => {
         this.products = products;
         this.isLoading = false;
+        
+        // Allow time for the viewport to render, then check its size
+        setTimeout(() => {
+          if (this.viewport) {
+            this.viewport.checkViewportSize();
+            this.cdr.detectChanges();
+          }
+        }, 100);
       },
       (error) => {
         console.error('Error loading products by category', error);
@@ -116,6 +142,14 @@ export class ProductListPage implements OnInit {
       (products) => {
         this.products = products;
         this.isLoading = false;
+        
+        // Allow time for the viewport to render, then check its size
+        setTimeout(() => {
+          if (this.viewport) {
+            this.viewport.checkViewportSize();
+            this.cdr.detectChanges();
+          }
+        }, 100);
       },
       (error) => {
         console.error('Error loading search results', error);
@@ -129,9 +163,12 @@ export class ProductListPage implements OnInit {
     this.isLoading = true;
     this.categoryName = 'On Sale';
     
+    // Using larger page size for virtual scrolling
+    const pageSize = 20;
+    
     const options = {
       page: this.currentPage,
-      per_page: 10,
+      per_page: pageSize,
       on_sale: true,
       ...this.currentFilters
     };
@@ -140,6 +177,14 @@ export class ProductListPage implements OnInit {
       (products) => {
         this.products = products;
         this.isLoading = false;
+        
+        // Allow time for the viewport to render, then check its size
+        setTimeout(() => {
+          if (this.viewport) {
+            this.viewport.checkViewportSize();
+            this.cdr.detectChanges();
+          }
+        }, 100);
       },
       (error) => {
         console.error('Error loading on sale products', error);
@@ -157,6 +202,14 @@ export class ProductListPage implements OnInit {
       (products) => {
         this.products = products;
         this.isLoading = false;
+        
+        // Allow time for the viewport to render, then check its size
+        setTimeout(() => {
+          if (this.viewport) {
+            this.viewport.checkViewportSize();
+            this.cdr.detectChanges();
+          }
+        }, 100);
       },
       (error) => {
         console.error('Error loading featured products', error);
@@ -169,17 +222,27 @@ export class ProductListPage implements OnInit {
   loadNextPage(event: any) {
     this.currentPage++;
     
+    // Increase per_page size for virtual scrolling for better performance
+    const pageSize = 20; // Larger page size for better virtual scrolling performance
+    
     if (this.categoryId) {
       const options = {
         page: this.currentPage,
-        per_page: 10,
+        per_page: pageSize,
         ...this.currentFilters
       };
       
       this.productService.getProductsByCategory(this.categoryId, options).subscribe(
         (products) => {
+          // Append new products
           this.products = [...this.products, ...products];
           event.target.complete();
+          
+          // Force viewport to check for changes
+          if (this.viewport) {
+            this.viewport.checkViewportSize();
+            this.cdr.detectChanges();
+          }
           
           // Disable infinite scroll if no more products
           if (products.length === 0) {
@@ -194,14 +257,21 @@ export class ProductListPage implements OnInit {
     } else {
       const options = {
         page: this.currentPage,
-        per_page: 10,
+        per_page: pageSize,
         ...this.currentFilters
       };
       
       this.productService.getProducts(options).subscribe(
         (products) => {
+          // Append new products
           this.products = [...this.products, ...products];
           event.target.complete();
+          
+          // Force viewport to check for changes
+          if (this.viewport) {
+            this.viewport.checkViewportSize();
+            this.cdr.detectChanges();
+          }
           
           // Disable infinite scroll if no more products
           if (products.length === 0) {
