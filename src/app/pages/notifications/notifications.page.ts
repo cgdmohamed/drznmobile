@@ -226,16 +226,9 @@ export class NotificationsPage implements OnInit, OnDestroy {
    */
   async addTestNotification() {
     try {
-      const testNotification: NotificationData = {
-        id: `test-${Date.now()}`,
-        title: 'إشعار تجريبي',
-        body: 'هذا إشعار تجريبي لاختبار وظائف الإشعارات',
-        type: 'general',
-        isRead: false,
-        receivedAt: new Date()
-      };
-      
-      await this.notificationService.addTestNotification(testNotification);
+      console.log('Adding test notification');
+      // Let the service create the test notification by default
+      await this.notificationService.addTestNotification();
       
       const toast = await this.toastController.create({
         message: 'تم إضافة إشعار تجريبي',

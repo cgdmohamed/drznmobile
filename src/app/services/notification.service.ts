@@ -277,29 +277,44 @@ export class NotificationService {
    * @param notification Notification data to store
    */
   private async storeNotification(notification: NotificationData) {
-    // Get current notifications
-    const currentNotifications = this._notifications.value;
-    
-    // Check if notification already exists
-    const existingIndex = currentNotifications.findIndex(n => n.id === notification.id);
-    
-    if (existingIndex >= 0) {
-      // Update existing notification
-      currentNotifications[existingIndex] = {
-        ...currentNotifications[existingIndex],
-        ...notification,
-        // Keep isRead status if already read
-        isRead: currentNotifications[existingIndex].isRead || notification.isRead
-      };
-    } else {
-      // Add new notification
-      currentNotifications.unshift(notification);
+    try {
+      console.log('Storing notification:', notification);
+      
+      if (!notification || !notification.id) {
+        console.error('Invalid notification object:', notification);
+        throw new Error('Invalid notification: missing required fields');
+      }
+      
+      // Get current notifications
+      const currentNotifications = this._notifications.value;
+      
+      // Check if notification already exists
+      const existingIndex = currentNotifications.findIndex(n => n.id === notification.id);
+      
+      if (existingIndex >= 0) {
+        console.log('Updating existing notification at index:', existingIndex);
+        // Update existing notification
+        currentNotifications[existingIndex] = {
+          ...currentNotifications[existingIndex],
+          ...notification,
+          // Keep isRead status if already read
+          isRead: currentNotifications[existingIndex].isRead || notification.isRead
+        };
+      } else {
+        console.log('Adding new notification');
+        // Add new notification
+        currentNotifications.unshift(notification);
+      }
+      
+      // Update observable and storage
+      this._notifications.next(currentNotifications);
+      await this.saveNotificationsToStorage();
+      this.updateNotificationCount();
+      console.log('Notification stored successfully');
+    } catch (error) {
+      console.error('Error storing notification:', error);
+      throw error;
     }
-    
-    // Update observable and storage
-    this._notifications.next(currentNotifications);
-    await this.saveNotificationsToStorage();
-    this.updateNotificationCount();
   }
   
   /**
@@ -350,11 +365,29 @@ export class NotificationService {
   
   /**
    * Add a test notification (for development/demo purposes)
-   * @param notification The notification data to add
+   * @param notification The notification data to add (optional)
    */
-  async addTestNotification(notification: NotificationData) {
-    await this.storeNotification(notification);
-    return notification;
+  async addTestNotification(notification?: NotificationData) {
+    try {
+      // If no notification is provided, create a default test notification
+      if (!notification) {
+        notification = {
+          id: `test-${Date.now()}`,
+          title: 'إشعار تجريبي',
+          body: 'هذا إشعار تجريبي لاختبار وظائف الإشعارات',
+          type: 'general',
+          isRead: false,
+          receivedAt: new Date()
+        };
+      }
+      
+      // Store the notification
+      await this.storeNotification(notification);
+      return notification;
+    } catch (error) {
+      console.error('Error adding test notification:', error);
+      throw error;
+    }
   }
   
   /**
@@ -369,16 +402,37 @@ export class NotificationService {
    * Save notifications to storage
    */
   private async saveNotificationsToStorage() {
-    await this.storage.set(this.NOTIFICATIONS_STORAGE_KEY, this._notifications.value);
+    try {
+      console.log('Saving notifications to storage');
+      await this.storage.set(this.NOTIFICATIONS_STORAGE_KEY, this._notifications.value);
+      console.log('Notifications saved successfully');
+    } catch (error) {
+      console.error('Error saving notifications to storage:', error);
+      throw error;
+    }
   }
   
   /**
    * Load notifications from storage
    */
   private async loadNotificationsFromStorage() {
-    const savedNotifications = await this.storage.get(this.NOTIFICATIONS_STORAGE_KEY);
-    if (savedNotifications) {
-      this._notifications.next(savedNotifications);
+    try {
+      console.log('Loading notifications from storage');
+      const savedNotifications = await this.storage.get(this.NOTIFICATIONS_STORAGE_KEY);
+      console.log('Loaded notifications:', savedNotifications ? savedNotifications.length : 0);
+      
+      if (savedNotifications) {
+        this._notifications.next(savedNotifications);
+        this.updateNotificationCount();
+      } else {
+        console.log('No saved notifications found');
+        // Initialize with empty array to ensure the BehaviorSubject has a valid value
+        this._notifications.next([]);
+      }
+    } catch (error) {
+      console.error('Error loading notifications from storage:', error);
+      // Set empty array as fallback
+      this._notifications.next([]);
       this.updateNotificationCount();
     }
   }
