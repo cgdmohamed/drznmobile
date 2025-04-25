@@ -238,6 +238,34 @@ export class CheckoutPage implements OnInit, OnDestroy {
   loadUserData() {
     this.isLoading = true;
     
+    // First check JWT auth service (our primary auth method)
+    if (this.jwtAuthService.isAuthenticated && this.jwtAuthService.currentUserValue) {
+      const jwtUser = this.jwtAuthService.currentUserValue;
+      this.user = jwtUser;
+      
+      // Load saved addresses
+      this.loadSavedAddresses();
+      
+      // Pre-fill form with JWT user data
+      this.shippingForm.patchValue({
+        firstName: jwtUser.first_name || '',
+        lastName: jwtUser.last_name || '',
+        email: jwtUser.email || '',
+        phone: jwtUser.billing?.phone || '',
+        address1: jwtUser.shipping?.address_1 || '',
+        address2: jwtUser.shipping?.address_2 || '',
+        district: jwtUser.shipping?.company || '', // Use company field as district
+        city: jwtUser.shipping?.city || '',
+        state: jwtUser.shipping?.state || '',
+        postalCode: jwtUser.shipping?.postcode || '',
+        country: jwtUser.shipping?.country || 'SA'
+      });
+      
+      this.isLoading = false;
+      return;
+    }
+    
+    // Fallback to legacy auth service if JWT auth not available
     this.userSubscription = this.authService.user.subscribe(user => {
       if (user) {
         this.user = user;
@@ -1008,7 +1036,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
           country: countryControl ? countryControl.value : 'SA'
         },
         customer_note: notesControl ? notesControl.value : '',
-        customer_id: this.user ? this.user.id : 0,
+        customer_id: this.jwtAuthService.currentUserValue?.id || (this.user ? this.user.id : 0),
         line_items: this.cart?.items.map(item => ({
           product_id: item.product.id,
           quantity: item.quantity
