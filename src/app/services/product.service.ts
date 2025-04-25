@@ -340,7 +340,7 @@ export class ProductService {
     
     // Connect to WooCommerce API using environment variables
     return this.http.get<Product[]>(
-      `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&featured=true&per_page=${limit}`
+      `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&featured=true&per_page=${limit}&status=publish&orderby=rand`
     ).pipe(
       catchError(error => {
         console.error('Error fetching featured products from API:', error);
@@ -391,7 +391,7 @@ export class ProductService {
     
     // Connect to WooCommerce API using environment variables
     return this.http.get<Product[]>(
-      `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&orderby=date&order=desc&per_page=10`
+      `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&orderby=date&order=desc&per_page=10&status=publish`
     ).pipe(
       catchError(error => {
         console.error('Error fetching new products from API:', error);
@@ -416,7 +416,7 @@ export class ProductService {
   getBestsellers(): Observable<Product[]> {
     // Connect to WooCommerce API using environment variables
     return this.http.get<Product[]>(
-      `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&orderby=popularity&order=desc&per_page=10`
+      `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&orderby=popularity&order=desc&per_page=10&status=publish`
     ).pipe(
       catchError(error => {
         console.error('Error fetching bestseller products from API:', error);
@@ -435,7 +435,7 @@ export class ProductService {
     
     // Connect to WooCommerce API using environment variables
     return this.http.get<Product[]>(
-      `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&on_sale=true&per_page=10`
+      `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&on_sale=true&per_page=10&status=publish&orderby=rand`
     ).pipe(
       catchError(error => {
         console.error('Error fetching on-sale products from API:', error);
@@ -480,7 +480,7 @@ export class ProductService {
   getRelatedProducts(productId: number): Observable<Product[]> {
     // Connect to WooCommerce API using environment variables
     return this.http.get<Product[]>(
-      `${this.apiUrl}/products/${productId}/related?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&per_page=4`
+      `${this.apiUrl}/products/${productId}/related?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&per_page=4&status=publish`
     ).pipe(
       catchError(error => {
         console.error(`Error fetching related products for product ID ${productId} from API:`, error);
