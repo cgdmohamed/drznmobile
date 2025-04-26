@@ -4,6 +4,7 @@ import { AlertController, LoadingController, ToastController } from '@ionic/angu
 import { Subscription } from 'rxjs';
 import { CartService } from '../../services/cart.service';
 import { AuthService } from '../../services/auth.service';
+import { JwtAuthService } from '../../services/jwt-auth.service';
 import { ProductService } from '../../services/product.service';
 import { Cart, CartItem } from '../../interfaces/cart.interface';
 import { Product } from '../../interfaces/product.interface';
@@ -24,6 +25,7 @@ export class CartPage implements OnInit, OnDestroy {
   constructor(
     private cartService: CartService,
     private authService: AuthService,
+    private jwtAuthService: JwtAuthService,
     private productService: ProductService,
     private router: Router,
     private alertController: AlertController,
@@ -173,7 +175,10 @@ export class CartPage implements OnInit, OnDestroy {
 
   // Proceed to checkout
   async proceedToCheckout() {
-    if (!this.authService.isLoggedIn) {
+    // Check if user is authenticated with either JWT or legacy auth
+    if (!this.jwtAuthService.isAuthenticated && !this.authService.isLoggedIn) {
+      console.log('User not authenticated, showing login prompt');
+      
       const alert = await this.alertController.create({
         header: 'تسجيل الدخول مطلوب',
         message: 'يرجى تسجيل الدخول للمتابعة إلى الدفع',
@@ -185,7 +190,9 @@ export class CartPage implements OnInit, OnDestroy {
           {
             text: 'تسجيل الدخول',
             handler: () => {
-              this.router.navigate(['/login']);
+              this.router.navigate(['/login'], {
+                queryParams: { returnUrl: '/checkout' }
+              });
             }
           }
         ]
@@ -194,6 +201,10 @@ export class CartPage implements OnInit, OnDestroy {
       await alert.present();
       return;
     }
+    
+    console.log('User is authenticated:', 
+      this.jwtAuthService.isAuthenticated ? 'via JWT' : 
+      this.authService.isLoggedIn ? 'via legacy auth' : 'unknown method');
     
     // Proceed to checkout page
     this.router.navigate(['/checkout']);
