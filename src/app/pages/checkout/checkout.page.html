@@ -494,26 +494,6 @@
           الاستمرار في التسوق
         </ion-button>
       </div>
-      
-      <!-- Recommended Products Section -->
-      <div class="recommended-products-section">
-        <h3 class="recommended-title text-align-left">قد يعجبك أيضا</h3>
-        <div class="recommended-products-grid">
-          <!-- Product cards will be populated here -->
-          <div class="product-card" *ngFor="let product of recommendedProducts">
-            <div class="product-image">
-              <img [src]="getProductImageUrl(product)" [alt]="product.name" (error)="handleImageError($event)">
-            </div>
-            <div class="product-details text-align-left">
-              <h4 class="product-name">{{ product.name }}</h4>
-              <p class="product-price">{{ product.price }} ر.س</p>
-              <ion-button fill="outline" size="small" (click)="addToCart(product)">
-                أضف إلى السلة
-              </ion-button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </ion-content>
