@@ -822,6 +822,18 @@ export class CheckoutPage implements OnInit, OnDestroy {
 
   // Process credit card payment
   async processPayment() {
+    if (!this.shippingForm.valid) {
+      this.presentToast('يرجى إكمال معلومات الشحن بشكل صحيح', 'danger');
+      return;
+    }
+    
+    // Check authentication status only when we have valid form information
+    if (!this.jwtAuthService.isAuthenticated && !this.authService.isLoggedIn && !this.otpConfirmed) {
+      console.log('User not authenticated, showing auth options before Credit Card payment');
+      this.showAuthOptions();
+      return;
+    }
+    
     // Open the credit card modal to collect payment information
     this.openCreditCardModal();
   }
@@ -830,6 +842,13 @@ export class CheckoutPage implements OnInit, OnDestroy {
   async processApplePayPayment() {
     if (!this.shippingForm.valid) {
       this.presentToast('يرجى إكمال معلومات الشحن بشكل صحيح', 'danger');
+      return;
+    }
+    
+    // Check authentication status only when we have valid form information
+    if (!this.jwtAuthService.isAuthenticated && !this.authService.isLoggedIn && !this.otpConfirmed) {
+      console.log('User not authenticated, showing auth options before Apple Pay payment');
+      this.showAuthOptions();
       return;
     }
     
@@ -857,6 +876,13 @@ export class CheckoutPage implements OnInit, OnDestroy {
   async processSTCPayPayment() {
     if (!this.shippingForm.valid) {
       this.presentToast('يرجى إكمال معلومات الشحن بشكل صحيح', 'danger');
+      return;
+    }
+    
+    // Check authentication status only when we have valid form information
+    if (!this.jwtAuthService.isAuthenticated && !this.authService.isLoggedIn && !this.otpConfirmed) {
+      console.log('User not authenticated, showing auth options before STC Pay payment');
+      this.showAuthOptions();
       return;
     }
     
