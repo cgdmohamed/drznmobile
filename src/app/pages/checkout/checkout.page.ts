@@ -9,8 +9,10 @@ import { AuthService } from '../../services/auth.service';
 import { JwtAuthService } from '../../services/jwt-auth.service';
 import { PaymentService } from '../../services/payment.service';
 import { OtpService } from '../../services/otp.service';
+import { ProductService } from '../../services/product.service';
 import { User } from '../../interfaces/user.interface';
 import { Cart } from '../../interfaces/cart.interface';
+import { Product } from '../../interfaces/product.interface';
 
 
 /**
@@ -49,13 +51,18 @@ export class CheckoutPage implements OnInit, OnDestroy {
   savedAddresses: any[] = [];
   selectedAddressId: number | null = null;
   
+  // Recommended products section
+  recommendedProducts: Product[] = [];
+  
   private cartSubscription: Subscription;
   private userSubscription: Subscription;
+  private productSubscription: Subscription;
 
   constructor(
     private formBuilder: FormBuilder,
     private cartService: CartService,
     private orderService: OrderService,
+    private productService: ProductService, // Added for recommended products
     public authService: AuthService, // Changed to public for template access
     public jwtAuthService: JwtAuthService, // Added JWT auth service
     private paymentService: PaymentService,
@@ -71,6 +78,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
   ngOnInit() {
     this.initForm();
     this.loadUserData();
+    this.loadRecommendedProducts(); // This will be defined below
     
     // Check for Apple Pay availability using proper detection
     this.isApplePayAvailable = this.detectApplePayAvailability();
@@ -247,6 +255,10 @@ export class CheckoutPage implements OnInit, OnDestroy {
     
     if (this.userSubscription) {
       this.userSubscription.unsubscribe();
+    }
+    
+    if (this.productSubscription) {
+      this.productSubscription.unsubscribe();
     }
   }
 
@@ -747,6 +759,53 @@ export class CheckoutPage implements OnInit, OnDestroy {
     };
     
     return countries[countryCode] || countryCode;
+  }
+
+  // Load recommended products for the checkout success page
+  loadRecommendedProducts() {
+    // Get recommended products - typically featured or bestselling products
+    this.productSubscription = this.productService.getFeaturedProducts(4).subscribe(
+      (products) => {
+        console.log('Loaded recommended products:', products);
+        this.recommendedProducts = products;
+      },
+      (error) => {
+        console.error('Error loading recommended products:', error);
+        // Fallback to a different category if featured products fail
+        this.productService.getProducts({ per_page: 4, category: 'newest' }).subscribe(
+          (products) => {
+            console.log('Loaded newest products as fallback:', products);
+            this.recommendedProducts = products;
+          },
+          (err) => {
+            console.error('Failed to load fallback products:', err);
+            this.recommendedProducts = [];
+          }
+        );
+      }
+    );
+  }
+
+  // Get product image URL
+  getProductImageUrl(product: Product): string {
+    if (product.images && product.images.length > 0) {
+      return product.images[0].src;
+    }
+    // Return a default image URL if no image is available
+    return 'assets/images/placeholder-product.png';
+  }
+
+  // Handle image loading errors
+  handleImageError(event: Event): void {
+    const imgElement = event.target as HTMLImageElement;
+    imgElement.src = 'assets/images/placeholder-product.png';
+  }
+
+  // Add product to cart from recommended products section
+  addToCart(product: Product): void {
+    // Add single quantity of the product
+    this.cartService.addToCart(product, 1);
+    this.presentToast(`تمت إضافة ${product.name} إلى السلة`, 'success');
   }
 
   // Process to next step
