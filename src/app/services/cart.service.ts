@@ -1,9 +1,17 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { Storage } from '@ionic/storage-angular';
+import { ToastController } from '@ionic/angular';
+import { switchMap, tap } from 'rxjs/operators';
 import { Product } from '../interfaces/product.interface';
 import { Cart, CartItem } from '../interfaces/cart.interface';
-import { ToastController } from '@ionic/angular';
+import { ShippingService, ShippingMethod } from './shipping.service';
+
+export interface SelectedShippingMethod {
+  zoneId: number;
+  methodId: number;
+  method: ShippingMethod;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -19,9 +27,15 @@ export class CartService {
     total: 0
   });
   
+  private _selectedShippingMethod = new BehaviorSubject<SelectedShippingMethod | null>(null);
   private readonly CART_STORAGE_KEY = 'shopping_cart';
+  private readonly SHIPPING_METHOD_KEY = 'selected_shipping_method';
   
-  constructor(private storage: Storage, private toastController: ToastController) {
+  constructor(
+    private storage: Storage, 
+    private toastController: ToastController,
+    private shippingService: ShippingService
+  ) {
     this.initialize();
   }
   
@@ -31,7 +45,12 @@ export class CartService {
   async initialize() {
     // Ensure storage is created before loading cart
     await this.storage.create();
+    
+    // Load cart data
     await this.loadCart();
+    
+    // Load saved shipping method
+    await this.loadSelectedShippingMethod();
   }
   
   /**
@@ -46,6 +65,20 @@ export class CartService {
    */
   get cartValue(): Cart {
     return this._cart.getValue();
+  }
+
+  /**
+   * Get selected shipping method as an observable
+   */
+  get selectedShippingMethod(): Observable<SelectedShippingMethod | null> {
+    return this._selectedShippingMethod.asObservable();
+  }
+  
+  /**
+   * Get current value of selected shipping method
+   */
+  get selectedShippingMethodValue(): SelectedShippingMethod | null {
+    return this._selectedShippingMethod.getValue();
   }
 
   /**
@@ -70,6 +103,23 @@ export class CartService {
   }
   
   /**
+   * Load selected shipping method from storage
+   */
+  async loadSelectedShippingMethod() {
+    try {
+      const storedMethod = await this.storage.get(this.SHIPPING_METHOD_KEY);
+      if (storedMethod) {
+        this._selectedShippingMethod.next(storedMethod);
+        
+        // Recalculate cart with the loaded shipping method
+        this.updateCartWithShippingMethod(storedMethod);
+      }
+    } catch (error) {
+      console.error('Error loading shipping method from storage:', error);
+    }
+  }
+  
+  /**
    * Save cart to storage
    */
   async saveCart() {
@@ -77,6 +127,17 @@ export class CartService {
       await this.storage.set(this.CART_STORAGE_KEY, this.cartValue);
     } catch (error) {
       console.error('Error saving cart to storage:', error);
+    }
+  }
+  
+  /**
+   * Save selected shipping method to storage
+   */
+  async saveSelectedShippingMethod() {
+    try {
+      await this.storage.set(this.SHIPPING_METHOD_KEY, this.selectedShippingMethodValue);
+    } catch (error) {
+      console.error('Error saving shipping method to storage:', error);
     }
   }
   
@@ -177,6 +238,10 @@ export class CartService {
       total: 0
     };
     
+    // Also clear shipping method when clearing cart
+    this._selectedShippingMethod.next(null);
+    this.saveSelectedShippingMethod();
+    
     this._cart.next(emptyCart);
     this.saveCart();
   }
@@ -202,6 +267,67 @@ export class CartService {
   }
   
   /**
+   * Select a shipping method
+   * @param zoneId The shipping zone ID
+   * @param methodId The shipping method ID
+   * @param method The full shipping method object
+   */
+  async selectShippingMethod(zoneId: number, methodId: number, method: ShippingMethod) {
+    const selectedMethod: SelectedShippingMethod = {
+      zoneId,
+      methodId,
+      method
+    };
+    
+    this._selectedShippingMethod.next(selectedMethod);
+    await this.saveSelectedShippingMethod();
+    
+    // Recalculate cart with the new shipping method
+    await this.updateCartWithShippingMethod(selectedMethod);
+    
+    this.presentToast(`Shipping method updated to: ${method.title}`);
+  }
+  
+  /**
+   * Update cart with selected shipping method
+   * @param shippingMethod The selected shipping method
+   */
+  private async updateCartWithShippingMethod(shippingMethod: SelectedShippingMethod) {
+    const currentCart = this.cartValue;
+    let shippingCost = 0;
+    
+    // If shipping method has a fixed cost, use it
+    if (shippingMethod.method.cost) {
+      shippingCost = parseFloat(shippingMethod.method.cost);
+    } else {
+      // Otherwise calculate it
+      const items = currentCart.items.map(item => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+        weight: item.product.weight || '0'
+      }));
+      
+      // Get shipping cost from service
+      this.shippingService.calculateShipping(
+        shippingMethod.zoneId, 
+        shippingMethod.methodId, 
+        items
+      ).subscribe(cost => {
+        shippingCost = cost;
+        
+        // Update cart with new shipping cost
+        const updatedCart = {
+          ...currentCart,
+          shipping: shippingCost
+        };
+        
+        this._cart.next(this.recalculateCart(updatedCart));
+        this.saveCart();
+      });
+    }
+  }
+  
+  /**
    * Recalculate cart totals
    * @param cart The cart to recalculate
    */
@@ -214,8 +340,9 @@ export class CartService {
     const vatRate = 0.15;
     const vat = (subtotal - cart.discount) * vatRate;
     
-    // Calculate shipping (this could be more complex in a real app)
-    const shipping = cart.items.length > 0 ? 10 : 0;
+    // Use the shipping cost from cart (which may have been set by shipping method)
+    // or use default if none selected
+    const shipping = cart.shipping > 0 ? cart.shipping : (cart.items.length > 0 ? 10 : 0);
     
     // Calculate total
     const total = subtotal - cart.discount + shipping + vat;

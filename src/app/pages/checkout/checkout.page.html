@@ -34,14 +34,24 @@
         <span *ngIf="step <= 1">1</span>
         <ion-icon name="checkmark" *ngIf="step > 1"></ion-icon>
       </div>
-      <div class="step-label">الشحن</div>
+      <div class="step-label">العنوان</div>
+    </div>
+    
+    <div class="stepper-line"></div>
+    
+    <div class="stepper-step" [class.active]="step === 1.5" [class.completed]="step > 1.5">
+      <div class="step-number">
+        <span *ngIf="step <= 1.5">2</span>
+        <ion-icon name="checkmark" *ngIf="step > 1.5"></ion-icon>
+      </div>
+      <div class="step-label">طريقة الشحن</div>
     </div>
     
     <div class="stepper-line"></div>
     
     <div class="stepper-step" [class.active]="step === 2" [class.completed]="step > 2">
       <div class="step-number">
-        <span *ngIf="step <= 2">2</span>
+        <span *ngIf="step <= 2">3</span>
         <ion-icon name="checkmark" *ngIf="step > 2"></ion-icon>
       </div>
       <div class="step-label">الدفع</div>
@@ -51,7 +61,7 @@
     
     <div class="stepper-step" [class.active]="step === 3" [class.completed]="step > 3">
       <div class="step-number">
-        <span *ngIf="step <= 3">3</span>
+        <span *ngIf="step <= 3">4</span>
         <ion-icon name="checkmark" *ngIf="step > 3"></ion-icon>
       </div>
       <div class="step-label">المراجعة</div>
@@ -61,7 +71,7 @@
     
     <div class="stepper-step" [class.active]="step === 4">
       <div class="step-number">
-        <span>4</span>
+        <span>5</span>
       </div>
       <div class="step-label">التأكيد</div>
     </div>
@@ -69,7 +79,7 @@
   
   <!-- Step 1: Shipping Information -->
   <div class="step-content" *ngIf="!isLoading && step === 1">
-    <h3 class="step-title">معلومات الشحن</h3>
+    <h3 class="step-title">معلومات العنوان</h3>
     
     <!-- Saved Addresses for logged in users -->
     <div class="saved-addresses" *ngIf="authService.isLoggedIn && user && savedAddresses && savedAddresses.length > 0">
@@ -267,7 +277,51 @@
     </form>
     
     <div class="nav-buttons">
-      <ion-button expand="block" (click)="nextStep()">متابعة إلى الدفع</ion-button>
+      <ion-button expand="block" (click)="nextStep()">متابعة إلى طريقة الشحن</ion-button>
+    </div>
+  </div>
+
+  <!-- Step 1.5: Shipping Method Selection -->
+  <div class="step-content" *ngIf="!isLoading && step === 1.5">
+    <h3 class="step-title">اختر طريقة الشحن</h3>
+    
+    <div class="shipping-methods" *ngIf="shippingMethods && shippingMethods.length > 0">
+      <div 
+        class="shipping-method-item" 
+        *ngFor="let method of shippingMethods"
+        [class.selected]="selectedMethodId === method.id"
+        (click)="selectShippingMethod(method)">
+        
+        <div class="shipping-method-radio">
+          <ion-icon name="checkmark-circle" *ngIf="selectedMethodId === method.id"></ion-icon>
+          <ion-icon name="ellipse-outline" *ngIf="selectedMethodId !== method.id"></ion-icon>
+        </div>
+        <div class="shipping-method-content">
+          <div class="shipping-method-title">
+            <ion-icon name="car-outline"></ion-icon>
+            {{ method.title }}
+          </div>
+          <div class="shipping-method-description" *ngIf="method.description">
+            {{ method.description }}
+          </div>
+          <div class="shipping-method-price" *ngIf="method.cost">
+            {{ method.cost }} ر.س
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="shipping-methods-empty" *ngIf="!shippingMethods || shippingMethods.length === 0">
+      <div class="empty-message">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <p>لم يتم العثور على طرق شحن متاحة لهذا العنوان</p>
+      </div>
+      <p class="helper-text">يرجى التأكد من إدخال العنوان بشكل صحيح أو تجربة عنوان آخر</p>
+    </div>
+    
+    <div class="nav-buttons">
+      <ion-button expand="block" fill="outline" (click)="previousStep()">رجوع</ion-button>
+      <ion-button expand="block" (click)="nextStep()" [disabled]="!selectedMethodId">متابعة إلى الدفع</ion-button>
     </div>
   </div>
   

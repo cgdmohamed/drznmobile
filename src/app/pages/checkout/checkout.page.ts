@@ -9,6 +9,7 @@ import { AuthService } from '../../services/auth.service';
 import { JwtAuthService } from '../../services/jwt-auth.service';
 import { PaymentService } from '../../services/payment.service';
 import { OtpService } from '../../services/otp.service';
+import { ShippingService, ShippingZone, ShippingMethod } from '../../services/shipping.service';
 import { User } from '../../interfaces/user.interface';
 import { Cart } from '../../interfaces/cart.interface';
 
@@ -33,7 +34,13 @@ export class CheckoutPage implements OnInit, OnDestroy {
   user: User;
   shippingForm: FormGroup;
   paymentMethod = 'creditCard'; // Default payment method
-  step = 0; // 0: Initial OTP Verification, 1: Shipping, 2: Payment, 3: Review, 4: Confirmation
+  step = 0; // 0: Initial OTP Verification, 1: Shipping, 1.5: Shipping Method, 2: Payment, 3: Review, 4: Confirmation
+  
+  // Shipping method related properties
+  shippingZones: any[] = [];
+  shippingMethods: any[] = [];
+  selectedZoneId: number | null = null;
+  selectedMethodId: number | null = null;
   isLoading = true;
   otpConfirmed = false;
   otpVerificationInProgress = false;
@@ -60,6 +67,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
     public jwtAuthService: JwtAuthService, // Added JWT auth service
     private paymentService: PaymentService,
     private otpService: OtpService,
+    private shippingService: ShippingService, // Added shipping service
     private router: Router,
     private route: ActivatedRoute,
     private loadingController: LoadingController,
@@ -71,6 +79,9 @@ export class CheckoutPage implements OnInit, OnDestroy {
   ngOnInit() {
     this.initForm();
     this.loadUserData();
+    
+    // Load shipping zones and methods
+    this.loadShippingZonesAndMethods();
     
     // Check for Apple Pay availability using proper detection
     this.isApplePayAvailable = this.detectApplePayAvailability();
@@ -735,6 +746,86 @@ export class CheckoutPage implements OnInit, OnDestroy {
     }
   }
   
+  /**
+   * Load shipping zones and methods from the WooCommerce API
+   */
+  loadShippingZonesAndMethods() {
+    this.isLoading = true;
+    
+    // First load all shipping zones
+    this.shippingService.getShippingZones().subscribe(
+      (zones) => {
+        this.shippingZones = zones;
+        console.log('Loaded shipping zones:', zones);
+        
+        // Default to first zone if available and none is selected
+        if (zones.length > 0 && !this.selectedZoneId) {
+          this.selectedZoneId = zones[0].id;
+          this.loadShippingMethodsForZone(zones[0].id);
+        } else if (this.selectedZoneId) {
+          this.loadShippingMethodsForZone(this.selectedZoneId);
+        }
+        
+        this.isLoading = false;
+      },
+      (error) => {
+        console.error('Error loading shipping zones:', error);
+        this.isLoading = false;
+        this.presentToast('حدث خطأ أثناء تحميل مناطق الشحن. يرجى المحاولة مرة أخرى لاحقاً.', 'danger');
+      }
+    );
+  }
+  
+  /**
+   * Load shipping methods for a specific zone
+   * @param zoneId The ID of the shipping zone
+   */
+  loadShippingMethodsForZone(zoneId: number) {
+    this.isLoading = true;
+    
+    this.shippingService.getShippingMethods(zoneId).subscribe(
+      (methods) => {
+        // Filter out disabled methods
+        this.shippingMethods = methods.filter(method => method.enabled);
+        console.log('Loaded shipping methods for zone', zoneId, ':', methods);
+        
+        // Default to first method if available and none is selected
+        if (this.shippingMethods.length > 0 && !this.selectedMethodId) {
+          this.selectedMethodId = this.shippingMethods[0].id;
+          this.selectShippingMethod(this.shippingMethods[0]);
+        }
+        
+        this.isLoading = false;
+      },
+      (error) => {
+        console.error('Error loading shipping methods:', error);
+        this.isLoading = false;
+        this.presentToast('حدث خطأ أثناء تحميل طرق الشحن. يرجى المحاولة مرة أخرى لاحقاً.', 'danger');
+      }
+    );
+  }
+  
+  /**
+   * Select a shipping method
+   * @param method The shipping method to select
+   */
+  selectShippingMethod(method: ShippingMethod) {
+    if (!this.selectedZoneId) {
+      return;
+    }
+    
+    this.selectedMethodId = method.id;
+    
+    // Update the cart with the selected shipping method
+    this.cartService.selectShippingMethod(
+      this.selectedZoneId, 
+      method.id,
+      method
+    );
+    
+    console.log('Selected shipping method:', method);
+  }
+  
   // Get country name from code
   getCountryName(countryCode: string): string {
     const countries = {
@@ -752,11 +843,45 @@ export class CheckoutPage implements OnInit, OnDestroy {
   // Process to next step
   nextStep() {
     if (this.step === 1) {
+      // Address validation
       if (this.shippingForm.valid) {
-        this.step = 2; // Move to payment method selection
+        // Move to shipping method selection step
+        this.step = 1.5;
+        
+        // Load shipping methods for the selected address if not already loaded
+        const country = this.shippingForm.get('country')?.value || 'SA';
+        const state = this.shippingForm.get('state')?.value || '';
+        const postcode = this.shippingForm.get('postalCode')?.value || '';
+        
+        // Find the correct shipping zone for the address
+        this.shippingService.getShippingZoneForLocation(country, state, postcode)
+          .subscribe(
+            (zoneId) => {
+              if (zoneId) {
+                this.selectedZoneId = zoneId;
+                this.loadShippingMethodsForZone(zoneId);
+              } else {
+                // If no specific zone found, load all shipping zones
+                this.loadShippingZonesAndMethods();
+              }
+            },
+            (error) => {
+              console.error('Error finding shipping zone for location:', error);
+              // Fallback to loading all zones
+              this.loadShippingZonesAndMethods();
+            }
+          );
       } else {
         this.markFormGroupTouched(this.shippingForm);
         this.presentToast('يرجى إكمال جميع الحقول المطلوبة', 'danger');
+      }
+    } else if (this.step === 1.5) {
+      // Shipping method validation
+      if (this.selectedZoneId && this.selectedMethodId) {
+        // Move to payment method selection
+        this.step = 2;
+      } else {
+        this.presentToast('يرجى اختيار طريقة الشحن', 'danger');
       }
     } else if (this.step === 2) {
       // Payment method selected - handle based on payment type
@@ -798,7 +923,10 @@ export class CheckoutPage implements OnInit, OnDestroy {
 
   // Back to previous step
   previousStep() {
-    if (this.step > 1) {
+    if (this.step === 1.5) {
+      // From shipping method back to address
+      this.step = 1;
+    } else if (this.step > 1) {
       this.step--;
     }
   }
@@ -1062,6 +1190,20 @@ export class CheckoutPage implements OnInit, OnDestroy {
           break;
       }
       
+      // Get selected shipping method information
+      let selectedShippingMethodInfo = null;
+      if (this.selectedZoneId && this.selectedMethodId) {
+        // Find the selected method
+        const selectedMethod = this.shippingMethods.find(m => m.id === this.selectedMethodId);
+        if (selectedMethod) {
+          selectedShippingMethodInfo = {
+            method_id: selectedMethod.method_id,
+            method_title: selectedMethod.method_title,
+            total: selectedMethod.cost || '0'
+          };
+        }
+      }
+      
       const orderData = {
         payment_method: paymentMethod,
         payment_method_title: paymentTitle,
@@ -1091,6 +1233,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
           postcode: postalCodeControl ? postalCodeControl.value : '',
           country: countryControl ? countryControl.value : 'SA'
         },
+        shipping_lines: selectedShippingMethodInfo ? [selectedShippingMethodInfo] : [],
         customer_note: notesControl ? notesControl.value : '',
         customer_id: this.jwtAuthService.currentUserValue?.id || (this.user ? this.user.id : 0),
         line_items: this.cart?.items.map(item => ({

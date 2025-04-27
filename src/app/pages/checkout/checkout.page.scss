@@ -362,6 +362,142 @@ ion-content {
   }
 }
 
+// Shipping methods styling
+.shipping-methods {
+  margin-bottom: 24px;
+  
+  .shipping-method-item {
+    display: flex;
+    padding: 18px;
+    background: #f9f9f9;
+    border-radius: 12px;
+    border: 2px solid #eee;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    position: relative;
+    overflow: hidden;
+    
+    &:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 3px;
+      background: var(--ion-color-primary);
+      transition: width 0.3s ease;
+    }
+    
+    &.selected {
+      border-color: var(--ion-color-primary);
+      background: rgba(236, 28, 36, 0.03);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 15px rgba(236, 28, 36, 0.08);
+      
+      &:after {
+        width: 100%;
+      }
+      
+      .shipping-method-radio {
+        ion-icon {
+          transform: scale(1.15);
+        }
+      }
+      
+      .shipping-method-content {
+        .shipping-method-title {
+          color: var(--ion-color-primary);
+        }
+        
+        .shipping-method-price {
+          color: var(--ion-color-primary);
+          font-weight: bold;
+        }
+      }
+    }
+    
+    .shipping-method-radio {
+      margin-right: 16px;
+      display: flex;
+      align-items: center;
+      
+      ion-icon {
+        font-size: 24px;
+        color: var(--ion-color-primary);
+        transition: transform 0.2s ease;
+      }
+    }
+    
+    .shipping-method-content {
+      flex: 1;
+      
+      .shipping-method-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        
+        ion-icon {
+          margin-left: 8px;
+          font-size: 18px;
+        }
+      }
+      
+      .shipping-method-description {
+        font-size: 13px;
+        color: #777;
+        margin-bottom: 12px;
+        line-height: 1.4;
+      }
+      
+      .shipping-method-price {
+        font-size: 15px;
+        font-weight: 600;
+        color: #333;
+        transition: color 0.2s ease;
+      }
+    }
+  }
+}
+
+.shipping-methods-empty {
+  padding: 30px 20px;
+  text-align: center;
+  background: #f9f9f9;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  
+  .empty-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 16px;
+    
+    ion-icon {
+      font-size: 48px;
+      color: #ddd;
+      margin-bottom: 16px;
+    }
+    
+    p {
+      font-weight: 600;
+      color: #555;
+      margin: 0;
+      font-size: 16px;
+    }
+  }
+  
+  .helper-text {
+    color: #888;
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.4;
+  }
+}
+
 // Payment methods styling
 .payment-methods {
   margin-bottom: 24px;
