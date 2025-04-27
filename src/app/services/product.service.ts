@@ -14,6 +14,9 @@ export class ProductService {
   private apiUrl = environment.apiUrl;
   private consumerKey = environment.consumerKey;
   private consumerSecret = environment.consumerSecret;
+  
+  // Track product IDs that failed to load to avoid repeated API calls
+  private failedProductIds = new Set<number>();
 
   constructor(
     private http: HttpClient,
@@ -58,12 +61,26 @@ export class ProductService {
       return of(this.generateDemoProduct(id));
     }
     
+    // Check if this is a product ID we've already tried and failed to fetch
+    if (this.failedProductIds.has(id)) {
+      console.log(`Using cached fallback for previously failed product ID: ${id}`);
+      return of(this.generateDemoProduct(id));
+    }
+    
     // Connect to WooCommerce API using environment variables
     return this.http.get<Product>(
       `${this.apiUrl}/products/${id}?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}`
     ).pipe(
       catchError(error => {
         console.error(`Error fetching product ID ${id} from API:`, error);
+        
+        // Add this ID to the list of failed product IDs so we won't try again
+        if (!this.failedProductIds) {
+          this.failedProductIds = new Set<number>();
+        }
+        this.failedProductIds.add(id);
+        
+        // Return a demo product as fallback
         return of(this.generateDemoProduct(id));
       })
     );
