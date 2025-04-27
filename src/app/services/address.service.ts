@@ -62,17 +62,34 @@ export class AddressService {
    * Fetch addresses from the API
    */
   private fetchAddresses(): Observable<AddressResponse> {
+    console.log('Attempting to fetch addresses');
     return from(this.jwtAuthService.getUser()).pipe(
       switchMap(user => {
+        console.log('User from JWT service:', user);
         if (!user || !user.id) {
+          console.error('User not authenticated or missing ID');
           return throwError(() => new Error('User not authenticated'));
         }
         
-        return this.http.get<AddressResponse>(
-          `${this.apiUrl}${this.addressEndpoint}/customers/${user.id}/addresses`
-        ).pipe(
+        const url = `${this.apiUrl}${this.addressEndpoint}/customers/${user.id}/addresses`;
+        console.log('Fetching addresses from URL:', url);
+        
+        return this.http.get<AddressResponse>(url).pipe(
+          map(response => {
+            console.log('Address response from API:', response);
+            return response;
+          }),
           catchError(error => {
             console.error('Error fetching addresses:', error);
+            // For debugging only - fallback to user's billing and shipping from their profile
+            // This helps us check if WooCommerce Address Book plugin is properly installed/activated
+            if (user.billing && user.shipping) {
+              console.log('Using fallback addresses from user profile');
+              return of({
+                billing: user.billing,
+                shipping: user.shipping
+              } as AddressResponse);
+            }
             return throwError(() => new Error('Failed to retrieve addresses'));
           })
         );
