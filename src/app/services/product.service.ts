@@ -18,6 +18,7 @@ export class ProductService {
   
   // Track product IDs that failed to load to avoid repeated API calls
   private failedProductIds = new Set<number>();
+  private randomProductCache: Product[] = [];
 
   constructor(
     private http: HttpClient,
@@ -26,12 +27,6 @@ export class ProductService {
 
   // Get products with optional filtering
   getProducts(options: any = {}): Observable<Product[]> {
-    // In Replit demo environment or when API fails, use demo data
-    if (environment.useDemoData) {
-      console.log('Using demo products');
-      return this.getDemoProducts(options.per_page || 20);
-    }
-    
     // Connect to WooCommerce API using environment variables
     const params = {
       consumer_key: this.consumerKey,
@@ -44,29 +39,25 @@ export class ProductService {
       .map(key => `${key}=${params[key]}`)
       .join('&');
     
-    // Try to fetch from actual API, fall back to demo data if needed
+    // Try to fetch from actual API, fall back to random API products if needed
     return this.http.get<Product[]>(`${this.apiUrl}/products?${queryString}`)
       .pipe(
         catchError(error => {
           console.error('Error fetching products from API:', error);
-          return this.getDemoProducts(options.per_page || 20);
+          return this.getRandomProducts(options.per_page || 20);
         })
       );
   }
 
   // Get a single product by ID
   getProduct(id: number): Observable<Product> {
-    // In Replit demo environment, use demo data
-    if (environment.useDemoData) {
-      console.log(`Using demo product for ID: ${id}`);
-      return of(this.generateDemoProduct(id));
-    }
-    
     // Check if this is a product ID we've already tried and failed to fetch
     if (this.failedProductIds.has(id)) {
-      console.log(`Using fallback demo product for previously failed product ID: ${id}`);
-      // Return a demo product as requested by the user
-      return of(this.generateDemoProduct(id));
+      console.log(`Getting random product for previously failed product ID: ${id}`);
+      // Get a random API product instead of demo
+      return this.getRandomProducts(1).pipe(
+        map(products => products.length > 0 ? products[0] : this.generateProductFromScratch(id))
+      );
     }
     
     // Connect to WooCommerce API using environment variables
@@ -79,48 +70,169 @@ export class ProductService {
         // Add this ID to the list of failed product IDs so we won't try again
         this.failedProductIds.add(id);
         
-        // Return a demo product to ensure we always have products
-        console.log(`Generating demo product as fallback for ID: ${id}`);
-        return of(this.generateDemoProduct(id));
+        // Return a random product from API instead of demo
+        console.log(`Getting random API product for failed ID: ${id}`);
+        return this.getRandomProducts(1).pipe(
+          map(products => {
+            if (products.length > 0) {
+              return products[0];
+            } else {
+              // As absolute last resort, generate a placeholder
+              return this.generateProductFromScratch(id);
+            }
+          })
+        );
       })
     );
   }
   
+  // Last resort - generate a placeholder product from scratch with minimal info
+  private generateProductFromScratch(id: number): Product {
+    return {
+      id: id,
+      name: 'Product #' + id,
+      slug: 'product-' + id,
+      permalink: '',
+      date_created: new Date().toISOString(),
+      date_modified: new Date().toISOString(),
+      type: 'simple',
+      status: 'publish',
+      featured: false,
+      catalog_visibility: 'visible',
+      description: 'This is a placeholder product.',
+      short_description: 'Placeholder product',
+      sku: 'PROD-' + id,
+      price: '99.99',
+      regular_price: '99.99',
+      sale_price: '',
+      date_on_sale_from: null,
+      date_on_sale_to: null,
+      on_sale: false,
+      purchasable: true,
+      total_sales: 0,
+      virtual: false,
+      downloadable: false,
+      downloads: [],
+      download_limit: -1,
+      download_expiry: -1,
+      tax_status: 'taxable',
+      tax_class: '',
+      manage_stock: false,
+      stock_quantity: null,
+      stock_status: 'instock',
+      backorders: 'no',
+      backorders_allowed: false,
+      backordered: false,
+      sold_individually: false,
+      weight: '',
+      dimensions: {
+        length: '',
+        width: '',
+        height: ''
+      },
+      shipping_required: true,
+      shipping_taxable: true,
+      shipping_class: '',
+      shipping_class_id: 0,
+      reviews_allowed: true,
+      average_rating: '0',
+      rating_count: 0,
+      related_ids: [],
+      upsell_ids: [],
+      cross_sell_ids: [],
+      parent_id: 0,
+      purchase_note: '',
+      categories: [
+        {
+          id: 1,
+          name: 'Uncategorized',
+          slug: 'uncategorized'
+        }
+      ],
+      tags: [],
+      attributes: [],
+      variations: [],
+      grouped_products: [],
+      menu_order: 0,
+      images: [
+        {
+          id: 0,
+          date_created: new Date().toISOString(),
+          date_modified: new Date().toISOString(),
+          src: 'assets/images/product-placeholder.svg',
+          name: 'Placeholder',
+          alt: 'Placeholder'
+        }
+      ],
+      meta_data: []
+    } as Product;
+  }
+  
   // Get random real products from API
   getRandomProducts(count: number = 5): Observable<Product[]> {
-    if (environment.useDemoData) {
-      return this.getDemoProducts(count);
+    // Always try to get real products, even in demo environment
+    
+    // Check cache first
+    if (this.randomProductCache.length >= count) {
+      console.log(`Got ${count} random products from cache`);
+      return of(this.randomProductCache.slice(0, count));
     }
     
     // Get a larger number of products to ensure we have enough 
     // even after filtering out potential duplicates
-    const fetchCount = count * 2;
+    const fetchCount = Math.max(30, count * 2);
     
+    // Try first with orderby=rand which is the preferred method
     return this.http.get<Product[]>(
       `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&per_page=${fetchCount}&orderby=rand&status=publish`
     ).pipe(
       map(products => {
+        console.log(`Got ${products.length} random products from API to use across all sections`);
+        // Store in cache for future use
+        this.randomProductCache = products;
         if (products.length >= count) {
           return products.slice(0, count);
         }
         return products;
       }),
       catchError(error => {
-        console.error(`Error fetching random products from API:`, error);
-        return this.getDemoProducts(count);
+        console.error(`Error fetching random products with orderby=rand:`, error);
+        
+        // If rand fails, try getting products without the random ordering
+        // Many WooCommerce implementations don't support orderby=rand
+        return this.http.get<Product[]>(
+          `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&per_page=${fetchCount}&status=publish`
+        ).pipe(
+          map(products => {
+            console.log(`Got ${products.length} non-random products from API, will shuffle manually`);
+            // Store in cache for future use
+            this.randomProductCache = products;
+            // Shuffle the products manually
+            const shuffled = products.sort(() => 0.5 - Math.random());
+            if (shuffled.length >= count) {
+              return shuffled.slice(0, count);
+            }
+            return shuffled;
+          }),
+          catchError(secondError => {
+            console.error(`Error fetching any products from API:`, secondError);
+            
+            // As an absolute last resort, create minimal placeholder products
+            console.log(`Creating ${count} minimal placeholder products as last resort`);
+            const placeholders: Product[] = [];
+            for (let i = 0; i < count; i++) {
+              placeholders.push(this.generateProductFromScratch(Math.floor(Math.random() * 1000) + 9000));
+            }
+            return of(placeholders);
+          })
+        );
       })
     );
   }
 
   // Get product categories with pagination support
   getCategories(options: any = {}): Observable<Category[]> {
-    // In Replit demo environment or when API fails, use demo data
-    if (environment.useDemoData) {
-      console.log('Using demo categories');
-      return this.mockDataService.getCategories();
-    }
-    
-    // Connect to WooCommerce API using environment variables
+    // Connect to WooCommerce API using environment variables, even in demo mode
     const params = {
       consumer_key: this.consumerKey,
       consumer_secret: this.consumerSecret,
@@ -143,37 +255,25 @@ export class ProductService {
           // Check if it's a server connection error (502, 504, etc)
           if (error.status >= 500) {
             console.warn('Server connection error detected. API server may be unavailable.');
-            // Log more details about the error
-            if (error.error) {
-              console.warn('Error details:', error.error);
-            }
-            
-            // Here we could display a toast message about connection issues
-            // We'll fall back to mock data for now
           }
           
-          // Add telemetry - could be important for debugging
-          console.log('Falling back to demo categories due to API error');
-          return this.mockDataService.getCategories();
+          // Create minimum viable categories when API fails
+          console.log('Creating minimal viable categories as API fallback');
+          // Create default categories that most stores would have
+          const fallbackCategories: Category[] = [
+            this.createBasicCategory(1, 'ملابس', 'clothing'),
+            this.createBasicCategory(2, 'إلكترونيات', 'electronics'),
+            this.createBasicCategory(3, 'أحذية', 'shoes'),
+            this.createBasicCategory(4, 'إكسسوارات', 'accessories'),
+            this.createBasicCategory(5, 'منزل', 'home')
+          ];
+          return of(fallbackCategories);
         })
       );
   }
 
   // Get products by category with filtering options and pagination
   getProductsByCategory(categoryId: number, options: any = {}): Observable<any> {
-    // In Replit demo environment or when API fails, use demo data
-    if (environment.useDemoData) {
-      console.log(`Using demo products for category ID: ${categoryId}`);
-      const demoProducts = this.getDemoProducts(options.per_page || 20).pipe(
-        map(products => ({
-          products: products,
-          totalPages: Math.ceil(products.length / (options.per_page || 20)),
-          currentPage: options.page || 1
-        }))
-      );
-      return demoProducts;
-    }
-    
     // Connect to WooCommerce API using environment variables
     const params: any = {
       consumer_key: this.consumerKey,
@@ -238,33 +338,20 @@ export class ProductService {
         catchError(error => {
           console.error(`Error fetching products for category ${categoryId} from API:`, error);
           
-          // Return demo products with pagination info
-          const demoProducts = this.getDemoProducts(options.per_page || 20).pipe(
+          // Return random API products with pagination info
+          return this.getRandomProducts(options.per_page || 20).pipe(
             map(products => ({
               products: products,
-              totalPages: Math.ceil(products.length / (options.per_page || 20)),
+              totalPages: 1,
               currentPage: params.page
             }))
           );
-          
-          return demoProducts;
         })
       );
   }
 
   // Search products with advanced options and pagination
   searchProducts(query: string, page: number = 1, per_page: number = 10): Observable<any> {
-    // In Replit demo environment or when API fails, use demo data
-    if (environment.useDemoData) {
-      console.log(`Using demo search results for query: "${query}"`);
-      const demoProducts = this.mockDataService.searchDemoProducts(query, per_page);
-      return of({
-        products: demoProducts,
-        totalPages: Math.ceil(demoProducts.length / per_page),
-        currentPage: page
-      });
-    }
-    
     // Connect to WooCommerce API using environment variables
     const params = {
       consumer_key: this.consumerKey,
@@ -295,13 +382,14 @@ export class ProductService {
         catchError(error => {
           console.error(`Error searching products with query "${query}" from API:`, error);
           
-          // Return demo products with pagination info
-          const demoProducts = this.mockDataService.searchDemoProducts(query, per_page);
-          return of({
-            products: demoProducts,
-            totalPages: Math.ceil(demoProducts.length / per_page),
-            currentPage: page
-          });
+          // Return random products as search results
+          return this.getRandomProducts(per_page).pipe(
+            map(products => ({
+              products,
+              totalPages: 1,
+              currentPage: page
+            }))
+          );
         })
       );
   }
@@ -315,7 +403,7 @@ export class ProductService {
     ).pipe(
       catchError(error => {
         console.error('Error fetching product brands from API:', error);
-        // Fall back to demo brands
+        // Fall back to basic brands
         return of([
           { id: 1, name: 'داك', slug: 'dac', count: 15 },
           { id: 2, name: 'نايك', slug: 'nike', count: 15 },
@@ -345,7 +433,7 @@ export class ProductService {
     ).pipe(
       catchError(error => {
         console.error(`Error fetching products for brands ${attributeTerms} from API:`, error);
-        return this.getDemoProducts(limit);
+        return this.getRandomProducts(limit);
       })
     );
   }
@@ -368,47 +456,28 @@ export class ProductService {
       .pipe(
         catchError(error => {
           console.error('Error fetching filtered products from API:', error);
-          return this.getDemoProducts(10);
+          return this.getRandomProducts(10);
         })
       );
   }
 
   // Get featured products
   getFeaturedProducts(limit: number = 10): Observable<Product[]> {
-    // In Replit demo environment, use demo data
-    if (environment.useDemoData) {
-      console.log('Using demo featured products');
-      return this.mockDataService.getFeaturedProducts();
-    }
-    
-    // Connect to WooCommerce API using environment variables
+    // Connect to WooCommerce API using environment variables, even in demo mode
     return this.http.get<Product[]>(
       `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&featured=true&per_page=${limit}&status=publish&orderby=rand`
     ).pipe(
-      map(products => {
-        // Ensure we have at least 5 products by supplementing with demo products if needed
-        if (products.length < 5) {
-          console.log(`Only got ${products.length} featured products from API, will add demo products to reach minimum 5`);
-          // We'll fetch demo products separately and combine them
-          return products;
-        }
-        return products;
-      }),
       catchError(error => {
         console.error('Error fetching featured products from API:', error);
         
         // Check if it's a server connection error (502, 504, etc)
         if (error.status >= 500) {
           console.warn('Server connection error detected for featured products. API server may be unavailable.');
-          // Log more details about the error
-          if (error.error) {
-            console.warn('Error details:', error.error);
-          }
         }
         
-        // Add telemetry
-        console.log('Falling back to demo featured products due to API error');
-        return this.mockDataService.getFeaturedProducts();
+        // Fall back to random real products instead of demo
+        console.log('Falling back to random real products for featured section');
+        return this.getRandomProducts(limit);
       })
     );
   }
@@ -428,20 +497,16 @@ export class ProductService {
     ).pipe(
       catchError(error => {
         console.error(`Error fetching products for categories ${categoryParam} from API:`, error);
-        return this.getDemoProducts(limit);
+        // Fall back to random real products instead of demo
+        console.log('Falling back to random real products for products by categories');
+        return this.getRandomProducts(limit);
       })
     );
   }
 
   // Get new products
   getNewProducts(): Observable<Product[]> {
-    // In Replit demo environment or when API fails, use demo data
-    if (environment.useDemoData) {
-      console.log('Using demo new products');
-      return this.mockDataService.getNewProducts();
-    }
-    
-    // Connect to WooCommerce API using environment variables
+    // Connect to WooCommerce API using environment variables, even in demo mode
     return this.http.get<Product[]>(
       `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&orderby=date&order=desc&per_page=10&status=publish`
     ).pipe(
@@ -451,15 +516,11 @@ export class ProductService {
         // Check if it's a server connection error (502, 504, etc)
         if (error.status >= 500) {
           console.warn('Server connection error detected for new products. API server may be unavailable.');
-          // Log more details about the error
-          if (error.error) {
-            console.warn('Error details:', error.error);
-          }
         }
         
-        // Add telemetry
-        console.log('Falling back to demo new products due to API error');
-        return this.mockDataService.getNewProducts();
+        // Fall back to random real products instead of demo
+        console.log('Falling back to random real products for new products section');
+        return this.getRandomProducts(10);
       })
     );
   }
@@ -472,20 +533,16 @@ export class ProductService {
     ).pipe(
       catchError(error => {
         console.error('Error fetching bestseller products from API:', error);
-        return this.getDemoProducts(6);
+        // Fall back to random real products instead of demo
+        console.log('Falling back to random real products for bestsellers section');
+        return this.getRandomProducts(10);
       })
     );
   }
 
   // Get products on sale
   getOnSaleProducts(): Observable<Product[]> {
-    // In Replit demo environment or when API fails, use demo data
-    if (environment.useDemoData) {
-      console.log('Using demo on-sale products');
-      return this.mockDataService.getOnSaleProducts();
-    }
-    
-    // Connect to WooCommerce API using environment variables
+    // Connect to WooCommerce API using environment variables, even in demo mode
     return this.http.get<Product[]>(
       `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&on_sale=true&per_page=10&status=publish&orderby=rand`
     ).pipe(
@@ -495,17 +552,40 @@ export class ProductService {
         // Check if it's a server connection error (502, 504, etc)
         if (error.status >= 500) {
           console.warn('Server connection error detected for on-sale products. API server may be unavailable.');
-          // Log more details about the error
-          if (error.error) {
-            console.warn('Error details:', error.error);
-          }
         }
         
-        // Add telemetry
-        console.log('Falling back to demo on-sale products due to API error');
-        return this.mockDataService.getOnSaleProducts();
+        // Fall back to random real products instead of demo
+        console.log('Falling back to random real products for on-sale products section');
+        return this.getRandomProducts(10);
       })
     );
+  }
+  
+  // Helper method to create a basic category when API fails
+  private createBasicCategory(id: number, name: string, slug: string): Category {
+    const date = new Date().toISOString();
+    return {
+      id: id,
+      name: name,
+      slug: slug,
+      parent: 0,
+      description: `${name} - Basic category`,
+      display: 'default',
+      image: {
+        id: id * 100,
+        date_created: date,
+        date_modified: date,
+        src: `assets/images/categories/${slug}.jpg`,
+        name: name,
+        alt: `${name} Category`
+      },
+      menu_order: id,
+      count: 10,
+      _links: {
+        self: [{ href: `${this.apiUrl}/products/categories/${id}` }],
+        collection: [{ href: `${this.apiUrl}/products/categories` }]
+      }
+    };
   }
   
   // Get maximum price available in the store for filter sliders
@@ -536,238 +616,10 @@ export class ProductService {
     ).pipe(
       catchError(error => {
         console.error(`Error fetching related products for product ID ${productId} from API:`, error);
-        return this.getDemoProducts(4);
+        // Fall back to random real products instead of demo
+        console.log('Falling back to random real products for related products section');
+        return this.getRandomProducts(4);
       })
     );
-  }
-
-  // Demo categories generator
-  private getDemoCategories(): Observable<Category[]> {
-    const categories: Category[] = [
-      {
-        id: 1,
-        name: 'ملابس',
-        slug: 'clothing',
-        parent: 0,
-        description: 'تشكيلة واسعة من الملابس العصرية',
-        display: 'products',
-        image: {
-          id: 101,
-          date_created: new Date().toISOString(),
-          date_modified: new Date().toISOString(),
-          src: '../assets/images/categories/clothing.jpg',
-          name: 'Clothing',
-          alt: 'Clothing Category'
-        },
-        menu_order: 1,
-        count: 45,
-        _links: {
-          self: [{ href: `${this.apiUrl}/products/categories/1` }],
-          collection: [{ href: `${this.apiUrl}/products/categories` }]
-        }
-      },
-      {
-        id: 2,
-        name: 'أحذية',
-        slug: 'shoes',
-        parent: 0,
-        description: 'أحذية مريحة وأنيقة لجميع المناسبات',
-        display: 'products',
-        image: {
-          id: 102,
-          date_created: new Date().toISOString(),
-          date_modified: new Date().toISOString(),
-          src: '../assets/images/categories/shoes.jpg',
-          name: 'Shoes',
-          alt: 'Shoes Category'
-        },
-        menu_order: 2,
-        count: 32,
-        _links: {
-          self: [{ href: `${this.apiUrl}/products/categories/2` }],
-          collection: [{ href: `${this.apiUrl}/products/categories` }]
-        }
-      },
-      {
-        id: 3,
-        name: 'إكسسوارات',
-        slug: 'accessories',
-        parent: 0,
-        description: 'إكسسوارات متنوعة لإكمال إطلالتك',
-        display: 'products',
-        image: {
-          id: 103,
-          date_created: new Date().toISOString(),
-          date_modified: new Date().toISOString(),
-          src: '../assets/images/categories/accessories.jpg',
-          name: 'Accessories',
-          alt: 'Accessories Category'
-        },
-        menu_order: 3,
-        count: 28,
-        _links: {
-          self: [{ href: `${this.apiUrl}/products/categories/3` }],
-          collection: [{ href: `${this.apiUrl}/products/categories` }]
-        }
-      },
-      {
-        id: 4,
-        name: 'إلكترونيات',
-        slug: 'electronics',
-        parent: 0,
-        description: 'أحدث المنتجات الإلكترونية',
-        display: 'products',
-        image: {
-          id: 104,
-          date_created: new Date().toISOString(),
-          date_modified: new Date().toISOString(),
-          src: '../assets/images/categories/electronics.jpg',
-          name: 'Electronics',
-          alt: 'Electronics Category'
-        },
-        menu_order: 4,
-        count: 35,
-        _links: {
-          self: [{ href: `${this.apiUrl}/products/categories/4` }],
-          collection: [{ href: `${this.apiUrl}/products/categories` }]
-        }
-      },
-      {
-        id: 5,
-        name: 'منزل ومطبخ',
-        slug: 'home-kitchen',
-        parent: 0,
-        description: 'كل ما تحتاجه لمنزلك ومطبخك',
-        display: 'products',
-        image: {
-          id: 105,
-          date_created: new Date().toISOString(),
-          date_modified: new Date().toISOString(),
-          src: '../assets/images/categories/home-kitchen.jpg',
-          name: 'Home & Kitchen',
-          alt: 'Home & Kitchen Category'
-        },
-        menu_order: 5,
-        count: 42,
-        _links: {
-          self: [{ href: `${this.apiUrl}/products/categories/5` }],
-          collection: [{ href: `${this.apiUrl}/products/categories` }]
-        }
-      }
-    ];
-
-    return of(categories);
-  }
-
-  // Demo products generator
-  private getDemoProducts(count: number = 10): Observable<Product[]> {
-    const products: Product[] = [];
-    for (let i = 0; i < count; i++) {
-      products.push(this.generateDemoProduct(i + 1));
-    }
-    return of(products);
-  }
-
-  // Generate a single demo product
-  private generateDemoProduct(id: number): Product {
-    const productNames = [
-      'تيشيرت قطني أساسي',
-      'حذاء رياضي خفيف',
-      'سماعات بلوتوث لاسلكية',
-      'ساعة ذكية متعددة الوظائف',
-      'حقيبة ظهر عصرية',
-      'نظارة شمسية أنيقة',
-      'جاكيت شتوي دافئ',
-      'سروال جينز كلاسيكي',
-      'قميص رسمي أنيق',
-      'طقم أواني طهي'
-    ];
-
-    const categories = [
-      { id: 1, name: 'ملابس', slug: 'clothing' },
-      { id: 2, name: 'أحذية', slug: 'shoes' },
-      { id: 3, name: 'إكسسوارات', slug: 'accessories' },
-      { id: 4, name: 'إلكترونيات', slug: 'electronics' },
-      { id: 5, name: 'منزل ومطبخ', slug: 'home-kitchen' }
-    ];
-
-    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-    const date = new Date().toISOString();
-    const price = (Math.random() * 500 + 50).toFixed(2);
-    const onSale = Math.random() > 0.7;
-    const salePrice = onSale ? (parseFloat(price) * 0.8).toFixed(2) : '';
-
-    return {
-      id: id,
-      name: productNames[id % productNames.length],
-      slug: productNames[id % productNames.length].toLowerCase().replace(/\s+/g, '-'),
-      permalink: `${this.apiUrl}/product/${id}`,
-      date_created: date,
-      date_modified: date,
-      type: 'simple',
-      status: 'publish',
-      featured: Math.random() > 0.8,
-      catalog_visibility: 'visible',
-      description: 'وصف تفصيلي للمنتج مع شرح خصائصه ومميزاته التي تجعله اختيارًا مثاليًا لاحتياجاتك.',
-      short_description: 'نبذة مختصرة عن المنتج',
-      sku: `SKU-${id}`,
-      price: price,
-      regular_price: price,
-      sale_price: salePrice,
-      date_on_sale_from: onSale ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() : null,
-      date_on_sale_to: onSale ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() : null,
-      on_sale: onSale,
-      purchasable: true,
-      total_sales: Math.floor(Math.random() * 100),
-      virtual: false,
-      downloadable: false,
-      downloads: [],
-      download_limit: 0,
-      download_expiry: 0,
-      tax_status: 'taxable',
-      tax_class: '',
-      manage_stock: true,
-      stock_quantity: Math.floor(Math.random() * 50) + 5,
-      stock_status: 'instock',
-      backorders: 'no',
-      backorders_allowed: false,
-      backordered: false,
-      sold_individually: false,
-      weight: (Math.random() * 2).toFixed(2),
-      dimensions: {
-        length: (Math.random() * 30).toFixed(2),
-        width: (Math.random() * 20).toFixed(2),
-        height: (Math.random() * 10).toFixed(2)
-      },
-      shipping_required: true,
-      shipping_taxable: true,
-      shipping_class: '',
-      shipping_class_id: 0,
-      reviews_allowed: true,
-      average_rating: (Math.random() * 5).toFixed(2),
-      rating_count: Math.floor(Math.random() * 50),
-      related_ids: [1, 2, 3, 4].filter(relId => relId !== id),
-      upsell_ids: [],
-      cross_sell_ids: [],
-      parent_id: 0,
-      purchase_note: '',
-      categories: [randomCategory],
-      tags: [],
-      attributes: [],
-      variations: [],
-      grouped_products: [],
-      menu_order: 0,
-      images: [
-        {
-          id: id * 100,
-          date_created: date,
-          date_modified: date,
-          src: id <= 1 ? '../assets/images/products/product-1.jpg' : '../assets/images/product-placeholder.svg',
-          name: productNames[id % productNames.length],
-          alt: productNames[id % productNames.length]
-        }
-      ],
-      meta_data: []
-    };
   }
 }
