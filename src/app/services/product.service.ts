@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { Product } from '../interfaces/product.interface';
 import { Category } from '../interfaces/category.interface';
@@ -55,7 +55,7 @@ export class ProductService {
 
   // Get a single product by ID
   getProduct(id: number): Observable<Product> {
-    // In Replit demo environment or when API fails, use demo data
+    // In Replit demo environment, use demo data
     if (environment.useDemoData) {
       console.log(`Using demo product for ID: ${id}`);
       return of(this.generateDemoProduct(id));
@@ -63,8 +63,9 @@ export class ProductService {
     
     // Check if this is a product ID we've already tried and failed to fetch
     if (this.failedProductIds.has(id)) {
-      console.log(`Using cached fallback for previously failed product ID: ${id}`);
-      return of(this.generateDemoProduct(id));
+      console.log(`Using cached error response for previously failed product ID: ${id}`);
+      // Instead of mixing demo products, return an error observable for consistent behavior
+      return throwError(() => new Error(`Product with ID ${id} not found`));
     }
     
     // Connect to WooCommerce API using environment variables
@@ -75,13 +76,11 @@ export class ProductService {
         console.error(`Error fetching product ID ${id} from API:`, error);
         
         // Add this ID to the list of failed product IDs so we won't try again
-        if (!this.failedProductIds) {
-          this.failedProductIds = new Set<number>();
-        }
         this.failedProductIds.add(id);
         
-        // Return a demo product as fallback
-        return of(this.generateDemoProduct(id));
+        // Instead of returning a demo product, return an error observable
+        // This keeps the behavior consistent - either all real data or all demo data
+        return throwError(() => error);
       })
     );
   }
