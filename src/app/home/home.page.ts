@@ -171,62 +171,221 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   loadData() {
     this.isLoading = true;
     
-    // Simulate a loading delay to demonstrate skeleton loading
+    // No delay - load data immediately
+    // Get categories
+    this.productService.getCategories().subscribe(
+      (categories) => {
+        this.categories = categories;
+      },
+      (error) => {
+        console.error('Error loading categories', error);
+      }
+    );
+
+    // Get a large batch of random products first - we'll use these to ensure we always have 5+ products
+    this.productService.getRandomProducts(30).subscribe(
+      (randomProducts) => {
+        console.log(`Got ${randomProducts.length} random products from API to use across all sections`);
+        
+        // Create an array copy we can draw from
+        const randomPool = [...randomProducts];
+        
+        // Process featured products with random supplementation
+        this.loadFeaturedWithRandomProducts(randomPool);
+        
+        // Process new products with random supplementation
+        this.loadNewWithRandomProducts(randomPool);
+        
+        // Process sale products with random supplementation
+        this.loadSaleWithRandomProducts(randomPool);
+      },
+      (error) => {
+        console.error('Error loading random product pool:', error);
+        
+        // Even if the random pool fails, try individual sections with their own random calls
+        this.loadFeaturedWithRandomProducts([]);
+        this.loadNewWithRandomProducts([]);
+        this.loadSaleWithRandomProducts([]);
+      }
+    );
+    
+    // Set a timeout to ensure we hide the loading indicator
     setTimeout(() => {
-      // Get categories
-      this.productService.getCategories().subscribe(
-        (categories) => {
-          this.categories = categories;
-        },
-        (error) => {
-          console.error('Error loading categories', error);
+      this.isLoading = false;
+    }, 2000); 
+  }
+  
+  // Load featured products with random supplementation
+  private loadFeaturedWithRandomProducts(randomPool: Product[]) {
+    this.productService.getFeaturedProducts().subscribe(
+      (products) => {
+        // Start with the featured products from API
+        this.featuredProducts = products;
+        
+        // If we don't have at least 5 products, add from random pool or get more random products
+        if (this.featuredProducts.length < 5) {
+          if (randomPool.length > 0) {
+            // If we have random products in our pool, use them
+            const neededCount = 5 - this.featuredProducts.length;
+            const randomToAdd = randomPool.splice(0, neededCount);
+            this.featuredProducts = [...this.featuredProducts, ...randomToAdd];
+            console.log(`Added ${randomToAdd.length} random products from pool to featured products`);
+          } else {
+            // Otherwise get more random products specifically for this section
+            this.getRandomProductsForSection('featured', 5 - this.featuredProducts.length);
+          }
         }
-      );
-
-      // Get featured products
-      this.productService.getFeaturedProducts().subscribe(
-        (products) => {
-          this.featuredProducts = products;
-          // Ensure we have at least 5 products
-          this.ensureMinimumProducts(this.featuredProducts, 'featured');
-        },
-        (error) => {
-          console.error('Error loading featured products', error);
-          // On error, load at least 5 demo products
-          this.loadDemoProducts('featured');
+      },
+      (error) => {
+        console.error('Error loading featured products:', error);
+        
+        if (randomPool.length > 0) {
+          // If featured fetch fails but we have random products, use them
+          this.featuredProducts = randomPool.splice(0, 5);
+          console.log(`Used ${this.featuredProducts.length} random products from pool as featured products`);
+        } else {
+          // Otherwise get random products specifically for this section
+          this.getRandomProductsForSection('featured', 5);
         }
-      );
-
-      // Get new products
-      this.productService.getNewProducts().subscribe(
-        (products) => {
-          this.newProducts = products;
-          // Ensure we have at least 5 products
-          this.ensureMinimumProducts(this.newProducts, 'new');
-        },
-        (error) => {
-          console.error('Error loading new products', error);
-          // On error, load at least 5 demo products
-          this.loadDemoProducts('new');
+      }
+    );
+  }
+  
+  // Load new products with random supplementation
+  private loadNewWithRandomProducts(randomPool: Product[]) {
+    this.productService.getNewProducts().subscribe(
+      (products) => {
+        // Start with the new products from API
+        this.newProducts = products;
+        
+        // If we don't have at least 5 products, add from random pool or get more random products
+        if (this.newProducts.length < 5) {
+          if (randomPool.length > 0) {
+            // If we have random products in our pool, use them
+            const neededCount = 5 - this.newProducts.length;
+            const randomToAdd = randomPool.splice(0, neededCount);
+            this.newProducts = [...this.newProducts, ...randomToAdd];
+            console.log(`Added ${randomToAdd.length} random products from pool to new products`);
+          } else {
+            // Otherwise get more random products specifically for this section
+            this.getRandomProductsForSection('new', 5 - this.newProducts.length);
+          }
         }
-      );
-
-      // Get on sale products
-      this.productService.getOnSaleProducts().subscribe(
-        (products) => {
-          this.onSaleProducts = products;
-          // Ensure we have at least 5 products
-          this.ensureMinimumProducts(this.onSaleProducts, 'sale');
-          this.isLoading = false;
-        },
-        (error) => {
-          console.error('Error loading sale products', error);
-          // On error, load at least 5 demo products
-          this.loadDemoProducts('sale');
-          this.isLoading = false;
+      },
+      (error) => {
+        console.error('Error loading new products:', error);
+        
+        if (randomPool.length > 0) {
+          // If new fetch fails but we have random products, use them
+          this.newProducts = randomPool.splice(0, 5);
+          console.log(`Used ${this.newProducts.length} random products from pool as new products`);
+        } else {
+          // Otherwise get random products specifically for this section
+          this.getRandomProductsForSection('new', 5);
         }
-      );
-    }, 1500); // 1.5 second delay to show the skeleton loading effect
+      }
+    );
+  }
+  
+  // Load sale products with random supplementation
+  private loadSaleWithRandomProducts(randomPool: Product[]) {
+    this.productService.getOnSaleProducts().subscribe(
+      (products) => {
+        // Start with the sale products from API
+        this.onSaleProducts = products;
+        
+        // If we don't have at least 5 products, add from random pool or get more random products
+        if (this.onSaleProducts.length < 5) {
+          if (randomPool.length > 0) {
+            // If we have random products in our pool, use them
+            const neededCount = 5 - this.onSaleProducts.length;
+            const randomToAdd = randomPool.splice(0, neededCount);
+            this.onSaleProducts = [...this.onSaleProducts, ...randomToAdd];
+            console.log(`Added ${randomToAdd.length} random products from pool to sale products`);
+          } else {
+            // Otherwise get more random products specifically for this section
+            this.getRandomProductsForSection('sale', 5 - this.onSaleProducts.length);
+          }
+        }
+      },
+      (error) => {
+        console.error('Error loading sale products:', error);
+        
+        if (randomPool.length > 0) {
+          // If sale fetch fails but we have random products, use them
+          this.onSaleProducts = randomPool.splice(0, 5);
+          console.log(`Used ${this.onSaleProducts.length} random products from pool as sale products`);
+        } else {
+          // Otherwise get random products specifically for this section
+          this.getRandomProductsForSection('sale', 5);
+        }
+      }
+    );
+  }
+  
+  // Get additional random products for a specific section
+  private getRandomProductsForSection(section: 'featured' | 'new' | 'sale', count: number) {
+    // Make a new API call to get random products
+    this.productService.getRandomProducts(count * 2).subscribe(
+      (randomProducts) => {
+        // Take only what we need
+        const productsToAdd = randomProducts.slice(0, count);
+        
+        // Add to the appropriate section
+        if (section === 'featured') {
+          this.featuredProducts = [...this.featuredProducts, ...productsToAdd];
+          console.log(`Added ${productsToAdd.length} new random products to featured products`);
+        } else if (section === 'new') {
+          this.newProducts = [...this.newProducts, ...productsToAdd];
+          console.log(`Added ${productsToAdd.length} new random products to new products`);
+        } else if (section === 'sale') {
+          this.onSaleProducts = [...this.onSaleProducts, ...productsToAdd];
+          console.log(`Added ${productsToAdd.length} new random products to sale products`);
+        }
+      },
+      (error) => {
+        console.error(`Error getting additional random products for ${section} section:`, error);
+        
+        // Get products from other categories as a last resort - no demos
+        this.getProductsFromOtherSections(section, count);
+      }
+    );
+  }
+  
+  // Last resort - get products from other sections that already have products
+  private getProductsFromOtherSections(section: 'featured' | 'new' | 'sale', count: number) {
+    // Find products from other sections we can use
+    let borrowFromSections: Product[] = [];
+    
+    if (section !== 'featured' && this.featuredProducts.length > 0) {
+      borrowFromSections = [...borrowFromSections, ...this.featuredProducts];
+    }
+    
+    if (section !== 'new' && this.newProducts.length > 0) {
+      borrowFromSections = [...borrowFromSections, ...this.newProducts];
+    }
+    
+    if (section !== 'sale' && this.onSaleProducts.length > 0) {
+      borrowFromSections = [...borrowFromSections, ...this.onSaleProducts];
+    }
+    
+    // If we found products in other sections, use them
+    if (borrowFromSections.length > 0) {
+      // Shuffle to get different products each time
+      const shuffled = borrowFromSections.sort(() => 0.5 - Math.random());
+      const borrowedProducts = shuffled.slice(0, count);
+      
+      if (section === 'featured') {
+        this.featuredProducts = [...this.featuredProducts, ...borrowedProducts];
+        console.log(`Borrowed ${borrowedProducts.length} products from other sections for featured products`);
+      } else if (section === 'new') {
+        this.newProducts = [...this.newProducts, ...borrowedProducts];
+        console.log(`Borrowed ${borrowedProducts.length} products from other sections for new products`);
+      } else if (section === 'sale') {
+        this.onSaleProducts = [...this.onSaleProducts, ...borrowedProducts];
+        console.log(`Borrowed ${borrowedProducts.length} products from other sections for sale products`);
+      }
+    }
   }
 
   // Toggle wishlist status
