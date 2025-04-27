@@ -187,9 +187,13 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
       this.productService.getFeaturedProducts().subscribe(
         (products) => {
           this.featuredProducts = products;
+          // Ensure we have at least 5 products
+          this.ensureMinimumProducts(this.featuredProducts, 'featured');
         },
         (error) => {
           console.error('Error loading featured products', error);
+          // On error, load at least 5 demo products
+          this.loadDemoProducts('featured');
         }
       );
 
@@ -197,9 +201,13 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
       this.productService.getNewProducts().subscribe(
         (products) => {
           this.newProducts = products;
+          // Ensure we have at least 5 products
+          this.ensureMinimumProducts(this.newProducts, 'new');
         },
         (error) => {
           console.error('Error loading new products', error);
+          // On error, load at least 5 demo products
+          this.loadDemoProducts('new');
         }
       );
 
@@ -207,10 +215,14 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
       this.productService.getOnSaleProducts().subscribe(
         (products) => {
           this.onSaleProducts = products;
+          // Ensure we have at least 5 products
+          this.ensureMinimumProducts(this.onSaleProducts, 'sale');
           this.isLoading = false;
         },
         (error) => {
           console.error('Error loading sale products', error);
+          // On error, load at least 5 demo products
+          this.loadDemoProducts('sale');
           this.isLoading = false;
         }
       );
@@ -306,5 +318,64 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
     
     // Log the error for debugging
     console.error('Image load error:', imgElement.src);
+  }
+
+  // Ensure minimum number of products in each section
+  private ensureMinimumProducts(productList: Product[], type: 'featured' | 'new' | 'sale'): void {
+    if (productList.length < 5) {
+      console.log(`Only got ${productList.length} ${type} products, adding demo products to reach minimum 5`);
+      
+      // Create a set of existing product IDs to avoid duplicates
+      const existingIds = new Set(productList.map(p => p.id));
+      
+      // Get demo products based on type
+      let demoProducts: Product[] = [];
+      const mockDataService = this.productService['mockDataService'];
+      
+      if (type === 'featured') {
+        mockDataService.getFeaturedProducts().subscribe(products => {
+          demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
+          // Add demo products to the list
+          productList.push(...demoProducts);
+          console.log(`Added ${demoProducts.length} demo products to ${type} products`);
+        });
+      } else if (type === 'new') {
+        mockDataService.getNewProducts().subscribe(products => {
+          demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
+          // Add demo products to the list
+          productList.push(...demoProducts);
+          console.log(`Added ${demoProducts.length} demo products to ${type} products`);
+        });
+      } else if (type === 'sale') {
+        mockDataService.getOnSaleProducts().subscribe(products => {
+          demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
+          // Add demo products to the list
+          productList.push(...demoProducts);
+          console.log(`Added ${demoProducts.length} demo products to ${type} products`);
+        });
+      }
+    }
+  }
+
+  // Load demo products when API fails
+  private loadDemoProducts(type: 'featured' | 'new' | 'sale'): void {
+    const mockDataService = this.productService['mockDataService'];
+    
+    if (type === 'featured') {
+      mockDataService.getFeaturedProducts().subscribe(products => {
+        this.featuredProducts = products.slice(0, 5);
+        console.log(`Loaded ${this.featuredProducts.length} demo featured products`);
+      });
+    } else if (type === 'new') {
+      mockDataService.getNewProducts().subscribe(products => {
+        this.newProducts = products.slice(0, 5);
+        console.log(`Loaded ${this.newProducts.length} demo new products`);
+      });
+    } else if (type === 'sale') {
+      mockDataService.getOnSaleProducts().subscribe(products => {
+        this.onSaleProducts = products.slice(0, 5);
+        console.log(`Loaded ${this.onSaleProducts.length} demo sale products`);
+      });
+    }
   }
 }
