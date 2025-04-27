@@ -48,13 +48,13 @@
           <div class="address-header">
             <div class="address-title">
               <h4>{{ address.name }}</h4>
-              <ion-badge color="success" *ngIf="address.default">افتراضي</ion-badge>
+              <ion-badge color="success" *ngIf="address.is_default">افتراضي</ion-badge>
             </div>
             <div class="address-actions">
               <ion-button fill="clear" size="small" (click)="editAddress(address)">
                 <ion-icon name="create-outline"></ion-icon>
               </ion-button>
-              <ion-button fill="clear" size="small" (click)="deleteAddress(address)" [disabled]="address.default">
+              <ion-button fill="clear" size="small" (click)="deleteAddress(address)" [disabled]="address.is_default">
                 <ion-icon name="trash-outline" color="danger"></ion-icon>
               </ion-button>
             </div>
@@ -69,7 +69,7 @@
             <p *ngIf="address.phone">{{ address.phone }}</p>
           </div>
           
-          <div class="address-footer" *ngIf="!address.default">
+          <div class="address-footer" *ngIf="!address.is_default">
             <ion-button fill="clear" size="small" (click)="setDefaultAddress(address)">
               تعيين كعنوان افتراضي
             </ion-button>
@@ -122,13 +122,13 @@
           <div class="address-header">
             <div class="address-title">
               <h4>{{ address.name }}</h4>
-              <ion-badge color="success" *ngIf="address.default">افتراضي</ion-badge>
+              <ion-badge color="success" *ngIf="address.is_default">افتراضي</ion-badge>
             </div>
             <div class="address-actions">
               <ion-button fill="clear" size="small" (click)="editAddress(address)">
                 <ion-icon name="create-outline"></ion-icon>
               </ion-button>
-              <ion-button fill="clear" size="small" (click)="deleteAddress(address)" [disabled]="address.default">
+              <ion-button fill="clear" size="small" (click)="deleteAddress(address)" [disabled]="address.is_default">
                 <ion-icon name="trash-outline" color="danger"></ion-icon>
               </ion-button>
             </div>
@@ -144,7 +144,7 @@
             <p *ngIf="address.email">{{ address.email }}</p>
           </div>
           
-          <div class="address-footer" *ngIf="!address.default">
+          <div class="address-footer" *ngIf="!address.is_default">
             <ion-button fill="clear" size="small" (click)="setDefaultAddress(address)">
               تعيين كعنوان افتراضي
             </ion-button>
@@ -167,8 +167,8 @@
   <!-- Address Form -->
   <div class="address-form-container" *ngIf="showAddressForm">
     <div class="form-header">
-      <h3 *ngIf="!editingAddressId">إضافة عنوان {{ currentAddressType === 'shipping' ? 'شحن' : 'فواتير' }} جديد</h3>
-      <h3 *ngIf="editingAddressId">تعديل عنوان {{ currentAddressType === 'shipping' ? 'الشحن' : 'الفواتير' }}</h3>
+      <h3 *ngIf="!editingAddressType">إضافة عنوان {{ currentAddressType === 'shipping' ? 'شحن' : 'فواتير' }} جديد</h3>
+      <h3 *ngIf="editingAddressType">تعديل عنوان {{ currentAddressType === 'shipping' ? 'الشحن' : 'الفواتير' }}</h3>
       <p>قم بإدخال تفاصيل العنوان الكاملة</p>
     </div>
     
@@ -264,7 +264,7 @@
       <ion-item lines="none">
         <div class="form-buttons">
           <ion-button expand="block" type="submit" color="danger">
-            {{ editingAddressId ? 'تحديث العنوان' : 'حفظ العنوان' }}
+            {{ editingAddressType ? 'تحديث العنوان' : 'حفظ العنوان' }}
           </ion-button>
           <ion-button expand="block" fill="outline" type="button" (click)="cancelAddressForm()">
             إلغاء

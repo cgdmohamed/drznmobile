@@ -1,24 +1,26 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LoadingController, ToastController, AlertController } from '@ionic/angular';
 import { AuthService } from 'src/app/services/auth.service';
 import { AddressService } from 'src/app/services/address.service';
+import { JwtAuthService } from 'src/app/services/jwt-auth.service';
 import { User } from 'src/app/interfaces/user.interface';
-import { Address } from 'src/app/interfaces/address.interface';
-import { Subscription } from 'rxjs';
+import { Address, AddressResponse } from 'src/app/interfaces/address.interface';
+import { Subscription, forkJoin, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-addresses',
   templateUrl: './addresses.page.html',
   styleUrls: ['./addresses.page.scss'],
 })
-export class AddressesPage implements OnInit {
+export class AddressesPage implements OnInit, OnDestroy {
+  // Transformed array of addresses from the billing and shipping objects
   addresses: Address[] = [];
   user: User | null = null;
   isLoading = true;
   showAddressForm = false;
   currentAddressType: 'shipping' | 'billing' = 'shipping';
-  editingAddressId: string | null = null;
+  editingAddressType: 'shipping' | 'billing' | null = null;
   addressForm: FormGroup;
   private addressesSubscription: Subscription;
   private userSubscription: Subscription;
@@ -26,6 +28,7 @@ export class AddressesPage implements OnInit {
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
+    private jwtAuthService: JwtAuthService,
     private addressService: AddressService,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController,
@@ -70,15 +73,41 @@ export class AddressesPage implements OnInit {
     });
     
     // Load addresses
-    this.addressesSubscription = this.addressService.addresses.subscribe(addresses => {
-      this.addresses = addresses;
+    this.addressesSubscription = this.addressService.getAddresses().subscribe((addressResponse: AddressResponse) => {
+      if (addressResponse) {
+        // Transform the address response into an array of addresses with type
+        this.addresses = [];
+        
+        // Add billing address if it exists and has required fields
+        if (addressResponse.billing && addressResponse.billing.first_name) {
+          this.addresses.push({
+            ...addressResponse.billing,
+            type: 'billing',
+            is_default: true // Billing address is always default
+          });
+        }
+        
+        // Add shipping address if it exists and has required fields
+        if (addressResponse.shipping && addressResponse.shipping.first_name) {
+          this.addresses.push({
+            ...addressResponse.shipping,
+            type: 'shipping',
+            is_default: true // Shipping address is always default
+          });
+        }
+      }
+      
       this.isLoading = false;
+    }, error => {
+      console.error('Error loading addresses:', error);
+      this.isLoading = false;
+      this.presentToast('فشل في تحميل العناوين', 'danger');
     });
   }
 
   openAddressForm(type: 'shipping' | 'billing') {
     this.currentAddressType = type;
-    this.editingAddressId = null;
+    this.editingAddressType = null;
     this.addressForm.reset();
     
     // Set default values
@@ -95,19 +124,24 @@ export class AddressesPage implements OnInit {
   }
 
   editAddress(address: Address) {
+    if (!address.type) {
+      this.presentToast('نوع العنوان غير محدد', 'danger');
+      return;
+    }
+    
     this.currentAddressType = address.type;
-    this.editingAddressId = address.id;
+    this.editingAddressType = address.type;
     this.addressForm.patchValue(address);
     this.showAddressForm = true;
   }
 
   cancelAddressForm() {
     this.showAddressForm = false;
-    this.editingAddressId = null;
+    this.editingAddressType = null;
     this.addressForm.reset();
   }
 
-  async saveAddress() {
+  saveAddress() {
     if (!this.addressForm.valid) {
       // Mark all controls as touched to show validation errors
       Object.keys(this.addressForm.controls).forEach(key => {
@@ -119,66 +153,94 @@ export class AddressesPage implements OnInit {
       return;
     }
     
-    const loading = await this.loadingCtrl.create({
+    this.loadingCtrl.create({
       message: 'جاري حفظ العنوان...',
       spinner: 'crescent'
-    });
-    await loading.present();
-    
-    const formData = this.addressForm.value;
-    
-    try {
-      if (this.editingAddressId) {
+    }).then(loading => {
+      loading.present();
+      
+      const formData = this.addressForm.value;
+      
+      let saveOperation: Observable<any>;
+      
+      if (this.editingAddressType) {
         // Update existing address
-        await this.addressService.updateAddress(this.editingAddressId, formData).toPromise();
-        this.presentToast('تم تحديث العنوان بنجاح', 'success');
+        saveOperation = this.addressService.updateAddress(this.editingAddressType, formData);
       } else {
         // Add new address
-        const newAddress: Omit<Address, 'id'> = {
+        const newAddress: Address = {
           ...formData,
           type: this.currentAddressType,
-          default: false
+          is_default: true // New addresses are set as default
         };
-        await this.addressService.addAddress(newAddress).toPromise();
-        this.presentToast('تم إضافة العنوان بنجاح', 'success');
+        
+        saveOperation = this.addressService.addAddress(newAddress);
       }
       
-      this.showAddressForm = false;
-      this.editingAddressId = null;
-      this.addressForm.reset();
-    } catch (error) {
-      console.error('Error saving address:', error);
-      this.presentToast('حدث خطأ أثناء حفظ العنوان', 'danger');
-    } finally {
-      loading.dismiss();
-    }
+      saveOperation.subscribe(
+        () => {
+          this.presentToast(
+            this.editingAddressType ? 'تم تحديث العنوان بنجاح' : 'تم إضافة العنوان بنجاح', 
+            'success'
+          );
+          
+          this.showAddressForm = false;
+          this.editingAddressType = null;
+          this.addressForm.reset();
+          
+          // Refresh the addresses list
+          this.loadData();
+          loading.dismiss();
+        },
+        error => {
+          console.error('Error saving address:', error);
+          this.presentToast('حدث خطأ أثناء حفظ العنوان', 'danger');
+          loading.dismiss();
+        }
+      );
+    });
   }
 
-  async setDefaultAddress(address: Address) {
-    const loading = await this.loadingCtrl.create({
+  setDefaultAddress(address: Address) {
+    if (!address.type) {
+      this.presentToast('نوع العنوان غير محدد', 'danger');
+      return;
+    }
+    
+    this.loadingCtrl.create({
       message: 'جاري تعيين العنوان الافتراضي...',
       spinner: 'crescent'
+    }).then(loading => {
+      loading.present();
+      
+      this.addressService.setDefaultAddress(address.type).subscribe(
+        () => {
+          this.presentToast('تم تعيين العنوان الافتراضي بنجاح', 'success');
+          // Refresh the addresses list
+          this.loadData();
+          loading.dismiss();
+        },
+        error => {
+          console.error('Error setting default address:', error);
+          this.presentToast('حدث خطأ أثناء تعيين العنوان الافتراضي', 'danger');
+          loading.dismiss();
+        }
+      );
     });
-    await loading.present();
-    
-    try {
-      await this.addressService.setDefaultAddress(address.id).toPromise();
-      this.presentToast('تم تعيين العنوان الافتراضي بنجاح', 'success');
-    } catch (error) {
-      console.error('Error setting default address:', error);
-      this.presentToast('حدث خطأ أثناء تعيين العنوان الافتراضي', 'danger');
-    } finally {
-      loading.dismiss();
-    }
   }
 
-  async deleteAddress(address: Address) {
-    if (address.default) {
+  deleteAddress(address: Address) {
+    if (!address.type) {
+      this.presentToast('نوع العنوان غير محدد', 'danger');
+      return;
+    }
+    
+    if (address.is_default) {
       this.presentToast('لا يمكن حذف العنوان الافتراضي', 'warning');
       return;
     }
     
-    const alert = await this.alertCtrl.create({
+    this.alertCtrl.create({
       header: 'تأكيد الحذف',
       message: 'هل أنت متأكد من رغبتك في حذف هذا العنوان؟',
       buttons: [
@@ -189,28 +251,31 @@ export class AddressesPage implements OnInit {
         {
           text: 'حذف',
           role: 'destructive',
-          handler: async () => {
-            const loading = await this.loadingCtrl.create({
+          handler: () => {
+            this.loadingCtrl.create({
               message: 'جاري حذف العنوان...',
               spinner: 'crescent'
+            }).then(loading => {
+              loading.present();
+              
+              this.addressService.deleteAddress(address.type).subscribe(
+                () => {
+                  this.presentToast('تم حذف العنوان بنجاح', 'success');
+                  // Refresh the addresses list
+                  this.loadData();
+                  loading.dismiss();
+                },
+                error => {
+                  console.error('Error deleting address:', error);
+                  this.presentToast('حدث خطأ أثناء حذف العنوان', 'danger');
+                  loading.dismiss();
+                }
+              );
             });
-            await loading.present();
-            
-            try {
-              await this.addressService.deleteAddress(address.id).toPromise();
-              this.presentToast('تم حذف العنوان بنجاح', 'success');
-            } catch (error) {
-              console.error('Error deleting address:', error);
-              this.presentToast('حدث خطأ أثناء حذف العنوان', 'danger');
-            } finally {
-              loading.dismiss();
-            }
           }
         }
       ]
-    });
-    
-    await alert.present();
+    }).then(alert => alert.present());
   }
 
   async presentToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
