@@ -65,43 +65,87 @@ export class AddressesPage implements OnInit, OnDestroy {
   }
 
   loadData() {
+    console.log('Loading addresses page data');
     this.isLoading = true;
     
     // Load user data
     this.userSubscription = this.authService.user.subscribe(user => {
       this.user = user;
+      console.log('User loaded from AuthService:', user);
+      
+      // For debugging - log user's billing and shipping from their profile
+      if (user && user.billing) {
+        console.log('User has billing in profile:', user.billing);
+      }
+      if (user && user.shipping) {
+        console.log('User has shipping in profile:', user.shipping);
+      }
     });
     
     // Load addresses
+    console.log('Requesting addresses from address service');
     this.addressesSubscription = this.addressService.getAddresses().subscribe((addressResponse: AddressResponse) => {
+      console.log('Received address response:', addressResponse);
+      
       if (addressResponse) {
         // Transform the address response into an array of addresses with type
         this.addresses = [];
         
         // Add billing address if it exists and has required fields
         if (addressResponse.billing && addressResponse.billing.first_name) {
+          console.log('Adding billing address to list', addressResponse.billing);
           this.addresses.push({
             ...addressResponse.billing,
             type: 'billing',
             is_default: true // Billing address is always default
           });
+        } else {
+          console.log('No valid billing address found or missing first_name');
         }
         
         // Add shipping address if it exists and has required fields
         if (addressResponse.shipping && addressResponse.shipping.first_name) {
+          console.log('Adding shipping address to list', addressResponse.shipping);
           this.addresses.push({
             ...addressResponse.shipping,
             type: 'shipping',
             is_default: true // Shipping address is always default
           });
+        } else {
+          console.log('No valid shipping address found or missing first_name');
         }
       }
       
+      console.log('Final addresses array:', this.addresses);
       this.isLoading = false;
     }, error => {
       console.error('Error loading addresses:', error);
       this.isLoading = false;
       this.presentToast('فشل في تحميل العناوين', 'danger');
+      
+      // Fallback to user data directly
+      if (this.user) {
+        console.log('Attempting fallback to user profile data for addresses');
+        this.addresses = [];
+        
+        if (this.user.billing && this.user.billing.first_name) {
+          this.addresses.push({
+            ...this.user.billing,
+            type: 'billing',
+            is_default: true
+          });
+        }
+        
+        if (this.user.shipping && this.user.shipping.first_name) {
+          this.addresses.push({
+            ...this.user.shipping,
+            type: 'shipping',
+            is_default: true
+          });
+        }
+        
+        console.log('Fallback addresses:', this.addresses);
+      }
     });
   }
 
