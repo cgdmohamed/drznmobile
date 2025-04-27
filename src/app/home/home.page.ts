@@ -328,12 +328,8 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
       // Create a set of existing product IDs to avoid duplicates
       const existingIds = new Set(productList.map(p => p.id));
       
-      // First try to get random real products from API
-      this.productService.getProducts({
-        per_page: 10,
-        orderby: 'rand', // Get random products
-        status: 'publish'
-      }).subscribe(randomProducts => {
+      // First try to get random real products from API using our improved method
+      this.productService.getRandomProducts(10).subscribe(randomProducts => {
         // Filter out duplicates
         const uniqueRandomProducts = randomProducts.filter(p => !existingIds.has(p.id));
         
@@ -343,17 +339,84 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
           
           // Add the random products to our list
           productList.push(...productsToAdd);
-          console.log(`Added ${productsToAdd.length} random API products to ${type} products`);
+          console.log(`Added ${productsToAdd.length} real API products to ${type} products`);
         } else {
-          // If we couldn't get unique random products, use demo products as fallback
-          console.log(`No unique random products available for ${type}, falling back to demo products`);
-          this.addDemoProductsToList(productList, type, existingIds);
+          // If we somehow couldn't get any unique random products, try again with a larger batch
+          // This is unlikely but handles the edge case
+          this.productService.getRandomProducts(20).subscribe(
+            moreRandomProducts => {
+              const moreUniqueProducts = moreRandomProducts.filter(p => !existingIds.has(p.id));
+              
+              if (moreUniqueProducts.length > 0) {
+                const moreToAdd = moreUniqueProducts.slice(0, 5 - productList.length);
+                productList.push(...moreToAdd);
+                console.log(`Added ${moreToAdd.length} real API products to ${type} products (second attempt)`);
+              } else {
+                // If we still can't get unique products, only then fall back to demo
+                console.log(`No unique random products available for ${type}, falling back to demo products`);
+                this.addRealProductsFromOtherCategories(productList, type, existingIds);
+              }
+            },
+            error => {
+              // If API call fails again, try one more approach before demo fallback
+              this.addRealProductsFromOtherCategories(productList, type, existingIds);
+            }
+          );
         }
       }, error => {
-        // If API call fails, fall back to demo products
+        // If API call fails, try getting real products from other categories
         console.error(`Error fetching random products for ${type}:`, error);
-        this.addDemoProductsToList(productList, type, existingIds);
+        this.addRealProductsFromOtherCategories(productList, type, existingIds);
       });
+    }
+  }
+  
+  // Try to get real products from other categories before falling back to demo
+  private addRealProductsFromOtherCategories(productList: Product[], type: 'featured' | 'new' | 'sale', existingIds: Set<number>): void {
+    // Try the opposite type of products (if we need featured, try on sale, etc.)
+    let otherType: 'featured' | 'new' | 'sale';
+    if (type === 'featured') {
+      otherType = 'sale';
+    } else if (type === 'new') {
+      otherType = 'featured';
+    } else {
+      otherType = 'new';
+    }
+    
+    console.log(`Trying to get real products from ${otherType} category for ${type}`);
+    
+    // Get products from another category
+    if (otherType === 'featured') {
+      this.productService.getFeaturedProducts(10).subscribe(
+        otherProducts => this.handleOtherCategoryProducts(otherProducts, productList, type, existingIds),
+        error => this.addDemoProductsToList(productList, type, existingIds)
+      );
+    } else if (otherType === 'new') {
+      this.productService.getNewProducts().subscribe(
+        otherProducts => this.handleOtherCategoryProducts(otherProducts, productList, type, existingIds),
+        error => this.addDemoProductsToList(productList, type, existingIds)
+      );
+    } else {
+      this.productService.getOnSaleProducts().subscribe(
+        otherProducts => this.handleOtherCategoryProducts(otherProducts, productList, type, existingIds),
+        error => this.addDemoProductsToList(productList, type, existingIds)
+      );
+    }
+  }
+  
+  // Handle products from another category 
+  private handleOtherCategoryProducts(otherProducts: Product[], productList: Product[], type: 'featured' | 'new' | 'sale', existingIds: Set<number>): void {
+    // Filter duplicates
+    const uniqueOtherProducts = otherProducts.filter(p => !existingIds.has(p.id));
+    
+    if (uniqueOtherProducts.length > 0) {
+      // Take only what we need
+      const otherToAdd = uniqueOtherProducts.slice(0, 5 - productList.length);
+      productList.push(...otherToAdd);
+      console.log(`Added ${otherToAdd.length} real products from other category to ${type} products`);
+    } else {
+      // If we still don't have unique real products, finally fall back to demo
+      this.addDemoProductsToList(productList, type, existingIds);
     }
   }
   
@@ -381,15 +444,13 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
       });
     }
   }
+  
+  // This was moved to the end of the file to avoid duplication
 
-  // Load products when a specific API call fails
+  // Load real products when a specific API call fails
   private loadDemoProducts(type: 'featured' | 'new' | 'sale'): void {
-    // First try to get random products from the API
-    this.productService.getProducts({
-      per_page: 5,
-      orderby: 'rand',
-      status: 'publish'
-    }).subscribe(randomProducts => {
+    // First try to get random products from the API using our improved method
+    this.productService.getRandomProducts(10).subscribe(randomProducts => {
       console.log(`Got ${randomProducts.length} random products from API for ${type}`);
       
       if (randomProducts.length >= 5) {
@@ -403,18 +464,105 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
         }
         console.log(`Used ${randomProducts.slice(0, 5).length} random API products for ${type}`);
       } else {
-        // Not enough products from API, supplement with demo products
-        this.loadFallbackDemoProducts(type, randomProducts);
+        // Not enough real random products, try products from other categories
+        this.tryOtherCategoryProductsBeforeFallback(type, randomProducts);
       }
     }, error => {
-      // If API call fails, use demo products
+      // If API call fails, try other API categories
       console.error(`Error fetching random products for ${type}:`, error);
-      this.loadFallbackDemoProducts(type, []);
+      this.tryOtherCategoryProductsBeforeFallback(type, []);
     });
   }
   
+  // Try to get products from other categories before falling back to demo
+  private tryOtherCategoryProductsBeforeFallback(type: 'featured' | 'new' | 'sale', existingProducts: Product[]): void {
+    // Use a different category than the one that failed
+    let otherType: 'featured' | 'new' | 'sale';
+    if (type === 'featured') {
+      otherType = 'new';
+    } else if (type === 'new') {
+      otherType = 'sale';
+    } else {
+      otherType = 'featured';
+    }
+    
+    console.log(`Trying ${otherType} products as replacements for ${type}`);
+    
+    // Try to get products from another category
+    if (otherType === 'featured') {
+      this.productService.getFeaturedProducts(10).subscribe(
+        otherProducts => {
+          if (otherProducts.length > 0) {
+            // We have some products, use them
+            const productsToUse = [...existingProducts, ...otherProducts].slice(0, 5);
+            
+            if (type === 'featured') {
+              this.featuredProducts = productsToUse;
+            } else if (type === 'new') {
+              this.newProducts = productsToUse;
+            } else if (type === 'sale') {
+              this.onSaleProducts = productsToUse;
+            }
+            
+            console.log(`Used ${productsToUse.length} products from other categories for ${type}`);
+          } else {
+            // Still not enough, fall back to demo
+            this.finalFallbackToDemoProducts(type, existingProducts);
+          }
+        },
+        error => this.finalFallbackToDemoProducts(type, existingProducts)
+      );
+    } else if (otherType === 'new') {
+      this.productService.getNewProducts().subscribe(
+        otherProducts => {
+          if (otherProducts.length > 0) {
+            // We have some products, use them
+            const productsToUse = [...existingProducts, ...otherProducts].slice(0, 5);
+            
+            if (type === 'featured') {
+              this.featuredProducts = productsToUse;
+            } else if (type === 'new') {
+              this.newProducts = productsToUse;
+            } else if (type === 'sale') {
+              this.onSaleProducts = productsToUse;
+            }
+            
+            console.log(`Used ${productsToUse.length} products from other categories for ${type}`);
+          } else {
+            // Still not enough, fall back to demo
+            this.finalFallbackToDemoProducts(type, existingProducts);
+          }
+        },
+        error => this.finalFallbackToDemoProducts(type, existingProducts)
+      );
+    } else if (otherType === 'sale') {
+      this.productService.getOnSaleProducts().subscribe(
+        otherProducts => {
+          if (otherProducts.length > 0) {
+            // We have some products, use them
+            const productsToUse = [...existingProducts, ...otherProducts].slice(0, 5);
+            
+            if (type === 'featured') {
+              this.featuredProducts = productsToUse;
+            } else if (type === 'new') {
+              this.newProducts = productsToUse;
+            } else if (type === 'sale') {
+              this.onSaleProducts = productsToUse;
+            }
+            
+            console.log(`Used ${productsToUse.length} products from other categories for ${type}`);
+          } else {
+            // Still not enough, fall back to demo
+            this.finalFallbackToDemoProducts(type, existingProducts);
+          }
+        },
+        error => this.finalFallbackToDemoProducts(type, existingProducts)
+      );
+    }
+  }
+  
   // Fallback to demo products when API doesn't provide enough products
-  private loadFallbackDemoProducts(type: 'featured' | 'new' | 'sale', existingProducts: Product[]): void {
+  private finalFallbackToDemoProducts(type: 'featured' | 'new' | 'sale', existingProducts: Product[]): void {
     const mockDataService = this.productService['mockDataService'];
     
     if (type === 'featured') {

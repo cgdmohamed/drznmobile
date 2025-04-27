@@ -85,6 +85,32 @@ export class ProductService {
       })
     );
   }
+  
+  // Get random real products from API
+  getRandomProducts(count: number = 5): Observable<Product[]> {
+    if (environment.useDemoData) {
+      return this.getDemoProducts(count);
+    }
+    
+    // Get a larger number of products to ensure we have enough 
+    // even after filtering out potential duplicates
+    const fetchCount = count * 2;
+    
+    return this.http.get<Product[]>(
+      `${this.apiUrl}/products?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&per_page=${fetchCount}&orderby=rand&status=publish`
+    ).pipe(
+      map(products => {
+        if (products.length >= count) {
+          return products.slice(0, count);
+        }
+        return products;
+      }),
+      catchError(error => {
+        console.error(`Error fetching random products from API:`, error);
+        return this.getDemoProducts(count);
+      })
+    );
+  }
 
   // Get product categories with pagination support
   getCategories(options: any = {}): Observable<Category[]> {
