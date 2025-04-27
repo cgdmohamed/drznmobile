@@ -323,58 +323,137 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   // Ensure minimum number of products in each section
   private ensureMinimumProducts(productList: Product[], type: 'featured' | 'new' | 'sale'): void {
     if (productList.length < 5) {
-      console.log(`Only got ${productList.length} ${type} products, adding demo products to reach minimum 5`);
+      console.log(`Only got ${productList.length} ${type} products, adding random products from API to reach minimum 5`);
       
       // Create a set of existing product IDs to avoid duplicates
       const existingIds = new Set(productList.map(p => p.id));
       
-      // Get demo products based on type
-      let demoProducts: Product[] = [];
-      const mockDataService = this.productService['mockDataService'];
-      
-      if (type === 'featured') {
-        mockDataService.getFeaturedProducts().subscribe(products => {
-          demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
-          // Add demo products to the list
-          productList.push(...demoProducts);
-          console.log(`Added ${demoProducts.length} demo products to ${type} products`);
-        });
-      } else if (type === 'new') {
-        mockDataService.getNewProducts().subscribe(products => {
-          demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
-          // Add demo products to the list
-          productList.push(...demoProducts);
-          console.log(`Added ${demoProducts.length} demo products to ${type} products`);
-        });
-      } else if (type === 'sale') {
-        mockDataService.getOnSaleProducts().subscribe(products => {
-          demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
-          // Add demo products to the list
-          productList.push(...demoProducts);
-          console.log(`Added ${demoProducts.length} demo products to ${type} products`);
-        });
-      }
+      // First try to get random real products from API
+      this.productService.getProducts({
+        per_page: 10,
+        orderby: 'rand', // Get random products
+        status: 'publish'
+      }).subscribe(randomProducts => {
+        // Filter out duplicates
+        const uniqueRandomProducts = randomProducts.filter(p => !existingIds.has(p.id));
+        
+        if (uniqueRandomProducts.length > 0) {
+          // Take only what we need to reach 5 products
+          const productsToAdd = uniqueRandomProducts.slice(0, 5 - productList.length);
+          
+          // Add the random products to our list
+          productList.push(...productsToAdd);
+          console.log(`Added ${productsToAdd.length} random API products to ${type} products`);
+        } else {
+          // If we couldn't get unique random products, use demo products as fallback
+          console.log(`No unique random products available for ${type}, falling back to demo products`);
+          this.addDemoProductsToList(productList, type, existingIds);
+        }
+      }, error => {
+        // If API call fails, fall back to demo products
+        console.error(`Error fetching random products for ${type}:`, error);
+        this.addDemoProductsToList(productList, type, existingIds);
+      });
     }
   }
-
-  // Load demo products when API fails
-  private loadDemoProducts(type: 'featured' | 'new' | 'sale'): void {
+  
+  // Helper method to add demo products when API calls fail
+  private addDemoProductsToList(productList: Product[], type: 'featured' | 'new' | 'sale', existingIds: Set<number>): void {
     const mockDataService = this.productService['mockDataService'];
     
     if (type === 'featured') {
       mockDataService.getFeaturedProducts().subscribe(products => {
-        this.featuredProducts = products.slice(0, 5);
-        console.log(`Loaded ${this.featuredProducts.length} demo featured products`);
+        const demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
+        productList.push(...demoProducts);
+        console.log(`Added ${demoProducts.length} demo products to ${type} products as fallback`);
       });
     } else if (type === 'new') {
       mockDataService.getNewProducts().subscribe(products => {
-        this.newProducts = products.slice(0, 5);
-        console.log(`Loaded ${this.newProducts.length} demo new products`);
+        const demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
+        productList.push(...demoProducts);
+        console.log(`Added ${demoProducts.length} demo products to ${type} products as fallback`);
       });
     } else if (type === 'sale') {
       mockDataService.getOnSaleProducts().subscribe(products => {
-        this.onSaleProducts = products.slice(0, 5);
-        console.log(`Loaded ${this.onSaleProducts.length} demo sale products`);
+        const demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
+        productList.push(...demoProducts);
+        console.log(`Added ${demoProducts.length} demo products to ${type} products as fallback`);
+      });
+    }
+  }
+
+  // Load products when a specific API call fails
+  private loadDemoProducts(type: 'featured' | 'new' | 'sale'): void {
+    // First try to get random products from the API
+    this.productService.getProducts({
+      per_page: 5,
+      orderby: 'rand',
+      status: 'publish'
+    }).subscribe(randomProducts => {
+      console.log(`Got ${randomProducts.length} random products from API for ${type}`);
+      
+      if (randomProducts.length >= 5) {
+        // We have enough products, use them
+        if (type === 'featured') {
+          this.featuredProducts = randomProducts.slice(0, 5);
+        } else if (type === 'new') {
+          this.newProducts = randomProducts.slice(0, 5);
+        } else if (type === 'sale') {
+          this.onSaleProducts = randomProducts.slice(0, 5);
+        }
+        console.log(`Used ${randomProducts.slice(0, 5).length} random API products for ${type}`);
+      } else {
+        // Not enough products from API, supplement with demo products
+        this.loadFallbackDemoProducts(type, randomProducts);
+      }
+    }, error => {
+      // If API call fails, use demo products
+      console.error(`Error fetching random products for ${type}:`, error);
+      this.loadFallbackDemoProducts(type, []);
+    });
+  }
+  
+  // Fallback to demo products when API doesn't provide enough products
+  private loadFallbackDemoProducts(type: 'featured' | 'new' | 'sale', existingProducts: Product[]): void {
+    const mockDataService = this.productService['mockDataService'];
+    
+    if (type === 'featured') {
+      mockDataService.getFeaturedProducts().subscribe(demoProducts => {
+        // If we already have some products, only add what we need to reach 5
+        if (existingProducts.length > 0) {
+          const neededCount = 5 - existingProducts.length;
+          const productsToAdd = demoProducts.slice(0, neededCount);
+          this.featuredProducts = [...existingProducts, ...productsToAdd];
+          console.log(`Added ${productsToAdd.length} demo products to ${existingProducts.length} API products for ${type}`);
+        } else {
+          // Otherwise use all demo products
+          this.featuredProducts = demoProducts.slice(0, 5);
+          console.log(`Loaded ${this.featuredProducts.length} demo featured products as complete fallback`);
+        }
+      });
+    } else if (type === 'new') {
+      mockDataService.getNewProducts().subscribe(demoProducts => {
+        if (existingProducts.length > 0) {
+          const neededCount = 5 - existingProducts.length;
+          const productsToAdd = demoProducts.slice(0, neededCount);
+          this.newProducts = [...existingProducts, ...productsToAdd];
+          console.log(`Added ${productsToAdd.length} demo products to ${existingProducts.length} API products for ${type}`);
+        } else {
+          this.newProducts = demoProducts.slice(0, 5);
+          console.log(`Loaded ${this.newProducts.length} demo new products as complete fallback`);
+        }
+      });
+    } else if (type === 'sale') {
+      mockDataService.getOnSaleProducts().subscribe(demoProducts => {
+        if (existingProducts.length > 0) {
+          const neededCount = 5 - existingProducts.length;
+          const productsToAdd = demoProducts.slice(0, neededCount);
+          this.onSaleProducts = [...existingProducts, ...productsToAdd];
+          console.log(`Added ${productsToAdd.length} demo products to ${existingProducts.length} API products for ${type}`);
+        } else {
+          this.onSaleProducts = demoProducts.slice(0, 5);
+          console.log(`Loaded ${this.onSaleProducts.length} demo sale products as complete fallback`);
+        }
       });
     }
   }
