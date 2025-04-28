@@ -5,8 +5,10 @@ import { AuthService } from 'src/app/services/auth.service';
 import { AddressService } from 'src/app/services/address.service';
 import { JwtAuthService } from 'src/app/services/jwt-auth.service';
 import { User } from 'src/app/interfaces/user.interface';
-import { Address, AddressResponse } from 'src/app/interfaces/address.interface';
-import { Subscription, forkJoin, Observable } from 'rxjs';
+import { Address, AddressResponse, CustomAddress } from 'src/app/interfaces/address.interface';
+import { Subscription, Observable, of } from 'rxjs';
+import { catchError, finalize, tap } from 'rxjs/operators';
+import { AddressHelper } from 'src/app/helpers/address-helper';
 
 @Component({
   selector: 'app-addresses',
@@ -14,28 +16,34 @@ import { Subscription, forkJoin, Observable } from 'rxjs';
   styleUrls: ['./addresses.page.scss'],
 })
 export class AddressesPage implements OnInit, OnDestroy {
-  // Transformed array of addresses from the billing and shipping objects
+  // Combined array of all addresses (billing, shipping and custom)
   addresses: Address[] = [];
+  shippingAddresses: Address[] = []; // Filtered shipping addresses
+  billingAddresses: Address[] = []; // Filtered billing addresses
+  customAddresses: Address[] = []; // Filtered custom addresses
+  
   user: User | null = null;
   isLoading = true;
   showAddressForm = false;
-  currentAddressType: 'shipping' | 'billing' = 'shipping';
-  editingAddressType: 'shipping' | 'billing' | null = null;
+  currentAddressType: 'shipping' | 'billing' | 'custom' = 'shipping';
+  editingAddressId: string | number | null = null;
   addressForm: FormGroup;
-  private addressesSubscription: Subscription;
-  private userSubscription: Subscription;
+  
+  private subscriptions: Subscription = new Subscription();
 
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
     private jwtAuthService: JwtAuthService,
     private addressService: AddressService,
+    private addressHelper: AddressHelper,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController,
     private alertCtrl: AlertController
   ) {
     this.addressForm = this.formBuilder.group({
-      name: ['', Validators.required],
+      address_nickname: [''], // For custom addresses
+      name: [''], // For display purposes 
       first_name: ['', Validators.required],
       last_name: ['', Validators.required],
       company: [''],
@@ -46,146 +54,138 @@ export class AddressesPage implements OnInit, OnDestroy {
       postcode: ['', Validators.required],
       country: ['SA', Validators.required],
       email: ['', [Validators.email]],
-      phone: ['']
+      phone: [''],
+      type: ['custom'] // shipping, billing, or custom
     });
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadData();
   }
 
-  ngOnDestroy() {
-    if (this.addressesSubscription) {
-      this.addressesSubscription.unsubscribe();
-    }
-    
-    if (this.userSubscription) {
-      this.userSubscription.unsubscribe();
-    }
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
-  loadData() {
+  loadData(): void {
     console.log('Loading addresses page data');
     this.isLoading = true;
     
     // Load user data
-    this.userSubscription = this.authService.user.subscribe(user => {
+    const userSub = this.authService.user.subscribe(user => {
       this.user = user;
       console.log('User loaded from AuthService:', user);
-      
-      // For debugging - log user's billing and shipping from their profile
-      if (user && user.billing) {
-        console.log('User has billing in profile:', user.billing);
-      }
-      if (user && user.shipping) {
-        console.log('User has shipping in profile:', user.shipping);
-      }
     });
+    this.subscriptions.add(userSub);
     
-    // Load addresses
-    console.log('Requesting addresses from address service');
-    this.addressesSubscription = this.addressService.getAddresses().subscribe((addressResponse: AddressResponse) => {
-      console.log('Received address response:', addressResponse);
-      
-      if (addressResponse) {
-        // Transform the address response into an array of addresses with type
-        this.addresses = [];
-        
-        // Add billing address if it exists and has required fields
-        if (addressResponse.billing && addressResponse.billing.first_name) {
-          console.log('Adding billing address to list', addressResponse.billing);
-          this.addresses.push({
-            ...addressResponse.billing,
-            type: 'billing',
-            is_default: true // Billing address is always default
-          });
-        } else {
-          console.log('No valid billing address found or missing first_name');
-        }
-        
-        // Add shipping address if it exists and has required fields
-        if (addressResponse.shipping && addressResponse.shipping.first_name) {
-          console.log('Adding shipping address to list', addressResponse.shipping);
-          this.addresses.push({
-            ...addressResponse.shipping,
-            type: 'shipping',
-            is_default: true // Shipping address is always default
-          });
-        } else {
-          console.log('No valid shipping address found or missing first_name');
-        }
-      }
-      
-      console.log('Final addresses array:', this.addresses);
-      this.isLoading = false;
-    }, error => {
-      console.error('Error loading addresses:', error);
-      this.isLoading = false;
-      this.presentToast('فشل في تحميل العناوين', 'danger');
-      
-      // Fallback to user data directly
-      if (this.user) {
-        console.log('Attempting fallback to user profile data for addresses');
-        this.addresses = [];
-        
-        if (this.user.billing && this.user.billing.first_name) {
-          this.addresses.push({
-            ...this.user.billing,
-            type: 'billing',
-            is_default: true
-          });
-        }
-        
-        if (this.user.shipping && this.user.shipping.first_name) {
-          this.addresses.push({
-            ...this.user.shipping,
-            type: 'shipping',
-            is_default: true
-          });
-        }
-        
-        console.log('Fallback addresses:', this.addresses);
+    // Initialize the address helper then get all addresses
+    this.addressHelper.initialize();
+    
+    // Load all addresses (billing, shipping, and custom)
+    const addressesSub = this.addressHelper.getAllAddresses()
+      .pipe(
+        tap(addresses => {
+          console.log('All addresses loaded:', addresses);
+          this.addresses = addresses;
+          
+          // Filter addresses by type
+          this.filterAddresses();
+        }),
+        catchError(error => {
+          console.error('Error loading addresses:', error);
+          this.presentToast('فشل في تحميل العناوين', 'danger');
+          return of([]);
+        }),
+        finalize(() => {
+          this.isLoading = false;
+        })
+      )
+      .subscribe();
+    
+    this.subscriptions.add(addressesSub);
+  }
+  
+  /**
+   * Filter addresses by type
+   */
+  private filterAddresses(): void {
+    // Clear existing filtered arrays
+    this.shippingAddresses = [];
+    this.billingAddresses = [];
+    this.customAddresses = [];
+    
+    // Filter addresses by type
+    this.addresses.forEach(address => {
+      if (address.type === 'shipping') {
+        this.shippingAddresses.push(address);
+      } else if (address.type === 'billing') {
+        this.billingAddresses.push(address);
+      } else if (address.type === 'custom' || !address.type) {
+        // Consider addresses with null/undefined type as custom
+        this.customAddresses.push(address);
       }
     });
   }
+  
+  /**
+   * Get shipping addresses
+   */
+  getShippingAddresses(): Address[] {
+    return this.shippingAddresses;
+  }
+  
+  /**
+   * Get billing addresses
+   */
+  getBillingAddresses(): Address[] {
+    return this.billingAddresses;
+  }
+  
+  /**
+   * Get custom addresses
+   */
+  getCustomAddresses(): Address[] {
+    return this.customAddresses;
+  }
 
-  openAddressForm(type: 'shipping' | 'billing') {
+  openAddressForm(type: 'shipping' | 'billing' | 'custom' = 'custom'): void {
     this.currentAddressType = type;
-    this.editingAddressType = null;
+    this.editingAddressId = null;
     this.addressForm.reset();
     
     // Set default values
     this.addressForm.patchValue({
-      name: type === 'shipping' ? 'عنوان الشحن' : 'عنوان الفواتير',
+      address_nickname: type === 'custom' ? 'عنوان جديد' : (type === 'shipping' ? 'عنوان الشحن' : 'عنوان الفواتير'),
+      name: type === 'custom' ? 'عنوان جديد' : (type === 'shipping' ? 'عنوان الشحن' : 'عنوان الفواتير'),
       country: 'SA',
       first_name: this.user?.first_name || '',
       last_name: this.user?.last_name || '',
-      email: type === 'billing' ? this.user?.email : '',
-      phone: type === 'billing' ? this.user?.billing?.phone : ''
+      email: this.user?.email || '',
+      phone: this.user?.billing?.phone || '',
+      type: type
     });
     
     this.showAddressForm = true;
   }
 
-  editAddress(address: Address) {
-    if (!address.type) {
-      this.presentToast('نوع العنوان غير محدد', 'danger');
-      return;
-    }
-    
-    this.currentAddressType = address.type;
-    this.editingAddressType = address.type;
-    this.addressForm.patchValue(address);
+  editAddress(address: Address): void {
+    this.currentAddressType = address.type || 'custom';
+    this.editingAddressId = address.id;
+    this.addressForm.patchValue({
+      ...address,
+      address_nickname: address.address_nickname || address.name || '',
+      name: address.name || address.address_nickname || ''
+    });
     this.showAddressForm = true;
   }
 
-  cancelAddressForm() {
+  cancelAddressForm(): void {
     this.showAddressForm = false;
-    this.editingAddressType = null;
+    this.editingAddressId = null;
     this.addressForm.reset();
   }
 
-  saveAddress() {
+  saveAddress(): void {
     if (!this.addressForm.valid) {
       // Mark all controls as touched to show validation errors
       Object.keys(this.addressForm.controls).forEach(key => {
@@ -205,49 +205,47 @@ export class AddressesPage implements OnInit, OnDestroy {
       
       const formData = this.addressForm.value;
       
-      let saveOperation: Observable<any>;
-      
-      if (this.editingAddressType) {
-        // Update existing address
-        saveOperation = this.addressService.updateAddress(this.editingAddressType, formData);
-      } else {
-        // Add new address
-        const newAddress: Address = {
-          ...formData,
-          type: this.currentAddressType,
-          is_default: true // New addresses are set as default
-        };
-        
-        saveOperation = this.addressService.addAddress(newAddress);
+      // Ensure we have a name/nickname for the address
+      if (!formData.address_nickname && !formData.name) {
+        if (formData.type === 'custom') {
+          formData.address_nickname = 'عنوان جديد';
+        } else {
+          formData.name = formData.type === 'shipping' ? 'عنوان الشحن' : 'عنوان الفواتير';
+        }
       }
       
-      saveOperation.subscribe(
-        () => {
-          this.presentToast(
-            this.editingAddressType ? 'تم تحديث العنوان بنجاح' : 'تم إضافة العنوان بنجاح', 
-            'success'
-          );
-          
-          this.showAddressForm = false;
-          this.editingAddressType = null;
-          this.addressForm.reset();
-          
-          // Refresh the addresses list
-          this.loadData();
-          loading.dismiss();
-        },
-        error => {
-          console.error('Error saving address:', error);
-          this.presentToast('حدث خطأ أثناء حفظ العنوان', 'danger');
-          loading.dismiss();
-        }
-      );
+      // Save using the address helper, which handles all types of addresses
+      this.addressHelper.saveAddress(formData)
+        .pipe(
+          tap(() => {
+            this.presentToast(
+              this.editingAddressId ? 'تم تحديث العنوان بنجاح' : 'تم إضافة العنوان بنجاح', 
+              'success'
+            );
+            
+            this.showAddressForm = false;
+            this.editingAddressId = null;
+            this.addressForm.reset();
+            
+            // Refresh the addresses list
+            this.loadData();
+          }),
+          catchError(error => {
+            console.error('Error saving address:', error);
+            this.presentToast('حدث خطأ أثناء حفظ العنوان', 'danger');
+            return of(null);
+          }),
+          finalize(() => {
+            loading.dismiss();
+          })
+        )
+        .subscribe();
     });
   }
 
-  setDefaultAddress(address: Address) {
-    if (!address.type) {
-      this.presentToast('نوع العنوان غير محدد', 'danger');
+  setDefaultAddress(address: Address): void {
+    if (!address.id) {
+      this.presentToast('معرف العنوان غير موجود', 'danger');
       return;
     }
     
@@ -257,25 +255,29 @@ export class AddressesPage implements OnInit, OnDestroy {
     }).then(loading => {
       loading.present();
       
-      this.addressService.setDefaultAddress(address.type).subscribe(
-        () => {
-          this.presentToast('تم تعيين العنوان الافتراضي بنجاح', 'success');
-          // Refresh the addresses list
-          this.loadData();
-          loading.dismiss();
-        },
-        error => {
-          console.error('Error setting default address:', error);
-          this.presentToast('حدث خطأ أثناء تعيين العنوان الافتراضي', 'danger');
-          loading.dismiss();
-        }
-      );
+      this.addressHelper.setDefaultAddress(address.id)
+        .pipe(
+          tap(() => {
+            this.presentToast('تم تعيين العنوان الافتراضي بنجاح', 'success');
+            // Refresh the addresses list
+            this.loadData();
+          }),
+          catchError(error => {
+            console.error('Error setting default address:', error);
+            this.presentToast('حدث خطأ أثناء تعيين العنوان الافتراضي', 'danger');
+            return of(null);
+          }),
+          finalize(() => {
+            loading.dismiss();
+          })
+        )
+        .subscribe();
     });
   }
 
-  deleteAddress(address: Address) {
-    if (!address.type) {
-      this.presentToast('نوع العنوان غير محدد', 'danger');
+  deleteAddress(address: Address): void {
+    if (!address.id) {
+      this.presentToast('معرف العنوان غير موجود', 'danger');
       return;
     }
     
@@ -302,19 +304,23 @@ export class AddressesPage implements OnInit, OnDestroy {
             }).then(loading => {
               loading.present();
               
-              this.addressService.deleteAddress(address.type).subscribe(
-                () => {
-                  this.presentToast('تم حذف العنوان بنجاح', 'success');
-                  // Refresh the addresses list
-                  this.loadData();
-                  loading.dismiss();
-                },
-                error => {
-                  console.error('Error deleting address:', error);
-                  this.presentToast('حدث خطأ أثناء حذف العنوان', 'danger');
-                  loading.dismiss();
-                }
-              );
+              this.addressHelper.deleteAddress(address.id)
+                .pipe(
+                  tap(() => {
+                    this.presentToast('تم حذف العنوان بنجاح', 'success');
+                    // Refresh the addresses list
+                    this.loadData();
+                  }),
+                  catchError(error => {
+                    console.error('Error deleting address:', error);
+                    this.presentToast('حدث خطأ أثناء حذف العنوان', 'danger');
+                    return of(null);
+                  }),
+                  finalize(() => {
+                    loading.dismiss();
+                  })
+                )
+                .subscribe();
             });
           }
         }
@@ -322,7 +328,7 @@ export class AddressesPage implements OnInit, OnDestroy {
     }).then(alert => alert.present());
   }
 
-  async presentToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
+  async presentToast(message: string, color: 'success' | 'danger' | 'warning' = 'success'): Promise<void> {
     const toast = await this.toastCtrl.create({
       message,
       duration: 2000,
@@ -333,7 +339,6 @@ export class AddressesPage implements OnInit, OnDestroy {
     toast.present();
   }
 
-  // Check if form control is invalid
   isFieldInvalid(field: string): boolean {
     const control = this.addressForm.get(field);
     return !!(control && control.invalid && (control.dirty || control.touched));

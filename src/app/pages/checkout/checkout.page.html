@@ -91,12 +91,18 @@
             <div class="address-details">
               <div class="address-header">
                 <div class="address-name">
-                  <h5>{{ address.first_name }} {{ address.last_name }}</h5>
-                  <ion-badge *ngIf="address.isDefault" color="success">الافتراضي</ion-badge>
+                  <!-- Show address nickname if available, otherwise use name -->
+                  <h5 class="address-title">
+                    {{ address.name || address.address_nickname || (address.type === 'billing' ? 'عنوان الفواتير' : 'عنوان الشحن') }}
+                  </h5>
+                  <h6>{{ address.first_name }} {{ address.last_name }}</h6>
+                  <ion-badge *ngIf="address.is_default || address.isDefault" color="success">الافتراضي</ion-badge>
+                  <ion-badge *ngIf="address.type === 'billing'" color="primary">الفواتير</ion-badge>
+                  <ion-badge *ngIf="address.type === 'shipping'" color="tertiary">الشحن</ion-badge>
                 </div>
                 <div class="address-actions">
                   <ion-button fill="clear" color="success" 
-                    *ngIf="!address.isDefault"
+                    *ngIf="!(address.is_default || address.isDefault)"
                     (click)="setDefaultAddress(address); $event.stopPropagation()">
                     <ion-icon name="star-outline" slot="icon-only"></ion-icon>
                   </ion-button>
@@ -106,7 +112,7 @@
                   <ion-button 
                     fill="clear" 
                     color="danger"
-                    [disabled]="address.isDefault"
+                    [disabled]="address.is_default || address.isDefault"
                     (click)="deleteAddress(address); $event.stopPropagation()">
                     <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
                   </ion-button>
@@ -120,9 +126,20 @@
               <div class="address-line">
                 <ion-icon name="call-outline"></ion-icon> {{ address.phone }}
               </div>
+              <div class="address-line" *ngIf="address.email">
+                <ion-icon name="mail-outline"></ion-icon> {{ address.email }}
+              </div>
             </div>
           </ion-card-content>
         </ion-card>
+      </div>
+      
+      <!-- Go to address management page -->
+      <div class="address-management-link">
+        <ion-button fill="clear" size="small" routerLink="/addresses" routerDirection="forward">
+          <ion-icon name="settings-outline" slot="start"></ion-icon>
+          إدارة العناوين
+        </ion-button>
       </div>
     </div>
     

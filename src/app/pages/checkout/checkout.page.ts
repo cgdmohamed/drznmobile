@@ -343,6 +343,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
     loading.then(loader => {
       loader.present();
       
+      // Get both standard addresses and custom addresses
       this.addressService.getAddresses().subscribe(
         (addressResponse: AddressResponse) => {
           console.log('Address response received:', addressResponse);
@@ -350,11 +351,12 @@ export class CheckoutPage implements OnInit, OnDestroy {
           
           // Transform billing address
           if (addressResponse.billing && addressResponse.billing.first_name) {
-            const billingAddress: any = {
+            const billingAddress: Address = {
               ...addressResponse.billing,
               type: 'billing',
-              isDefault: true,
-              id: 'billing' // Use 'billing' as ID to match with select-based UI
+              is_default: true,
+              id: 'billing', // Use 'billing' as ID to match with select-based UI
+              name: addressResponse.billing.name || 'عنوان الفواتير'
             };
             console.log('Adding billing address to saved addresses:', billingAddress);
             this.savedAddresses.push(billingAddress);
@@ -364,11 +366,12 @@ export class CheckoutPage implements OnInit, OnDestroy {
           
           // Transform shipping address
           if (addressResponse.shipping && addressResponse.shipping.first_name) {
-            const shippingAddress: any = {
+            const shippingAddress: Address = {
               ...addressResponse.shipping,
               type: 'shipping',
-              isDefault: true,
-              id: 'shipping' // Use 'shipping' as ID to match with select-based UI
+              is_default: true,
+              id: 'shipping', // Use 'shipping' as ID to match with select-based UI
+              name: addressResponse.shipping.name || 'عنوان الشحن'
             };
             console.log('Adding shipping address to saved addresses:', shippingAddress);
             this.savedAddresses.push(shippingAddress);
@@ -376,47 +379,87 @@ export class CheckoutPage implements OnInit, OnDestroy {
             console.log('No valid shipping address found in response');
           }
           
-          // Select shipping address by default if available, otherwise select billing
-          if (this.savedAddresses.length > 0) {
-            const shippingAddress = this.savedAddresses.find(addr => addr.type === 'shipping');
-            this.selectedAddressId = shippingAddress ? 'shipping' : 'billing';
-            console.log('Selected address ID:', this.selectedAddressId);
-          }
-          
-          // If no addresses found but we have user data, create temporary addresses from user profile
-          if (this.savedAddresses.length === 0 && this.user) {
-            console.log('No addresses found from API, creating from user profile');
-            
-            // Add billing address from user profile if available
-            if (this.user.billing && this.user.billing.first_name) {
-              const billingAddress: any = {
-                ...this.user.billing,
-                type: 'billing',
-                isDefault: true,
-                id: 'billing'
-              };
-              console.log('Adding billing address from user profile:', billingAddress);
-              this.savedAddresses.push(billingAddress);
+          // Now get custom addresses
+          this.addressService.getCustomAddresses().subscribe(
+            (customAddresses) => {
+              console.log('Custom addresses received:', customAddresses);
+              
+              // Add custom addresses to the list
+              if (customAddresses && customAddresses.length > 0) {
+                // Make sure each address has a name
+                const processedCustomAddresses = customAddresses.map(addr => ({
+                  ...addr,
+                  name: addr.name || addr.address_nickname || `${addr.first_name} ${addr.last_name}`
+                }));
+                
+                this.savedAddresses = [...this.savedAddresses, ...processedCustomAddresses];
+                console.log('Added custom addresses, new total:', this.savedAddresses.length);
+              }
+              
+              // Select shipping address by default if available, otherwise select billing or first custom address
+              if (this.savedAddresses.length > 0) {
+                // First try to find a default address
+                const defaultAddress = this.savedAddresses.find(addr => addr.is_default);
+                
+                if (defaultAddress) {
+                  this.selectedAddressId = defaultAddress.id;
+                } else {
+                  // Then try to find shipping address
+                  const shippingAddress = this.savedAddresses.find(addr => addr.type === 'shipping');
+                  if (shippingAddress) {
+                    this.selectedAddressId = shippingAddress.id;
+                  } else {
+                    // Otherwise use the first available address
+                    this.selectedAddressId = this.savedAddresses[0].id;
+                  }
+                }
+                
+                console.log('Selected address ID:', this.selectedAddressId);
+              }
+              
+              loader.dismiss();
+            },
+            error => {
+              console.error('Error loading custom addresses:', error);
+              
+              // If no addresses found but we have user data, create temporary addresses from user profile
+              if (this.savedAddresses.length === 0 && this.user) {
+                console.log('No addresses found from API, creating from user profile');
+                
+                // Add billing address from user profile if available
+                if (this.user.billing && this.user.billing.first_name) {
+                  const billingAddress: Address = {
+                    ...this.user.billing,
+                    type: 'billing',
+                    is_default: true,
+                    id: 'billing',
+                    name: 'عنوان الفواتير'
+                  };
+                  console.log('Adding billing address from user profile:', billingAddress);
+                  this.savedAddresses.push(billingAddress);
+                }
+                
+                // Add shipping address from user profile if available
+                if (this.user.shipping && this.user.shipping.first_name) {
+                  const shippingAddress: Address = {
+                    ...this.user.shipping,
+                    type: 'shipping',
+                    is_default: true,
+                    id: 'shipping',
+                    name: 'عنوان الشحن'
+                  };
+                  console.log('Adding shipping address from user profile:', shippingAddress);
+                  this.savedAddresses.push(shippingAddress);
+                  this.selectedAddressId = 'shipping';
+                } else if (this.savedAddresses.length > 0) {
+                  this.selectedAddressId = 'billing';
+                }
+              }
+              
+              console.log('Final saved addresses:', this.savedAddresses);
+              loader.dismiss();
             }
-            
-            // Add shipping address from user profile if available
-            if (this.user.shipping && this.user.shipping.first_name) {
-              const shippingAddress: any = {
-                ...this.user.shipping,
-                type: 'shipping',
-                isDefault: true,
-                id: 'shipping'
-              };
-              console.log('Adding shipping address from user profile:', shippingAddress);
-              this.savedAddresses.push(shippingAddress);
-              this.selectedAddressId = 'shipping';
-            } else if (this.savedAddresses.length > 0) {
-              this.selectedAddressId = 'billing';
-            }
-          }
-          
-          console.log('Final saved addresses:', this.savedAddresses);
-          loader.dismiss();
+          );
         },
         error => {
           console.error('Error loading addresses:', error);

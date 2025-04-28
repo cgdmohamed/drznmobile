@@ -2,6 +2,8 @@
   --ion-color-primary: #ec1c24;
   --ion-color-success: #2dd36f;
   --ion-color-danger: #eb445a;
+  --ion-color-tertiary: #5260ff;
+  --ion-color-medium: #92949c;
 }
 
 ion-content {
@@ -16,13 +18,27 @@ ion-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin: 16px 0;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
   
   h3 {
     font-size: 18px;
     font-weight: 600;
     color: #333;
     margin: 0;
+    display: flex;
+    align-items: center;
+    
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 18px;
+      background-color: var(--ion-color-primary);
+      margin-left: 8px;
+      border-radius: 2px;
+    }
   }
   
   ion-button {
@@ -46,6 +62,13 @@ ion-content {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
   overflow: hidden;
+  border: 1px solid #eee;
+  transition: transform 0.2s, box-shadow 0.2s;
+  
+  &:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  }
   
   .address-header {
     display: flex;
@@ -57,6 +80,7 @@ ion-content {
     .address-title {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
       
       h4 {
@@ -73,6 +97,7 @@ ion-content {
         --padding-bottom: 3px;
         --padding-start: 6px;
         --padding-end: 6px;
+        border-radius: 4px;
       }
     }
     
@@ -96,14 +121,25 @@ ion-content {
     padding: 12px 16px;
     
     p {
-      margin: 4px 0;
+      margin: 6px 0;
       font-size: 14px;
       color: #555;
       line-height: 1.5;
+      display: flex;
+      align-items: center;
+      
+      ion-icon {
+        margin-left: 0;
+        margin-right: 6px;
+        font-size: 16px;
+        color: #888;
+      }
       
       &.customer-name {
         font-weight: 600;
         color: #333;
+        font-size: 15px;
+        margin-bottom: 8px;
       }
     }
   }

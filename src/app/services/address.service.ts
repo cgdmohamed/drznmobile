@@ -2,14 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, from, of, throwError } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
-import { Address, AddressResponse } from '../interfaces/address.interface';
+import { Address, AddressResponse, CustomAddress } from '../interfaces/address.interface';
 import { environment } from '../../environments/environment';
 import { JwtAuthService } from './jwt-auth.service';
-
-/**
- * Interface for custom addresses (already included in the Address interface)
- */
-export type CustomAddress = Address;
 
 @Injectable({
   providedIn: 'root'
@@ -369,6 +364,107 @@ export class AddressService {
         );
       })
     );
+  }
+  
+  /**
+   * Delete an address (for backward compatibility)
+   */
+  deleteAddress(type: string): Observable<any> {
+    console.log(`Deleting address of type ${type}`);
+    
+    // Check if it's a standard address type
+    if (type === 'billing' || type === 'shipping') {
+      // For standard addresses, we clear them rather than delete
+      return from(this.jwtAuthService.getUser()).pipe(
+        switchMap(user => {
+          if (!user || !user.id) {
+            return throwError(() => new Error('User not authenticated'));
+          }
+          
+          // Create an empty address
+          const emptyAddress: Address = {
+            first_name: '',
+            last_name: '',
+            address_1: '',
+            address_2: '',
+            company: '',
+            city: '',
+            state: '',
+            postcode: '',
+            country: 'SA',
+            phone: '',
+            email: user.email || '',
+            type: type as 'billing' | 'shipping'
+          };
+          
+          // Update with empty values
+          return this.updateAddress(type as 'billing' | 'shipping', emptyAddress);
+        })
+      );
+    } else {
+      // For custom addresses, treat as a custom address ID
+      return this.deleteCustomAddress(type);
+    }
+  }
+  
+  /**
+   * Set an address as default
+   */
+  setDefaultAddress(type: string): Observable<any> {
+    console.log(`Setting address of type ${type} as default`);
+    
+    if (type === 'billing' || type === 'shipping') {
+      return from(this.jwtAuthService.getUser()).pipe(
+        switchMap(user => {
+          if (!user || !user.id) {
+            return throwError(() => new Error('User not authenticated'));
+          }
+          
+          return this.getAddress(type as 'billing' | 'shipping').pipe(
+            switchMap(address => {
+              if (!address) {
+                return throwError(() => new Error(`No ${type} address found`));
+              }
+              
+              const updatedAddress: Address = {
+                ...address,
+                is_default: true
+              };
+              
+              return this.updateAddress(type as 'billing' | 'shipping', updatedAddress);
+            })
+          );
+        })
+      );
+    } else {
+      // For custom addresses, we need to copy its data to either billing or shipping
+      return from(this.jwtAuthService.getUser()).pipe(
+        switchMap(user => {
+          if (!user || !user.id) {
+            return throwError(() => new Error('User not authenticated'));
+          }
+          
+          // Find the custom address with this ID
+          const customAddress = this._customAddresses.find(a => a.id === type);
+          if (!customAddress) {
+            return throwError(() => new Error('Custom address not found'));
+          }
+          
+          // Determine which standard address to update (fallback to shipping)
+          const targetType = customAddress.type === 'billing' ? 'billing' : 'shipping';
+          
+          // Create standard address from custom data
+          const standardAddress: Address = {
+            ...customAddress,
+            type: targetType,
+            is_default: true
+          };
+          
+          // Update the standard address with this data
+          return this.updateAddress(targetType, standardAddress);
+        })
+      );
+    }
   }
   
   /**
