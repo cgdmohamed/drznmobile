@@ -1,10 +1,26 @@
 {
-  /* 
-    Proxy configuration has been removed since we're using direct API URLs.
-    All API requests are now made directly to the respective endpoints.
-    
-    WooCommerce API: https://app.drzn.sa/wp-json/wc/v3
-    JWT Auth: https://app.drzn.sa/wp-json/jwt-auth/v1
-    Taqnyat API: https://api.taqnyat.sa
-  */
+  "/api": {
+    "target": "https://app.drzn.sa",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api": "/wp-json/wc/v3"
+    }
+  },
+  "/jwt-auth": {
+    "target": "https://app.drzn.sa",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/jwt-auth": "/wp-json/jwt-auth/v1"
+    }
+  },
+  "/simple-jwt": {
+    "target": "https://app.drzn.sa",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/simple-jwt": "/wp-json/simple-jwt-login/v1"
+    }
+  }
 }

@@ -35,10 +35,9 @@ export class JwtAuthService {
   private AUTH_TOKEN_EXPIRY_KEY = 'jwt_token_expiry';
   private TOKEN_REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-  // Use direct API URL
-  private baseUrl = 'https://app.drzn.sa'; // Base API URL
-  private apiUrl = `${this.baseUrl}/wp-json/simple-jwt-login/v1`;
-  private wcApiUrl = environment.apiUrl; // WooCommerce API URL
+  // Use proxy URLs for better security
+  private apiUrl = environment.simpleJwtUrl; // Simple JWT Login API (proxied)
+  private wcApiUrl = environment.apiUrl;    // WooCommerce API (proxied)
   private authCode = environment.authCode;
   
   // Token refresh timer
