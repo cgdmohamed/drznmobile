@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { map, tap, catchError } from 'rxjs/operators';
+import { map, tap, catchError, switchMap } from 'rxjs/operators';
 import { User } from '../interfaces/user.interface';
 import { environment } from '../../environments/environment';
 import { Storage } from '@ionic/storage-angular';
@@ -80,73 +80,82 @@ export class AuthService {
 
   // Login user
   login(username: string, password: string): Observable<any> {
-    // In a real application, this would connect to WooCommerce JWT Auth
-    // For demo purposes, we're using a simulated response
-    const demoUser: User = {
-      id: 1,
-      date_created: new Date().toISOString(),
-      date_modified: new Date().toISOString(),
-      email: username,
-      first_name: 'مستخدم',
-      last_name: 'تجريبي',
-      role: 'customer',
-      username: username,
-      billing: {
-        first_name: 'مستخدم',
-        last_name: 'تجريبي',
-        company: '',
-        address_1: 'شارع الرياض',
-        address_2: '',
-        city: 'الرياض',
-        state: '',
-        postcode: '12345',
-        country: 'SA',
-        email: username,
-        phone: '05xxxxxxxx'
-      },
-      shipping: {
-        first_name: 'مستخدم',
-        last_name: 'تجريبي',
-        company: '',
-        address_1: 'شارع الرياض',
-        address_2: '',
-        city: 'الرياض',
-        state: '',
-        postcode: '12345',
-        country: 'SA'
-      },
-      is_paying_customer: false,
-      avatar_url: 'https://secure.gravatar.com/avatar/?s=96&d=mm&r=g',
-      meta_data: []
-    };
-
-    const demoToken = 'demo_token_' + Math.random().toString(36).substr(2);
-
-    return of({ user: demoUser, token: demoToken }).pipe(
+    const url = `${this.apiUrl}/wp-json/jwt-auth/v1/token`;
+    const body = { username, password };
+    
+    return this.http.post<{token: string, user: any}>(url, body).pipe(
       tap(response => {
-        this._user.next(response.user);
-        this._token.next(response.token);
+        // Extract the token from the response
+        const token = response?.token;
+        
+        // Get user data from the JWT response
+        const userData = response?.user || {};
+        
+        // Create a User object from the response
+        const user: User = {
+          id: userData.id || 0,
+          date_created: userData.date_created || new Date().toISOString(),
+          date_modified: userData.date_modified || new Date().toISOString(),
+          email: userData.email || username,
+          first_name: userData.first_name || '',
+          last_name: userData.last_name || '',
+          role: userData.role || 'customer',
+          username: userData.username || username,
+          billing: userData.billing || {
+            first_name: '',
+            last_name: '',
+            company: '',
+            address_1: '',
+            address_2: '',
+            city: '',
+            state: '',
+            postcode: '',
+            country: 'SA',
+            email: username,
+            phone: ''
+          },
+          shipping: userData.shipping || {
+            first_name: '',
+            last_name: '',
+            company: '',
+            address_1: '',
+            address_2: '',
+            city: '',
+            state: '',
+            postcode: '',
+            country: 'SA'
+          },
+          is_paying_customer: userData.is_paying_customer || false,
+          avatar_url: userData.avatar_url || '',
+          meta_data: userData.meta_data || []
+        };
+        
+        // Update the behavior subjects
+        this._user.next(user);
+        this._token.next(token);
         
         // Save to storage
-        this.storage.set('user', response.user);
-        this.storage.set('token', response.token);
+        this.storage.set('user', user);
+        this.storage.set('token', token);
+      }),
+      catchError(error => {
+        console.error('Login error:', error);
+        return throwError(() => new Error(error.error?.message || 'Failed to login. Please check your credentials.'));
       })
     );
   }
 
   // Register a new user
   register(userData: any): Observable<any> {
-    // In a real application, this would connect to WooCommerce API
-    // For demo purposes, we're using a simulated response
-    const demoUser: User = {
-      id: 999,
-      date_created: new Date().toISOString(),
-      date_modified: new Date().toISOString(),
+    // First create the user account
+    const createUserUrl = `${this.apiUrl}/wp-json/wc/v3/customers`;
+    
+    const customerData = {
       email: userData.email,
       first_name: userData.firstName,
       last_name: userData.lastName,
-      role: 'customer',
       username: userData.email,
+      password: userData.password,
       billing: {
         first_name: userData.firstName,
         last_name: userData.lastName,
@@ -170,22 +179,31 @@ export class AuthService {
         state: '',
         postcode: '',
         country: 'SA'
-      },
-      is_paying_customer: false,
-      avatar_url: 'https://secure.gravatar.com/avatar/?s=96&d=mm&r=g',
-      meta_data: []
+      }
     };
     
-    const demoToken = 'demo_token_' + Math.random().toString(36).substr(2);
-
-    return of({ user: demoUser, token: demoToken }).pipe(
-      tap(response => {
-        this._user.next(response.user);
-        this._token.next(response.token);
+    // Add authentication parameters to URL
+    const authParams = `?consumer_key=${environment.consumerKey}&consumer_secret=${environment.consumerSecret}`;
+    
+    return this.http.post(`${createUserUrl}${authParams}`, customerData).pipe(
+      // After user creation is successful, login with the new credentials
+      switchMap(response => {
+        return this.login(userData.email, userData.password);
+      }),
+      catchError(error => {
+        console.error('Registration error:', error);
+        let errorMessage = 'Failed to register. Please try again.';
         
-        // Save to storage
-        this.storage.set('user', response.user);
-        this.storage.set('token', response.token);
+        // Check for common registration errors
+        if (error.error?.message) {
+          if (error.error.message.includes('already exists')) {
+            errorMessage = 'This email or username is already registered. Please use a different one or try logging in.';
+          } else {
+            errorMessage = error.error.message;
+          }
+        }
+        
+        return throwError(() => new Error(errorMessage));
       })
     );
   }
@@ -205,30 +223,51 @@ export class AuthService {
 
   // Update user profile
   updateUserProfile(userData: Partial<User>): Observable<User> {
-    // In a real application, this would connect to WooCommerce API
-    // For demo purposes, we're simulating a success response
     const currentUser = this._user.value;
     
     if (!currentUser) {
-      return throwError('User not logged in');
+      return throwError(() => new Error('User not logged in'));
     }
     
-    const updatedUser: User = {
-      ...currentUser,
-      ...userData
-    };
+    // Create API endpoint URL
+    const updateUrl = `${this.apiUrl}/wp-json/wc/v3/customers/${currentUser.id}`;
+    const authParams = `?consumer_key=${environment.consumerKey}&consumer_secret=${environment.consumerSecret}`;
     
-    return of(updatedUser).pipe(
-      tap(user => {
-        this._user.next(user);
-        this.storage.set('user', user);
+    return this.http.put<any>(`${updateUrl}${authParams}`, userData).pipe(
+      map(response => {
+        // Create updated user object
+        const updatedUser: User = {
+          ...currentUser,
+          ...response
+        };
+        
+        // Update state and storage
+        this._user.next(updatedUser);
+        this.storage.set('user', updatedUser);
+        
+        return updatedUser;
+      }),
+      catchError(error => {
+        console.error('Error updating user profile:', error);
+        return throwError(() => new Error(error.error?.message || 'Failed to update profile. Please try again.'));
       })
     );
   }
 
   // Reset password
   forgotPassword(email: string): Observable<any> {
-    // In a real application, this would trigger a password reset email
-    return of({ success: true, message: 'Password reset email sent.' });
+    // Use WordPress reset password endpoint
+    const resetUrl = `${this.apiUrl}/wp-json/wp/v2/users/lostpassword`;
+    const body = { user_login: email };
+    
+    return this.http.post(resetUrl, body).pipe(
+      map(response => {
+        return { success: true, message: 'Password reset email sent successfully.' };
+      }),
+      catchError(error => {
+        console.error('Error requesting password reset:', error);
+        return throwError(() => new Error('Failed to send password reset email. Please try again.'));
+      })
+    );
   }
 }

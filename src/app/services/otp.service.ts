@@ -33,17 +33,11 @@ export class OtpService {
     this.storeOtpData(formattedNumber, verificationCode);
     
     if (!this.environmentService.isTaqnyatConfigured()) {
-      console.warn('Taqnyat API key not configured, using demo mode');
-      // In demo mode, return a mock response but use a real OTP code that's saved for verification
-      console.log(`Demo Mode: OTP ${verificationCode} would be sent to ${formattedNumber}`);
-      return of({
-        status: 'success',
-        message: 'OTP sent successfully (Demo Mode)',
-        messageId: 'msg_' + Math.random().toString(36).substring(2, 15)
-      });
+      console.error('Taqnyat API key not configured');
+      return throwError(() => new Error('SMS verification service is not available. Please contact support.'));
     }
     
-    // Real implementation using Taqnyat.sa API
+    // Implementation using Taqnyat.sa API
     const endpoint = `${this.apiUrl}/v1/messages`;
     const body = {
       sender: this.sender,
@@ -59,17 +53,7 @@ export class OtpService {
       tap(response => console.log('Taqnyat API response:', response)),
       catchError(error => {
         console.error('Error sending OTP via Taqnyat API:', error);
-        if (environment.production) {
-          return throwError(() => new Error('Failed to send verification code. Please try again later.'));
-        } else {
-          // In development, fallback to demo mode if API fails
-          console.log(`API Failed, Demo Fallback: OTP ${verificationCode} would be sent to ${formattedNumber}`);
-          return of({
-            status: 'success',
-            message: 'OTP sent successfully (Demo Fallback)',
-            messageId: 'msg_' + Math.random().toString(36).substring(2, 15)
-          });
-        }
+        return throwError(() => new Error('Failed to send verification code. Please try again later.'));
       })
     );
   }
