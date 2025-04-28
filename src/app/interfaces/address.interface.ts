@@ -1,5 +1,5 @@
 export interface Address {
-  id?: string;                // Optional for API response
+  id?: string | number;       // Optional for API response, can be string or number
   name?: string;              // User-friendly name for this address
   type?: 'shipping' | 'billing';
   is_default?: boolean;
@@ -14,6 +14,7 @@ export interface Address {
   country: string;
   email?: string;
   phone?: string;
+  address_nickname?: string;  // For custom addresses
 }
 
 // API Response format
