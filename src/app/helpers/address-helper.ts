@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of, throwError, from } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { Address, AddressResponse } from '../interfaces/address.interface';
 import { AddressService, CustomAddress } from '../services/address.service';
 import { JwtAuthService } from '../services/jwt-auth.service';
+import { User } from '../interfaces/user.interface';
 
 /**
  * Helper service for address management in the app
@@ -89,16 +90,26 @@ export class AddressHelper {
           });
         }
         
-        // Get custom addresses
-        return this.addressService.getCustomAddresses().pipe(
-          map(customAddresses => {
-            // Combine standard and custom addresses
-            return [...standardAddresses, ...customAddresses];
-          }),
-          catchError(error => {
-            console.error('Error loading custom addresses:', error);
-            // Return just the standard addresses if custom addresses fail to load
-            return of(standardAddresses);
+        // Check if we have a valid user with ID before fetching custom addresses
+        return this.jwtAuthService.getUserAsObservable().pipe(
+          switchMap(user => {
+            if (!user || !user.id) {
+              console.log('User missing ID, skipping custom addresses');
+              return of(standardAddresses);
+            }
+            
+            // Get custom addresses
+            return this.addressService.getCustomAddresses().pipe(
+              map(customAddresses => {
+                // Combine standard and custom addresses
+                return [...standardAddresses, ...customAddresses];
+              }),
+              catchError(error => {
+                console.error('Error loading custom addresses:', error);
+                // Return just the standard addresses if custom addresses fail to load
+                return of(standardAddresses);
+              })
+            );
           })
         );
       }),
@@ -109,7 +120,8 @@ export class AddressHelper {
       }),
       catchError(error => {
         console.error('Error loading all addresses:', error);
-        return throwError(() => new Error('Failed to load addresses'));
+        // Return empty array instead of throwing
+        return of([]);
       })
     );
   }
@@ -154,30 +166,52 @@ export class AddressHelper {
    * Save an address (create or update)
    */
   saveAddress(address: Address | CustomAddress): Observable<any> {
-    if ('address_nickname' in address && address.address_nickname) {
-      // This is a custom address
-      if (address.id && address.id !== 'billing' && address.id !== 'shipping') {
-        // Update existing custom address
-        return this.addressService.updateCustomAddress(address.id, address).pipe(
-          tap(() => this.refreshAddresses())
-        );
-      } else {
-        // Create new custom address
-        return this.addressService.addCustomAddress(address).pipe(
-          tap(() => this.refreshAddresses())
-        );
-      }
-    } else {
-      // This is a standard address (billing or shipping)
-      const type = address.type as 'billing' | 'shipping';
-      if (!type || !['billing', 'shipping'].includes(type)) {
-        return throwError(() => new Error('Invalid address type. Must be "billing" or "shipping"'));
-      }
-      
-      return this.addressService.updateAddress(type, address).pipe(
-        tap(() => this.refreshAddresses())
-      );
-    }
+    // Check for valid user with ID before attempting to save address
+    return this.jwtAuthService.getUserAsObservable().pipe(
+      switchMap((user: User | null) => {
+        if (!user || (user.id === undefined || user.id === null)) {
+          console.error('Cannot save address: User not authenticated or missing ID');
+          return throwError(() => new Error('User not authenticated'));
+        }
+        
+        if ('address_nickname' in address && address.address_nickname) {
+          // This is a custom address
+          if (address.id && address.id !== 'billing' && address.id !== 'shipping') {
+            // Update existing custom address
+            return this.addressService.updateCustomAddress(address.id, address).pipe(
+              tap(() => this.refreshAddresses()),
+              catchError(error => {
+                console.error('Error updating custom address:', error);
+                return throwError(() => error);
+              })
+            );
+          } else {
+            // Create new custom address
+            return this.addressService.addCustomAddress(address).pipe(
+              tap(() => this.refreshAddresses()),
+              catchError(error => {
+                console.error('Error adding custom address:', error);
+                return throwError(() => error);
+              })
+            );
+          }
+        } else {
+          // This is a standard address (billing or shipping)
+          const type = address.type as 'billing' | 'shipping';
+          if (!type || !['billing', 'shipping'].includes(type)) {
+            return throwError(() => new Error('Invalid address type. Must be "billing" or "shipping"'));
+          }
+          
+          return this.addressService.updateAddress(type, address).pipe(
+            tap(() => this.refreshAddresses()),
+            catchError(error => {
+              console.error(`Error updating ${type} address:`, error);
+              return throwError(() => error);
+            })
+          );
+        }
+      })
+    );
   }
   
   /**
@@ -188,8 +222,22 @@ export class AddressHelper {
       return throwError(() => new Error('Cannot delete primary billing or shipping addresses'));
     }
     
-    return this.addressService.deleteCustomAddress(addressId).pipe(
-      tap(() => this.refreshAddresses())
+    // Check for valid user with ID before attempting to delete address
+    return this.jwtAuthService.getUserAsObservable().pipe(
+      switchMap((user: User | null) => {
+        if (!user || (user.id === undefined || user.id === null)) {
+          console.error('Cannot delete address: User not authenticated or missing ID');
+          return throwError(() => new Error('User not authenticated'));
+        }
+        
+        return this.addressService.deleteCustomAddress(addressId).pipe(
+          tap(() => this.refreshAddresses()),
+          catchError(error => {
+            console.error('Error deleting address:', error);
+            return throwError(() => error);
+          })
+        );
+      })
     );
   }
   
@@ -197,38 +245,66 @@ export class AddressHelper {
    * Set an address as default for checkout
    */
   setDefaultAddress(addressId: string | number): Observable<any> {
-    return this.getAddressById(addressId).pipe(
-      switchMap(address => {
-        if (!address) {
-          return throwError(() => new Error('Address not found'));
+    // Check for valid user with ID first
+    return this.jwtAuthService.getUserAsObservable().pipe(
+      switchMap((user: User | null) => {
+        if (!user || (user.id === undefined || user.id === null)) {
+          console.error('Cannot set default address: User not authenticated or missing ID');
+          return throwError(() => new Error('User not authenticated'));
         }
         
-        if (addressId === 'billing') {
-          return this.addressService.updateAddress('billing', {
-            ...address,
-            is_default: true
-          });
-        } else if (addressId === 'shipping') {
-          return this.addressService.updateAddress('shipping', {
-            ...address,
-            is_default: true
-          });
-        } else {
-          // For custom addresses, we need to copy it to either billing or shipping
-          // Determine if this should be billing or shipping
-          const type = address.type as 'billing' | 'shipping';
-          if (!type || !['billing', 'shipping'].includes(type)) {
-            return throwError(() => new Error('Invalid address type'));
-          }
-          
-          return this.addressService.updateAddress(type, {
-            ...address,
-            type,
-            is_default: true
-          }).pipe(
-            tap(() => this.refreshAddresses())
-          );
-        }
+        return this.getAddressById(addressId).pipe(
+          switchMap(address => {
+            if (!address) {
+              console.error('Address not found with ID:', addressId);
+              return throwError(() => new Error('Address not found'));
+            }
+            
+            if (addressId === 'billing') {
+              return this.addressService.updateAddress('billing', {
+                ...address,
+                is_default: true
+              }).pipe(
+                tap(() => this.refreshAddresses()),
+                catchError(error => {
+                  console.error('Error setting billing address as default:', error);
+                  return throwError(() => error);
+                })
+              );
+            } else if (addressId === 'shipping') {
+              return this.addressService.updateAddress('shipping', {
+                ...address,
+                is_default: true
+              }).pipe(
+                tap(() => this.refreshAddresses()),
+                catchError(error => {
+                  console.error('Error setting shipping address as default:', error);
+                  return throwError(() => error);
+                })
+              );
+            } else {
+              // For custom addresses, we need to copy it to either billing or shipping
+              // Determine if this should be billing or shipping
+              const type = address.type as 'billing' | 'shipping';
+              if (!type || !['billing', 'shipping'].includes(type)) {
+                console.error('Invalid address type for address with ID:', addressId);
+                return throwError(() => new Error('Invalid address type'));
+              }
+              
+              return this.addressService.updateAddress(type, {
+                ...address,
+                type,
+                is_default: true
+              }).pipe(
+                tap(() => this.refreshAddresses()),
+                catchError(error => {
+                  console.error(`Error setting custom address as default ${type}:`, error);
+                  return throwError(() => error);
+                })
+              );
+            }
+          })
+        );
       })
     );
   }

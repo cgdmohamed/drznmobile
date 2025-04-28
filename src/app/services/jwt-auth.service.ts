@@ -135,6 +135,13 @@ export class JwtAuthService {
   }
 
   /**
+   * Get user as an Observable
+   */
+  getUserAsObservable(): Observable<User | null> {
+    return from(this.getUser());
+  }
+  
+  /**
    * Create a minimal user object with basic user data
    */
   private createMinimalUser(userData: {
