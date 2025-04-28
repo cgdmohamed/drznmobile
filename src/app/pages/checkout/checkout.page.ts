@@ -10,6 +10,7 @@ import { JwtAuthService } from '../../services/jwt-auth.service';
 import { PaymentService } from '../../services/payment.service';
 import { OtpService } from '../../services/otp.service';
 import { AddressService } from '../../services/address.service';
+import { AddressHelper } from '../../helpers/address-helper';
 import { User } from '../../interfaces/user.interface';
 import { Cart } from '../../interfaces/cart.interface';
 import { Address, AddressResponse } from '../../interfaces/address.interface';
@@ -63,6 +64,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
     private paymentService: PaymentService,
     private otpService: OtpService,
     private addressService: AddressService, // Added Address service
+    private addressHelper: AddressHelper, // Added AddressHelper service
     private router: Router,
     private route: ActivatedRoute,
     private loadingController: LoadingController,
@@ -332,9 +334,9 @@ export class CheckoutPage implements OnInit, OnDestroy {
     });
   }
   
-  // Load saved addresses using the AddressService
+  // Load saved addresses using the AddressHelper
   loadSavedAddresses() {
-    console.log('Loading saved addresses from the Address service');
+    console.log('Loading saved addresses from the AddressHelper service');
     const loading = this.loadingController.create({
       message: 'جاري تحميل العناوين...',
       spinner: 'crescent'
@@ -343,43 +345,57 @@ export class CheckoutPage implements OnInit, OnDestroy {
     loading.then(loader => {
       loader.present();
       
-      this.addressService.getAddresses().subscribe(
-        (addressResponse: AddressResponse) => {
-          console.log('Address response received:', addressResponse);
+      this.addressHelper.getAllAddresses().subscribe(
+        (addresses) => {
+          console.log('Addresses received from helper:', addresses);
           this.savedAddresses = [];
           
-          // Transform billing address
-          if (addressResponse.billing && addressResponse.billing.first_name) {
-            const billingAddress: any = {
-              ...addressResponse.billing,
-              type: 'billing',
-              isDefault: true,
-              id: 'billing' // Use 'billing' as ID to match with select-based UI
+          // Transform addresses for UI display
+          addresses.forEach(address => {
+            const formattedAddress: any = {
+              ...address,
+              isDefault: address.is_default || false,
+              // Make sure 'id' field is preserved
+              id: address.id || (address.type === 'billing' ? 'billing' : 'shipping')
             };
-            console.log('Adding billing address to saved addresses:', billingAddress);
-            this.savedAddresses.push(billingAddress);
-          } else {
-            console.log('No valid billing address found in response');
-          }
+            
+            // Ensure the standard addresses have the correct IDs
+            if (address.type === 'billing' && address.id !== 'billing') {
+              formattedAddress.id = 'billing';
+            } else if (address.type === 'shipping' && address.id !== 'shipping') {
+              formattedAddress.id = 'shipping';
+            }
+            
+            console.log(`Adding ${address.type} address to saved addresses:`, formattedAddress);
+            this.savedAddresses.push(formattedAddress);
+          });
           
-          // Transform shipping address
-          if (addressResponse.shipping && addressResponse.shipping.first_name) {
-            const shippingAddress: any = {
-              ...addressResponse.shipping,
-              type: 'shipping',
-              isDefault: true,
-              id: 'shipping' // Use 'shipping' as ID to match with select-based UI
-            };
-            console.log('Adding shipping address to saved addresses:', shippingAddress);
-            this.savedAddresses.push(shippingAddress);
-          } else {
-            console.log('No valid shipping address found in response');
-          }
+          // Sort addresses - put default first, then sort by type (billing, shipping, then custom)
+          this.savedAddresses.sort((a, b) => {
+            // Default addresses first
+            if (a.isDefault && !b.isDefault) return -1;
+            if (!a.isDefault && b.isDefault) return 1;
+            
+            // Then by type
+            if (a.type === 'billing' && b.type !== 'billing') return -1;
+            if (a.type !== 'billing' && b.type === 'billing') return 1;
+            if (a.type === 'shipping' && b.type !== 'shipping') return -1;
+            if (a.type !== 'shipping' && b.type === 'shipping') return 1;
+            
+            return 0;
+          });
           
           // Select shipping address by default if available, otherwise select billing
           if (this.savedAddresses.length > 0) {
-            const shippingAddress = this.savedAddresses.find(addr => addr.type === 'shipping');
-            this.selectedAddressId = shippingAddress ? 'shipping' : 'billing';
+            // Try to select default address first
+            const defaultAddress = this.savedAddresses.find(addr => addr.isDefault);
+            if (defaultAddress) {
+              this.selectedAddressId = defaultAddress.id;
+            } else {
+              // No default, try shipping then billing
+              const shippingAddress = this.savedAddresses.find(addr => addr.type === 'shipping');
+              this.selectedAddressId = shippingAddress ? shippingAddress.id : this.savedAddresses[0].id;
+            }
             console.log('Selected address ID:', this.selectedAddressId);
           }
           
@@ -453,6 +469,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
           }
           
           loader.dismiss();
+          this.presentToast('حدث خطأ أثناء تحميل العناوين', 'danger');
         }
       );
     });
@@ -581,8 +598,8 @@ export class CheckoutPage implements OnInit, OnDestroy {
                 is_default: true
               };
               
-              // Save to API using AddressService
-              this.addressService.addAddress(newAddress).subscribe(
+              // Save to API using AddressHelper
+              this.addressHelper.saveAddress(newAddress).subscribe(
                 response => {
                   console.log('Address added successfully:', response);
                   
@@ -729,8 +746,8 @@ export class CheckoutPage implements OnInit, OnDestroy {
                 is_default: true
               };
               
-              // Update address in API using AddressService
-              this.addressService.updateAddress(addressType, updatedAddress).subscribe(
+              // Update address in API using AddressHelper
+              this.addressHelper.saveAddress(updatedAddress).subscribe(
                 response => {
                   console.log(`${addressType} address updated successfully:`, response);
                   
@@ -832,8 +849,8 @@ export class CheckoutPage implements OnInit, OnDestroy {
                   type: addressType
                 };
                 
-                // Update with empty values
-                this.addressService.updateAddress(addressType, emptyAddress).subscribe(
+                // Update with empty values using AddressHelper
+                this.addressHelper.saveAddress(emptyAddress).subscribe(
                   () => {
                     console.log(`${addressType} address cleared successfully`);
                     
@@ -920,7 +937,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
           is_default: true
         };
         
-        this.addressService.updateAddress(addressType, updatedAddress).subscribe(
+        this.addressHelper.setDefaultAddress(address.id).subscribe(
           () => {
             console.log(`${addressType} address set as default successfully`);
             
@@ -956,9 +973,9 @@ export class CheckoutPage implements OnInit, OnDestroy {
     }
   }
   
-  // Save addresses using the AddressService
+  // Save addresses using the AddressHelper
   saveAddressesToUser() {
-    console.log('Saving addresses using the Address service');
+    console.log('Saving addresses using the AddressHelper service');
     
     // For each address in the savedAddresses array, save it to the API
     // The addresses created/edited in the UI will be custom addresses with generated IDs
@@ -997,7 +1014,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
           is_default: true
         };
         
-        this.addressService.updateAddress('billing', addressToSave).subscribe(
+        this.addressHelper.saveAddress(addressToSave).subscribe(
           () => {
             console.log('Billing address saved successfully');
             checkCompletion();
@@ -1020,7 +1037,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
           is_default: true
         };
         
-        this.addressService.updateAddress('shipping', addressToSave).subscribe(
+        this.addressHelper.saveAddress(addressToSave).subscribe(
           () => {
             console.log('Shipping address saved successfully');
             checkCompletion();
