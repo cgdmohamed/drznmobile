@@ -579,29 +579,11 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
     }
   }
   
-  // Helper method to add demo products when API calls fail
+  // Helper method that previously added demo products - now just uses existing products
   private addDemoProductsToList(productList: Product[], type: 'featured' | 'new' | 'sale', existingIds: Set<number>): void {
-    const mockDataService = this.productService['mockDataService'];
+    console.log(`No demo products will be added to ${type} products - using only ${productList.length} real API products`);
     
-    if (type === 'featured') {
-      mockDataService.getFeaturedProducts().subscribe(products => {
-        const demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
-        productList.push(...demoProducts);
-        console.log(`Added ${demoProducts.length} demo products to ${type} products as fallback`);
-      });
-    } else if (type === 'new') {
-      mockDataService.getNewProducts().subscribe(products => {
-        const demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
-        productList.push(...demoProducts);
-        console.log(`Added ${demoProducts.length} demo products to ${type} products as fallback`);
-      });
-    } else if (type === 'sale') {
-      mockDataService.getOnSaleProducts().subscribe(products => {
-        const demoProducts = products.filter(p => !existingIds.has(p.id)).slice(0, 5 - productList.length);
-        productList.push(...demoProducts);
-        console.log(`Added ${demoProducts.length} demo products to ${type} products as fallback`);
-      });
-    }
+    // No action needed - we'll just use the existing real API products, even if less than 5
   }
   
   // This was moved to the end of the file to avoid duplication
@@ -720,48 +702,22 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
     }
   }
   
-  // Fallback to demo products when API doesn't provide enough products
+  // No fallback to demo products - only use real API products
   private finalFallbackToDemoProducts(type: 'featured' | 'new' | 'sale', existingProducts: Product[]): void {
-    const mockDataService = this.productService['mockDataService'];
+    console.log(`No demo products available for ${type} - using only real API products`);
     
     if (type === 'featured') {
-      mockDataService.getFeaturedProducts().subscribe(demoProducts => {
-        // If we already have some products, only add what we need to reach 5
-        if (existingProducts.length > 0) {
-          const neededCount = 5 - existingProducts.length;
-          const productsToAdd = demoProducts.slice(0, neededCount);
-          this.featuredProducts = [...existingProducts, ...productsToAdd];
-          console.log(`Added ${productsToAdd.length} demo products to ${existingProducts.length} API products for ${type}`);
-        } else {
-          // Otherwise use all demo products
-          this.featuredProducts = demoProducts.slice(0, 5);
-          console.log(`Loaded ${this.featuredProducts.length} demo featured products as complete fallback`);
-        }
-      });
+      // Use only existing real products, even if fewer than 5
+      this.featuredProducts = existingProducts.slice();
+      console.log(`Using ${this.featuredProducts.length} real API products for featured section`);
     } else if (type === 'new') {
-      mockDataService.getNewProducts().subscribe(demoProducts => {
-        if (existingProducts.length > 0) {
-          const neededCount = 5 - existingProducts.length;
-          const productsToAdd = demoProducts.slice(0, neededCount);
-          this.newProducts = [...existingProducts, ...productsToAdd];
-          console.log(`Added ${productsToAdd.length} demo products to ${existingProducts.length} API products for ${type}`);
-        } else {
-          this.newProducts = demoProducts.slice(0, 5);
-          console.log(`Loaded ${this.newProducts.length} demo new products as complete fallback`);
-        }
-      });
+      // Use only existing real products, even if fewer than 5
+      this.newProducts = existingProducts.slice();
+      console.log(`Using ${this.newProducts.length} real API products for new section`);
     } else if (type === 'sale') {
-      mockDataService.getOnSaleProducts().subscribe(demoProducts => {
-        if (existingProducts.length > 0) {
-          const neededCount = 5 - existingProducts.length;
-          const productsToAdd = demoProducts.slice(0, neededCount);
-          this.onSaleProducts = [...existingProducts, ...productsToAdd];
-          console.log(`Added ${productsToAdd.length} demo products to ${existingProducts.length} API products for ${type}`);
-        } else {
-          this.onSaleProducts = demoProducts.slice(0, 5);
-          console.log(`Loaded ${this.onSaleProducts.length} demo sale products as complete fallback`);
-        }
-      });
+      // Use only existing real products, even if fewer than 5
+      this.onSaleProducts = existingProducts.slice();
+      console.log(`Using ${this.onSaleProducts.length} real API products for sale section`);
     }
   }
 }
