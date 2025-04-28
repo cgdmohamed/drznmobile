@@ -31,6 +31,7 @@ export class AddressesPage implements OnInit, OnDestroy {
     private authService: AuthService,
     private jwtAuthService: JwtAuthService,
     private addressService: AddressService,
+    private addressHelper: AddressHelper,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController,
     private alertCtrl: AlertController
@@ -83,40 +84,13 @@ export class AddressesPage implements OnInit, OnDestroy {
       }
     });
     
-    // Load addresses
-    console.log('Requesting addresses from address service');
-    this.addressesSubscription = this.addressService.getAddresses().subscribe((addressResponse: AddressResponse) => {
-      console.log('Received address response:', addressResponse);
+    // Load addresses using the address helper
+    console.log('Requesting addresses from address helper');
+    this.addressesSubscription = this.addressHelper.getAllAddresses().subscribe((allAddresses) => {
+      console.log('Received all addresses from helper:', allAddresses);
       
-      if (addressResponse) {
-        // Transform the address response into an array of addresses with type
-        this.addresses = [];
-        
-        // Add billing address if it exists and has required fields
-        if (addressResponse.billing && addressResponse.billing.first_name) {
-          console.log('Adding billing address to list', addressResponse.billing);
-          this.addresses.push({
-            ...addressResponse.billing,
-            type: 'billing',
-            is_default: true // Billing address is always default
-          });
-        } else {
-          console.log('No valid billing address found or missing first_name');
-        }
-        
-        // Add shipping address if it exists and has required fields
-        if (addressResponse.shipping && addressResponse.shipping.first_name) {
-          console.log('Adding shipping address to list', addressResponse.shipping);
-          this.addresses.push({
-            ...addressResponse.shipping,
-            type: 'shipping',
-            is_default: true // Shipping address is always default
-          });
-        } else {
-          console.log('No valid shipping address found or missing first_name');
-        }
-      }
-      
+      // Convert to Address[] array for display
+      this.addresses = allAddresses as Address[];
       console.log('Final addresses array:', this.addresses);
       this.isLoading = false;
     }, error => {
@@ -133,7 +107,8 @@ export class AddressesPage implements OnInit, OnDestroy {
           this.addresses.push({
             ...this.user.billing,
             type: 'billing',
-            is_default: true
+            is_default: true,
+            id: 'billing'
           });
         }
         
@@ -141,7 +116,8 @@ export class AddressesPage implements OnInit, OnDestroy {
           this.addresses.push({
             ...this.user.shipping,
             type: 'shipping',
-            is_default: true
+            is_default: true,
+            id: 'shipping'
           });
         }
         
@@ -206,23 +182,20 @@ export class AddressesPage implements OnInit, OnDestroy {
       
       const formData = this.addressForm.value;
       
-      let saveOperation: Observable<any>;
+      // Create address object with proper ID and type
+      const address: Address = {
+        ...formData,
+        type: this.currentAddressType,
+        is_default: true
+      };
       
+      // If editing, set the id
       if (this.editingAddressType) {
-        // Update existing address
-        saveOperation = this.addressService.updateAddress(this.editingAddressType, formData);
-      } else {
-        // Add new address
-        const newAddress: Address = {
-          ...formData,
-          type: this.currentAddressType,
-          is_default: true // New addresses are set as default
-        };
-        
-        saveOperation = this.addressService.addAddress(newAddress);
+        address.id = this.editingAddressType;
       }
       
-      saveOperation.subscribe(
+      // Use the address helper to save the address
+      this.addressHelper.saveAddress(address).subscribe(
         () => {
           this.presentToast(
             this.editingAddressType ? 'تم تحديث العنوان بنجاح' : 'تم إضافة العنوان بنجاح', 
@@ -252,13 +225,18 @@ export class AddressesPage implements OnInit, OnDestroy {
       return;
     }
     
+    if (!address.id) {
+      this.presentToast('معرف العنوان غير محدد', 'danger');
+      return;
+    }
+    
     this.loadingCtrl.create({
       message: 'جاري تعيين العنوان الافتراضي...',
       spinner: 'crescent'
     }).then(loading => {
       loading.present();
       
-      this.addressService.setDefaultAddress(address.type).subscribe(
+      this.addressHelper.setDefaultAddress(address.id).subscribe(
         () => {
           this.presentToast('تم تعيين العنوان الافتراضي بنجاح', 'success');
           // Refresh the addresses list
@@ -275,8 +253,14 @@ export class AddressesPage implements OnInit, OnDestroy {
   }
 
   deleteAddress(address: Address) {
-    if (!address.type) {
-      this.presentToast('نوع العنوان غير محدد', 'danger');
+    if (!address.id) {
+      this.presentToast('معرف العنوان غير محدد', 'danger');
+      return;
+    }
+    
+    // Don't allow deletion of primary addresses
+    if (address.id === 'billing' || address.id === 'shipping') {
+      this.presentToast('لا يمكن حذف العناوين الأساسية', 'warning');
       return;
     }
     
@@ -303,7 +287,7 @@ export class AddressesPage implements OnInit, OnDestroy {
             }).then(loading => {
               loading.present();
               
-              this.addressService.deleteAddress(address.type).subscribe(
+              this.addressHelper.deleteAddress(address.id).subscribe(
                 () => {
                   this.presentToast('تم حذف العنوان بنجاح', 'success');
                   // Refresh the addresses list
