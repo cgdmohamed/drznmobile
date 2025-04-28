@@ -2,11 +2,12 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LoadingController, ToastController, AlertController } from '@ionic/angular';
 import { AuthService } from 'src/app/services/auth.service';
-import { AddressService } from 'src/app/services/address.service';
+import { AddressService, CustomAddress } from 'src/app/services/address.service';
 import { JwtAuthService } from 'src/app/services/jwt-auth.service';
 import { User } from 'src/app/interfaces/user.interface';
 import { Address, AddressResponse } from 'src/app/interfaces/address.interface';
 import { Subscription, forkJoin, Observable } from 'rxjs';
+import { AddressHelper } from 'src/app/helpers/address-helper';
 
 @Component({
   selector: 'app-addresses',

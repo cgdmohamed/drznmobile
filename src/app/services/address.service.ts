@@ -372,6 +372,88 @@ export class AddressService {
   }
   
   /**
+   * Delete an address (backward compatibility method)
+   * For standard addresses, this just clears them
+   * For custom addresses, this removes them completely
+   */
+  deleteAddress(type: string): Observable<any> {
+    console.log(`Delete address of type ${type}`);
+    
+    if (type === 'billing' || type === 'shipping') {
+      // For billing/shipping, we just clear the fields
+      return from(this.jwtAuthService.getUser()).pipe(
+        switchMap(user => {
+          if (!user || !user.id) {
+            return throwError(() => new Error('User not authenticated'));
+          }
+          
+          // Create an empty address to replace the current one
+          const emptyAddress: Address = {
+            type: type as 'billing' | 'shipping',
+            first_name: '',
+            last_name: '',
+            address_1: '',
+            city: '',
+            state: '',
+            postcode: '',
+            country: 'SA',
+            email: user.email || ''
+          };
+          
+          return this.updateAddress(type as 'billing' | 'shipping', emptyAddress);
+        })
+      );
+    } else {
+      // For custom addresses, perform a real deletion
+      return this.deleteCustomAddress(type);
+    }
+  }
+  
+  /**
+   * Set an address as default
+   */
+  setDefaultAddress(type: string): Observable<any> {
+    console.log(`Set address of type ${type} as default`);
+    
+    return from(this.jwtAuthService.getUser()).pipe(
+      switchMap(user => {
+        if (!user || !user.id) {
+          return throwError(() => new Error('User not authenticated'));
+        }
+        
+        if (type === 'billing' || type === 'shipping') {
+          // Get the current address and ensure is_default is set
+          return this.getAddress(type as 'billing' | 'shipping').pipe(
+            switchMap(address => {
+              address.is_default = true;
+              return this.updateAddress(type as 'billing' | 'shipping', address);
+            })
+          );
+        } else {
+          // For custom addresses, we need to:
+          // 1. Get the custom address
+          // 2. Determine if it's a billing or shipping type
+          // 3. Copy it to the appropriate standard address
+          const customAddressIndex = this._customAddresses.findIndex(a => a.id === type);
+          if (customAddressIndex !== -1) {
+            const customAddress = this._customAddresses[customAddressIndex];
+            const addressType = customAddress.type as 'billing' | 'shipping' || 'shipping';
+            
+            // Copy the custom address to the standard address
+            return this.updateAddress(addressType, {
+              ...customAddress,
+              type: addressType,
+              is_default: true
+            });
+          }
+          
+          return throwError(() => new Error(`Custom address with ID ${type} not found`));
+        }
+      })
+    );
+  }
+  
+  /**
    * Clear cache and reload all addresses
    */
   refreshAddresses(): Observable<any> {
@@ -379,14 +461,16 @@ export class AddressService {
     this._addresses = null;
     this._customAddresses = [];
     
-    return from(Promise.all([
-      this.fetchAddresses().toPromise(),
-      this.fetchCustomAddresses().toPromise()
-    ])).pipe(
-      map(([addresses, customAddresses]) => {
+    return this.fetchAddresses().pipe(
+      switchMap(addresses => {
         this._addresses = addresses;
-        this._customAddresses = customAddresses;
-        return { addresses, customAddresses };
+        
+        return this.fetchCustomAddresses().pipe(
+          map(customAddresses => {
+            this._customAddresses = customAddresses;
+            return { addresses, customAddresses };
+          })
+        );
       })
     );
   }
