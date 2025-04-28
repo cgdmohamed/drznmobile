@@ -109,7 +109,6 @@ export class WoocommerceService {
         retry(2),
         catchError(error => {
           console.error(`Error fetching products for category ${categoryId} from API:`, error);
-          this.useDemo = true;
           return this.handleError('Failed to fetch category products', error);
         })
       );
@@ -206,7 +205,6 @@ export class WoocommerceService {
         retry(2),
         catchError(error => {
           console.error(`Error searching for products with query "${searchQuery}":`, error);
-          this.useDemo = true;
           return this.handleError('Failed to search products', error);
         })
       );
@@ -232,7 +230,6 @@ export class WoocommerceService {
         retry(2),
         catchError(error => {
           console.error('Error fetching products by IDs:', error);
-          this.useDemo = true;
           return this.handleError('Failed to fetch products', error);
         })
       );
