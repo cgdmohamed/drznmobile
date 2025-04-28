@@ -28,7 +28,9 @@ export class PaymentService {
   private moyasarPublishableKey = environment.moyasarPublishableKey;
   private _paymentResult = new BehaviorSubject<PaymentResult | null>(null);
   
-  // All demo code has been completely removed
+  // Use environment settings to determine whether to use demo payments
+  private useDemoPayments = environment.useDemoPayments;
+  private allowDemoCheckout = environment.allowDemoCheckout;
   
   constructor(
     private http: HttpClient,
@@ -36,6 +38,13 @@ export class PaymentService {
     private loadingController: LoadingController
   ) {
     console.log('Payment service initialized');
+    
+    // Force refresh of settings from environment
+    this.useDemoPayments = environment.useDemoPayments;
+    this.allowDemoCheckout = environment.allowDemoCheckout;
+    
+    console.log('Using demo payments:', this.useDemoPayments);
+    console.log('Allow demo checkout:', this.allowDemoCheckout);
     console.log('Moyasar API key:', this.moyasarPublishableKey ? 'available' : 'not available');
   }
   
@@ -89,7 +98,82 @@ export class PaymentService {
     return this._paymentResult.asObservable();
   }
   
-  // All demo payment processing has been removed
+  /**
+   * Show a demonstration of a payment process in demo mode
+   * @param cart The cart being processed
+   * @param paymentMethod The name of the payment method
+   * @returns A simulated payment result
+   */
+  private async showDemoPaymentProcess(cart: Cart, paymentMethod: string): Promise<PaymentResult> {
+    if (!this.allowDemoCheckout) {
+      const errorResult: PaymentResult = {
+        success: false,
+        message: 'الدفع غير متاح في الوضع التجريبي. الرجاء الاتصال بالمتجر الفعلي لإجراء عملية شراء حقيقية.',
+        data: { demoMode: true }
+      };
+      
+      this._paymentResult.next(errorResult);
+      this.presentErrorToast(errorResult.message);
+      return errorResult;
+    }
+    
+    const loading = await this.loadingController.create({
+      message: `جاري معالجة الدفع عبر ${paymentMethod}...`,
+      spinner: 'circles'
+    });
+    
+    await loading.present();
+    
+    // Simulate a processing delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Create a simulated transaction ID
+    const transactionId = `DEMO-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    
+    // Create a simulated successful payment result
+    const paymentResult: PaymentResult = {
+      success: true,
+      message: `تم إكمال الدفع بنجاح عبر ${paymentMethod}`,
+      transactionId: transactionId,
+      data: {
+        id: transactionId,
+        status: 'paid',
+        amount: Math.round(cart.total * 100),
+        fee: Math.round(cart.total * 100 * 0.0275), // Simulate 2.75% fee
+        currency: 'SAR',
+        refunded: 0,
+        refunded_at: null,
+        captured: true,
+        captured_at: new Date().toISOString(),
+        voided_at: null,
+        description: `طلب من متجر DARZN (${cart.items.length} منتجات)`,
+        amount_format: `${cart.total} SAR`,
+        fee_format: `${(cart.total * 0.0275).toFixed(2)} SAR`,
+        refunded_format: '0.00 SAR',
+        invoice_id: null,
+        ip: '127.0.0.1',
+        callback_url: window.location.origin + '/checkout/confirmation',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        metadata: {
+          order_id: `ORDER-${Date.now()}`,
+          demo_payment: true
+        },
+        source: {
+          type: paymentMethod.toLowerCase().replace(' ', '_'),
+          payment_method: paymentMethod,
+          name: 'DEMO USER',
+          transaction_id: transactionId
+        }
+      }
+    };
+    
+    await loading.dismiss();
+    this._paymentResult.next(paymentResult);
+    this.presentSuccessToast(paymentResult.message);
+    
+    return paymentResult;
+  }
   
   /**
    * Process a credit card payment using Moyasar
@@ -97,6 +181,10 @@ export class PaymentService {
    * @param billingDetails The billing details
    */
   async processCreditCardPayment(cart: Cart, billingDetails: any): Promise<PaymentResult> {
+    // Check if we're using demo payments
+    if (this.useDemoPayments) {
+      return this.showDemoPaymentProcess(cart, 'البطاقة الائتمانية');
+    }
     
     const loading = await this.loadingController.create({
       message: 'جاري معالجة الدفع...',
@@ -347,6 +435,10 @@ export class PaymentService {
    * @param billingDetails The billing details
    */
   async processApplePay(cart: Cart, billingDetails: any): Promise<PaymentResult> {
+    // If using demo payments, show demo payment process
+    if (this.useDemoPayments) {
+      return this.showDemoPaymentProcess(cart, 'Apple Pay');
+    }
     
     // Check if Apple Pay is available
     if (!this.isApplePaySupported()) {
@@ -661,6 +753,10 @@ export class PaymentService {
    * @param billingDetails The billing details
    */
   async processSTCPay(cart: Cart, billingDetails: any): Promise<PaymentResult> {
+    // If using demo payments, show demo payment process
+    if (this.useDemoPayments) {
+      return this.showDemoPaymentProcess(cart, 'STC Pay');
+    }
     
     const loading = await this.loadingController.create({
       message: 'جاري تجهيز الدفع عبر STC Pay...',

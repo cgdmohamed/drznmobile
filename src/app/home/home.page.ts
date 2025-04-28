@@ -722,33 +722,46 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   
   // Fallback to demo products when API doesn't provide enough products
   private finalFallbackToDemoProducts(type: 'featured' | 'new' | 'sale', existingProducts: Product[]): void {
-    // Simply use the existing products we have, regardless of how many there are
+    const mockDataService = this.productService['mockDataService'];
+    
     if (type === 'featured') {
-      // Just use whatever we have already
-      if (existingProducts.length > 0) {
-        this.featuredProducts = existingProducts;
-        console.log(`Using ${existingProducts.length} existing API products for featured section`);
-      } else {
-        // Leave as empty array - we'll display appropriate UI for no products
-        this.featuredProducts = [];
-        console.log(`No featured products available from API`);
-      }
+      mockDataService.getFeaturedProducts().subscribe(demoProducts => {
+        // If we already have some products, only add what we need to reach 5
+        if (existingProducts.length > 0) {
+          const neededCount = 5 - existingProducts.length;
+          const productsToAdd = demoProducts.slice(0, neededCount);
+          this.featuredProducts = [...existingProducts, ...productsToAdd];
+          console.log(`Added ${productsToAdd.length} demo products to ${existingProducts.length} API products for ${type}`);
+        } else {
+          // Otherwise use all demo products
+          this.featuredProducts = demoProducts.slice(0, 5);
+          console.log(`Loaded ${this.featuredProducts.length} demo featured products as complete fallback`);
+        }
+      });
     } else if (type === 'new') {
-      if (existingProducts.length > 0) {
-        this.newProducts = existingProducts;
-        console.log(`Using ${existingProducts.length} existing API products for new section`);
-      } else {
-        this.newProducts = [];
-        console.log(`No new products available from API`);
-      }
+      mockDataService.getNewProducts().subscribe(demoProducts => {
+        if (existingProducts.length > 0) {
+          const neededCount = 5 - existingProducts.length;
+          const productsToAdd = demoProducts.slice(0, neededCount);
+          this.newProducts = [...existingProducts, ...productsToAdd];
+          console.log(`Added ${productsToAdd.length} demo products to ${existingProducts.length} API products for ${type}`);
+        } else {
+          this.newProducts = demoProducts.slice(0, 5);
+          console.log(`Loaded ${this.newProducts.length} demo new products as complete fallback`);
+        }
+      });
     } else if (type === 'sale') {
-      if (existingProducts.length > 0) {
-        this.onSaleProducts = existingProducts;
-        console.log(`Using ${existingProducts.length} existing API products for sale section`);
-      } else {
-        this.onSaleProducts = [];
-        console.log(`No sale products available from API`);
-      }
+      mockDataService.getOnSaleProducts().subscribe(demoProducts => {
+        if (existingProducts.length > 0) {
+          const neededCount = 5 - existingProducts.length;
+          const productsToAdd = demoProducts.slice(0, neededCount);
+          this.onSaleProducts = [...existingProducts, ...productsToAdd];
+          console.log(`Added ${productsToAdd.length} demo products to ${existingProducts.length} API products for ${type}`);
+        } else {
+          this.onSaleProducts = demoProducts.slice(0, 5);
+          console.log(`Loaded ${this.onSaleProducts.length} demo sale products as complete fallback`);
+        }
+      });
     }
   }
 }

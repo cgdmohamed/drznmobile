@@ -1,7 +1,7 @@
 // TypeScript declarations are in a separate file to avoid duplicate declarations
 
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, of } from 'rxjs';
 import { catchError, retry, tap, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
@@ -10,19 +10,21 @@ import { Category } from '../interfaces/category.interface';
 import { Order } from '../interfaces/order.interface';
 import { AuthService } from './auth.service';
 import { ToastController } from '@ionic/angular';
+import { demoProducts } from '../demo/demo-products';
+import { demoCategories } from '../demo/demo-categories';
 
 @Injectable({
   providedIn: 'root'
 })
 export class WoocommerceService {
-  // Use proxied API URL for security
+  // Use local proxy to prevent CORS issues
   private apiUrl = environment.apiUrl;
   private consumerKey = environment.consumerKey;
   private consumerSecret = environment.consumerSecret;
-
-  // Basic auth headers for API requests with base64 encoded credentials
-  private headers: HttpHeaders;
-
+  
+  // Use environment settings for demo mode
+  private useDemo = environment.useDemoData;
+  
   constructor(
     private http: HttpClient,
     private authService: AuthService,
@@ -30,12 +32,11 @@ export class WoocommerceService {
   ) {
     console.log('WooCommerce service initialized');
     console.log('API URL:', this.apiUrl);
+    console.log('Using demo mode:', this.useDemo);
     
-    // Create basic auth headers with base64 encoded consumer key and secret
-    const auth = btoa(`${this.consumerKey}:${this.consumerSecret}`);
-    this.headers = new HttpHeaders()
-      .set('Content-Type', 'application/json')
-      .set('Authorization', `Basic ${auth}`);
+    // Force demo mode to be refreshed from environment settings
+    this.useDemo = environment.useDemoData;
+    console.log('Demo mode updated from environment:', this.useDemo);
   }
 
   /**
@@ -43,19 +44,44 @@ export class WoocommerceService {
    * @param options Query parameters to filter products
    */
   getProducts(options: any = {}): Observable<Product[]> {
-    // Add status=publish to ensure only published products are returned
-    const params = this.createParams({
-      ...options,
-      status: 'publish'
-    });
+    // If in demo mode, return demo products directly
+    if (this.useDemo) {
+      console.log('Using demo products data');
+      
+      let filteredProducts = [...demoProducts];
+      
+      // Apply filters
+      if (options.featured) {
+        filteredProducts = filteredProducts.filter(p => p.featured);
+      }
+      
+      if (options.on_sale) {
+        filteredProducts = filteredProducts.filter(p => p.on_sale);
+      }
+      
+      if (options.orderby === 'date' && options.order === 'desc') {
+        filteredProducts = filteredProducts.sort((a, b) => 
+          new Date(b.date_created).getTime() - new Date(a.date_created).getTime()
+        );
+      }
+      
+      // Limit results if per_page is set
+      if (options.per_page) {
+        filteredProducts = filteredProducts.slice(0, parseInt(options.per_page));
+      }
+      
+      return of(filteredProducts);
+    }
     
-    return this.http.get<Product[]>(`${this.apiUrl}/products`, { 
-      params,
-      headers: this.headers
-    }).pipe(
+    // Otherwise, call the API
+    const params = this.createParams(options);
+    
+    return this.http.get<Product[]>(`${this.apiUrl}/products`, { params })
+      .pipe(
         retry(2),
         catchError(error => {
           console.error('Error fetching products from API:', error);
+          this.useDemo = true;
           return this.handleError('Failed to fetch products', error);
         })
       );
@@ -66,13 +92,23 @@ export class WoocommerceService {
    * @param productId The ID of the product to fetch
    */
   getProduct(productId: number): Observable<Product> {
+    // If in demo mode, return demo product
+    if (this.useDemo) {
+      const product = demoProducts.find(p => p.id === productId);
+      if (product) {
+        return of(product);
+      }
+      // If product not found, return the first one
+      return of(demoProducts[0]);
+    }
+    
     return this.http.get<Product>(`${this.apiUrl}/products/${productId}`, {
-      params: this.createParams(),
-      headers: this.headers
+      params: this.createParams()
     }).pipe(
       retry(2),
       catchError(error => {
         console.error(`Error fetching product ID ${productId} from API:`, error);
+        this.useDemo = true;
         return this.handleError('Failed to fetch product details', error);
       })
     );
@@ -83,21 +119,21 @@ export class WoocommerceService {
    * @param options Query parameters to filter categories
    */
   getCategories(options: any = {}): Observable<Category[]> {
+    // If in demo mode, return demo categories directly
+    if (this.useDemo) {
+      console.log('Using demo categories data');
+      return of(demoCategories);
+    }
+    
     const params = this.createParams(options);
     
-    return this.http.get<Category[]>(`${this.apiUrl}/products/categories`, { 
-      params,
-      headers: this.headers 
-    })
+    return this.http.get<Category[]>(`${this.apiUrl}/products/categories`, { params })
       .pipe(
         retry(2),
         catchError(error => {
           console.error('Error fetching categories from API:', error);
-          // Create minimal viable categories as API fallback
-          console.log('Creating minimal viable categories as API fallback');
-          return of([
-            this.createBasicCategory(1, 'جميع المنتجات', 'all-products')
-          ]);
+          this.useDemo = true;
+          return this.handleError('Failed to fetch categories', error);
         })
       );
   }
@@ -108,24 +144,37 @@ export class WoocommerceService {
    * @param options Additional query parameters
    */
   getProductsByCategory(categoryId: number, options: any = {}): Observable<Product[]> {
+    // If in demo mode, filter demo products by category
+    if (this.useDemo) {
+      console.log(`Using demo products for category ${categoryId}`);
+      
+      const filteredProducts = demoProducts.filter(product => 
+        product.categories.some(category => category.id === categoryId)
+      );
+      
+      // Apply additional filters
+      let result = [...filteredProducts];
+      
+      // Limit results if per_page is set
+      if (options.per_page) {
+        result = result.slice(0, parseInt(options.per_page));
+      }
+      
+      return of(result);
+    }
+    
     const params = this.createParams({
       ...options,
-      category: categoryId,
-      status: 'publish'
+      category: categoryId
     });
     
-    return this.http.get<Product[]>(`${this.apiUrl}/products`, { 
-      params,
-      headers: this.headers
-    })
+    return this.http.get<Product[]>(`${this.apiUrl}/products`, { params })
       .pipe(
         retry(2),
         catchError(error => {
           console.error(`Error fetching products for category ${categoryId} from API:`, error);
-          console.log(`Falling back to random real products for products by categories`);
-          
-          // Fallback to getRandomProducts if category-specific request fails
-          return this.getRandomProducts(options.per_page || 8);
+          this.useDemo = true;
+          return this.handleError('Failed to fetch category products', error);
         })
       );
   }
@@ -137,17 +186,8 @@ export class WoocommerceService {
   getFeaturedProducts(limit: number = 10): Observable<Product[]> {
     return this.getProducts({
       featured: true,
-      per_page: limit,
-      orderby: 'rand' // Get random featured products for variety
-    }).pipe(
-      catchError(error => {
-        console.error('Error fetching featured products from API:', error);
-        console.log('Falling back to random real products for featured section');
-        
-        // Fallback to getRandomProducts if featured products request fails
-        return this.getRandomProducts(limit);
-      })
-    );
+      per_page: limit
+    });
   }
 
   /**
@@ -159,15 +199,7 @@ export class WoocommerceService {
       orderby: 'date',
       order: 'desc',
       per_page: limit
-    }).pipe(
-      catchError(error => {
-        console.error('Error fetching new products from API:', error);
-        console.log('Falling back to random real products for new products section');
-        
-        // Fallback to getRandomProducts if new products request fails
-        return this.getRandomProducts(limit);
-      })
-    );
+    });
   }
 
   /**
@@ -177,55 +209,8 @@ export class WoocommerceService {
   getOnSaleProducts(limit: number = 10): Observable<Product[]> {
     return this.getProducts({
       on_sale: true,
-      per_page: limit,
-      orderby: 'rand' // Get random sale products for variety
-    }).pipe(
-      catchError(error => {
-        console.error('Error fetching on-sale products from API:', error);
-        console.log('Falling back to random real products for on-sale products section');
-        
-        // Fallback to getRandomProducts if on-sale products request fails
-        return this.getRandomProducts(limit);
-      })
-    );
-  }
-
-  /**
-   * Get random products - useful as a fallback
-   * @param limit Maximum number of products to return
-   */
-  getRandomProducts(limit: number = 10): Observable<Product[]> {
-    return this.getProducts({
-      per_page: limit * 3, // Request more than needed
-      orderby: 'rand',     // Random order
-      status: 'publish'     // Published products only
-    }).pipe(
-      map(products => {
-        if (products && products.length > 0) {
-          return products.slice(0, limit); // Return only what we need
-        }
-        console.error('Error fetching any products from API:', {
-          message: 'No products available from API'
-        });
-        console.log('Returning empty product array due to API errors');
-        return [];
-      }),
-      catchError(error => {
-        console.error('Error fetching random products with orderby=rand:', error);
-        
-        // Last resort - try without orderby=rand
-        return this.getProducts({
-          per_page: limit,
-          status: 'publish'
-        }).pipe(
-          catchError(finalError => {
-            console.error('Error fetching any products from API:', finalError);
-            console.log('Returning empty product array due to API errors');
-            return of([]);
-          })
-        );
-      })
-    );
+      per_page: limit
+    });
   }
 
   /**
@@ -242,8 +227,7 @@ export class WoocommerceService {
     }
     
     return this.http.post<Order>(`${this.apiUrl}/orders`, orderData, {
-      params: this.createParams(),
-      headers: this.headers
+      params: this.createParams()
     }).pipe(
       catchError(error => {
         console.error('Error creating order:', error);
@@ -259,8 +243,7 @@ export class WoocommerceService {
    */
   updateOrder(orderId: number, orderData: any): Observable<Order> {
     return this.http.put<Order>(`${this.apiUrl}/orders/${orderId}`, orderData, {
-      params: this.createParams(),
-      headers: this.headers
+      params: this.createParams()
     }).pipe(
       catchError(error => {
         console.error(`Error updating order ${orderId}:`, error);
@@ -275,23 +258,46 @@ export class WoocommerceService {
    * @param options Additional query parameters
    */
   searchProducts(searchQuery: string, options: any = {}): Observable<Product[]> {
-    if (!searchQuery || searchQuery.trim() === '') {
-      return of([]);
+    // If in demo mode, do a simple search on product names/descriptions
+    if (this.useDemo) {
+      console.log(`Using demo products for search: "${searchQuery}"`);
+      
+      const searchTerms = searchQuery.toLowerCase().split(' ');
+      
+      // Search in name, description, and short_description
+      const filteredProducts = demoProducts.filter(product => {
+        const searchText = [
+          product.name,
+          product.description,
+          product.short_description
+        ].join(' ').toLowerCase();
+        
+        // Match if any search term is found
+        return searchTerms.some(term => searchText.includes(term));
+      });
+      
+      // Apply additional filters
+      let result = [...filteredProducts];
+      
+      // Limit results if per_page is set
+      if (options.per_page) {
+        result = result.slice(0, parseInt(options.per_page));
+      }
+      
+      return of(result);
     }
     
     const params = this.createParams({
       ...options,
-      search: searchQuery,
-      status: 'publish'
+      search: searchQuery
     });
     
-    return this.http.get<Product[]>(`${this.apiUrl}/products`, { 
-      params,
-      headers: this.headers
-    }).pipe(
+    return this.http.get<Product[]>(`${this.apiUrl}/products`, { params })
+      .pipe(
         retry(2),
         catchError(error => {
           console.error(`Error searching for products with query "${searchQuery}":`, error);
+          this.useDemo = true;
           return this.handleError('Failed to search products', error);
         })
       );
@@ -306,57 +312,40 @@ export class WoocommerceService {
       return of([]);
     }
     
+    // If in demo mode, filter by product IDs
+    if (this.useDemo) {
+      console.log(`Using demo products for IDs: ${productIds.join(', ')}`);
+      
+      const filteredProducts = demoProducts.filter(product => 
+        productIds.includes(product.id)
+      );
+      
+      return of(filteredProducts);
+    }
+    
     const params = this.createParams({
-      include: productIds.join(','),
-      status: 'publish'
+      include: productIds.join(',')
     });
     
-    return this.http.get<Product[]>(`${this.apiUrl}/products`, { 
-      params,
-      headers: this.headers
-    }).pipe(
+    return this.http.get<Product[]>(`${this.apiUrl}/products`, { params })
+      .pipe(
         retry(2),
         catchError(error => {
           console.error('Error fetching products by IDs:', error);
-          return of([]);
+          this.useDemo = true;
+          return this.handleError('Failed to fetch products', error);
         })
       );
   }
 
   /**
-   * Create a basic category object - used for fallback
-   */
-  private createBasicCategory(id: number, name: string, slug: string): Category {
-    return {
-      id,
-      name,
-      slug,
-      parent: 0,
-      description: '',
-      display: 'default',
-      image: {
-        id: 0,
-        date_created: new Date().toISOString(),
-        date_modified: new Date().toISOString(),
-        src: '',
-        name: '',
-        alt: ''
-      },
-      menu_order: 0,
-      count: 0,
-      _links: {
-        self: [{ href: '' }],
-        collection: [{ href: '' }]
-      }
-    };
-  }
-
-  /**
-   * Create parameters for WooCommerce API
+   * Create parameters with authentication for WooCommerce API
    * @param additionalParams Additional query parameters
    */
   private createParams(additionalParams: any = {}): HttpParams {
-    let params = new HttpParams();
+    let params = new HttpParams()
+      .set('consumer_key', this.consumerKey)
+      .set('consumer_secret', this.consumerSecret);
     
     // Add additional parameters
     Object.keys(additionalParams).forEach(key => {
@@ -394,13 +383,31 @@ export class WoocommerceService {
       }
     }
     
-    console.log('API Error:', errorMessage);
+    console.log('API Error:', errorMessage, 'Using demo data instead');
     
-    // Return empty array for list requests or null for single item requests
-    if (message.includes('products') || message.includes('categories')) {
+    // If API connection fails, return demo data for better UX
+    if (this.useDemo) {
+      // Return appropriate demo data based on the request
+      if (message.includes('products')) {
+        if (message.includes('categories')) {
+          return of(demoCategories);
+        }
+        if (message.includes('featured')) {
+          return of(demoProducts.filter(p => p.featured));
+        }
+        if (message.includes('on-sale')) {
+          return of(demoProducts.filter(p => p.on_sale));
+        }
+        if (message.includes('category')) {
+          // For category products, just return demo products as we don't have the category ID here
+          return of(demoProducts);
+        }
+        // Default to all products
+        return of(demoProducts);
+      }
+      
+      // For other requests, return empty data
       return of([]);
-    } else if (message.includes('product details')) {
-      return of(null);
     }
     
     return throwError(() => new Error(errorMessage));

@@ -1,28 +1,16 @@
 {
-  "/api": {
-    "target": "https://app.drzn.sa/wp-json/wc/v3",
+  "/wp-json": {
+    "target": "https://app.drzn.sa",
     "secure": true,
     "changeOrigin": true,
-    "pathRewrite": {
-      "^/api": ""
-    },
     "logLevel": "debug"
   },
-  "/jwt-auth": {
-    "target": "https://app.drzn.sa/wp-json/jwt-auth/v1",
+  "/taqnyat-api": {
+    "target": "https://api.taqnyat.sa",
     "secure": true,
     "changeOrigin": true,
     "pathRewrite": {
-      "^/jwt-auth": ""
-    },
-    "logLevel": "debug"
-  },
-  "/simple-jwt": {
-    "target": "https://app.drzn.sa/wp-json/simple-jwt-login/v1",
-    "secure": true,
-    "changeOrigin": true,
-    "pathRewrite": {
-      "^/simple-jwt": ""
+      "^/taqnyat-api": ""
     },
     "logLevel": "debug"
   }

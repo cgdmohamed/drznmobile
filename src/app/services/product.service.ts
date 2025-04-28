@@ -6,6 +6,7 @@ import { mergeMap } from 'rxjs/operators';
 import { Product } from '../interfaces/product.interface';
 import { Category } from '../interfaces/category.interface';
 import { environment } from '../../environments/environment';
+import { MockDataService } from './mock-data.service';
 
 @Injectable({
   providedIn: 'root'
@@ -20,7 +21,8 @@ export class ProductService {
   private randomProductCache: Product[] = [];
 
   constructor(
-    private http: HttpClient
+    private http: HttpClient,
+    private mockDataService: MockDataService
   ) {}
 
   // Get products with optional filtering
@@ -51,8 +53,11 @@ export class ProductService {
   getProduct(id: number): Observable<Product> {
     // Check if this is a product ID we've already tried and failed to fetch
     if (this.failedProductIds.has(id)) {
-      console.log(`Product ID ${id} previously failed to load, returning error`);
-      return throwError(() => new Error(`Product with ID ${id} not found`));
+      console.log(`Getting random product for previously failed product ID: ${id}`);
+      // Get a random API product instead of demo
+      return this.getRandomProducts(1).pipe(
+        map(products => products.length > 0 ? products[0] : this.generateProductFromScratch(id))
+      );
     }
     
     // Connect to WooCommerce API using environment variables
@@ -65,14 +70,108 @@ export class ProductService {
         // Add this ID to the list of failed product IDs so we won't try again
         this.failedProductIds.add(id);
         
-        // Return a clear error instead of a placeholder
-        return throwError(() => new Error(`Failed to load product with ID ${id}`));
+        // Return a random product from API instead of demo
+        console.log(`Getting random API product for failed ID: ${id}`);
+        return this.getRandomProducts(1).pipe(
+          map(products => {
+            if (products.length > 0) {
+              return products[0];
+            } else {
+              // As absolute last resort, generate a placeholder
+              return this.generateProductFromScratch(id);
+            }
+          })
+        );
       })
     );
   }
   
+  // Last resort - generate a placeholder product from scratch with minimal info
+  private generateProductFromScratch(id: number): Product {
+    return {
+      id: id,
+      name: 'Product #' + id,
+      slug: 'product-' + id,
+      permalink: '',
+      date_created: new Date().toISOString(),
+      date_modified: new Date().toISOString(),
+      type: 'simple',
+      status: 'publish',
+      featured: false,
+      catalog_visibility: 'visible',
+      description: 'This is a placeholder product.',
+      short_description: 'Placeholder product',
+      sku: 'PROD-' + id,
+      price: '99.99',
+      regular_price: '99.99',
+      sale_price: '',
+      date_on_sale_from: null,
+      date_on_sale_to: null,
+      on_sale: false,
+      purchasable: true,
+      total_sales: 0,
+      virtual: false,
+      downloadable: false,
+      downloads: [],
+      download_limit: -1,
+      download_expiry: -1,
+      tax_status: 'taxable',
+      tax_class: '',
+      manage_stock: false,
+      stock_quantity: null,
+      stock_status: 'instock',
+      backorders: 'no',
+      backorders_allowed: false,
+      backordered: false,
+      sold_individually: false,
+      weight: '',
+      dimensions: {
+        length: '',
+        width: '',
+        height: ''
+      },
+      shipping_required: true,
+      shipping_taxable: true,
+      shipping_class: '',
+      shipping_class_id: 0,
+      reviews_allowed: true,
+      average_rating: '0',
+      rating_count: 0,
+      related_ids: [],
+      upsell_ids: [],
+      cross_sell_ids: [],
+      parent_id: 0,
+      purchase_note: '',
+      categories: [
+        {
+          id: 1,
+          name: 'Uncategorized',
+          slug: 'uncategorized'
+        }
+      ],
+      tags: [],
+      attributes: [],
+      variations: [],
+      grouped_products: [],
+      menu_order: 0,
+      images: [
+        {
+          id: 0,
+          date_created: new Date().toISOString(),
+          date_modified: new Date().toISOString(),
+          src: 'assets/images/product-placeholder.svg',
+          name: 'Placeholder',
+          alt: 'Placeholder'
+        }
+      ],
+      meta_data: []
+    } as Product;
+  }
+  
   // Get random real products from API
   getRandomProducts(count: number = 5): Observable<Product[]> {
+    // Always try to get real products, even in demo environment
+    
     // Check cache first
     if (this.randomProductCache.length >= count) {
       console.log(`Got ${count} random products from cache`);
@@ -117,9 +216,14 @@ export class ProductService {
           }),
           catchError(secondError => {
             console.error(`Error fetching any products from API:`, secondError);
-            // Return an empty array instead of creating placeholders
-            console.log(`Returning empty product array due to API errors`);
-            return of([]);
+            
+            // As an absolute last resort, create minimal placeholder products
+            console.log(`Creating ${count} minimal placeholder products as last resort`);
+            const placeholders: Product[] = [];
+            for (let i = 0; i < count; i++) {
+              placeholders.push(this.generateProductFromScratch(Math.floor(Math.random() * 1000) + 9000));
+            }
+            return of(placeholders);
           })
         );
       })

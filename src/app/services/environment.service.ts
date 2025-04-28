@@ -22,8 +22,8 @@ export class EnvironmentService {
   private readonly _envOneSignalAppId = environment.oneSignalAppId;
   private _dynamicOneSignalAppId: string | null = null;
   
-  // Demo mode is no longer supported
-  private readonly _useDemoData = false;
+  // Feature flags
+  private readonly _useDemoData = environment.useDemoData;
 
   constructor(private http: HttpClient) {
     // In a real production environment, these would be injected at build time

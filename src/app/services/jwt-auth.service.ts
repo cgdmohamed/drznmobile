@@ -35,9 +35,9 @@ export class JwtAuthService {
   private AUTH_TOKEN_EXPIRY_KEY = 'jwt_token_expiry';
   private TOKEN_REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-  // Use proxy URLs for better security
-  private apiUrl = environment.simpleJwtUrl; // Simple JWT Login API (proxied)
-  private wcApiUrl = environment.apiUrl;    // WooCommerce API (proxied)
+  // Use proxy to avoid CORS issues
+  private baseUrl = environment.apiUrl.split('/wp-json')[0]; // Get the base URL without wp-json
+  private apiUrl = `${this.baseUrl}/wp-json/simple-jwt-login/v1`;
   private authCode = environment.authCode;
   
   // Token refresh timer
@@ -675,7 +675,7 @@ export class JwtAuthService {
           const consumerSecret = environment.consumerSecret;
           
           // Use the WooCommerce REST API to fetch the user by email
-          return this.http.get<User>(`${this.wcApiUrl}/customers?email=${email}&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`).pipe(
+          return this.http.get<User>(`${environment.apiUrl}/customers?email=${email}&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`).pipe(
             map((customers: any) => {
               console.log('User profile response:', customers);
               
