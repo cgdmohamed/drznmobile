@@ -1,26 +1,29 @@
 {
   "/api": {
-    "target": "https://app.drzn.sa",
+    "target": "https://app.drzn.sa/wp-json/wc/v3",
     "secure": true,
     "changeOrigin": true,
     "pathRewrite": {
-      "^/api": "/wp-json/wc/v3"
-    }
+      "^/api": ""
+    },
+    "logLevel": "debug"
   },
   "/jwt-auth": {
-    "target": "https://app.drzn.sa",
+    "target": "https://app.drzn.sa/wp-json/jwt-auth/v1",
     "secure": true,
     "changeOrigin": true,
     "pathRewrite": {
-      "^/jwt-auth": "/wp-json/jwt-auth/v1"
-    }
+      "^/jwt-auth": ""
+    },
+    "logLevel": "debug"
   },
   "/simple-jwt": {
-    "target": "https://app.drzn.sa",
+    "target": "https://app.drzn.sa/wp-json/simple-jwt-login/v1",
     "secure": true,
     "changeOrigin": true,
     "pathRewrite": {
-      "^/simple-jwt": "/wp-json/simple-jwt-login/v1"
-    }
+      "^/simple-jwt": ""
+    },
+    "logLevel": "debug"
   }
 }

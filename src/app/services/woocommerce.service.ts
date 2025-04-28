@@ -1,7 +1,7 @@
 // TypeScript declarations are in a separate file to avoid duplicate declarations
 
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, of } from 'rxjs';
 import { catchError, retry, tap, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
@@ -15,11 +15,14 @@ import { ToastController } from '@ionic/angular';
   providedIn: 'root'
 })
 export class WoocommerceService {
-  // Use direct API URL with full path
+  // Use proxied API URL for security
   private apiUrl = environment.apiUrl;
   private consumerKey = environment.consumerKey;
   private consumerSecret = environment.consumerSecret;
-  
+
+  // Basic auth headers for API requests with base64 encoded credentials
+  private headers: HttpHeaders;
+
   constructor(
     private http: HttpClient,
     private authService: AuthService,
@@ -27,6 +30,12 @@ export class WoocommerceService {
   ) {
     console.log('WooCommerce service initialized');
     console.log('API URL:', this.apiUrl);
+    
+    // Create basic auth headers with base64 encoded consumer key and secret
+    const auth = btoa(`${this.consumerKey}:${this.consumerSecret}`);
+    this.headers = new HttpHeaders()
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Basic ${auth}`);
   }
 
   /**
@@ -40,8 +49,10 @@ export class WoocommerceService {
       status: 'publish'
     });
     
-    return this.http.get<Product[]>(`${this.apiUrl}/products`, { params })
-      .pipe(
+    return this.http.get<Product[]>(`${this.apiUrl}/products`, { 
+      params,
+      headers: this.headers
+    }).pipe(
         retry(2),
         catchError(error => {
           console.error('Error fetching products from API:', error);
@@ -56,7 +67,8 @@ export class WoocommerceService {
    */
   getProduct(productId: number): Observable<Product> {
     return this.http.get<Product>(`${this.apiUrl}/products/${productId}`, {
-      params: this.createParams()
+      params: this.createParams(),
+      headers: this.headers
     }).pipe(
       retry(2),
       catchError(error => {
@@ -73,7 +85,10 @@ export class WoocommerceService {
   getCategories(options: any = {}): Observable<Category[]> {
     const params = this.createParams(options);
     
-    return this.http.get<Category[]>(`${this.apiUrl}/products/categories`, { params })
+    return this.http.get<Category[]>(`${this.apiUrl}/products/categories`, { 
+      params,
+      headers: this.headers 
+    })
       .pipe(
         retry(2),
         catchError(error => {
@@ -99,7 +114,10 @@ export class WoocommerceService {
       status: 'publish'
     });
     
-    return this.http.get<Product[]>(`${this.apiUrl}/products`, { params })
+    return this.http.get<Product[]>(`${this.apiUrl}/products`, { 
+      params,
+      headers: this.headers
+    })
       .pipe(
         retry(2),
         catchError(error => {
@@ -224,7 +242,8 @@ export class WoocommerceService {
     }
     
     return this.http.post<Order>(`${this.apiUrl}/orders`, orderData, {
-      params: this.createParams()
+      params: this.createParams(),
+      headers: this.headers
     }).pipe(
       catchError(error => {
         console.error('Error creating order:', error);
@@ -240,7 +259,8 @@ export class WoocommerceService {
    */
   updateOrder(orderId: number, orderData: any): Observable<Order> {
     return this.http.put<Order>(`${this.apiUrl}/orders/${orderId}`, orderData, {
-      params: this.createParams()
+      params: this.createParams(),
+      headers: this.headers
     }).pipe(
       catchError(error => {
         console.error(`Error updating order ${orderId}:`, error);
@@ -265,8 +285,10 @@ export class WoocommerceService {
       status: 'publish'
     });
     
-    return this.http.get<Product[]>(`${this.apiUrl}/products`, { params })
-      .pipe(
+    return this.http.get<Product[]>(`${this.apiUrl}/products`, { 
+      params,
+      headers: this.headers
+    }).pipe(
         retry(2),
         catchError(error => {
           console.error(`Error searching for products with query "${searchQuery}":`, error);
@@ -289,8 +311,10 @@ export class WoocommerceService {
       status: 'publish'
     });
     
-    return this.http.get<Product[]>(`${this.apiUrl}/products`, { params })
-      .pipe(
+    return this.http.get<Product[]>(`${this.apiUrl}/products`, { 
+      params,
+      headers: this.headers
+    }).pipe(
         retry(2),
         catchError(error => {
           console.error('Error fetching products by IDs:', error);
@@ -328,13 +352,11 @@ export class WoocommerceService {
   }
 
   /**
-   * Create parameters with authentication for WooCommerce API
+   * Create parameters for WooCommerce API
    * @param additionalParams Additional query parameters
    */
   private createParams(additionalParams: any = {}): HttpParams {
-    let params = new HttpParams()
-      .set('consumer_key', this.consumerKey)
-      .set('consumer_secret', this.consumerSecret);
+    let params = new HttpParams();
     
     // Add additional parameters
     Object.keys(additionalParams).forEach(key => {
