@@ -6,6 +6,7 @@ import { mergeMap } from 'rxjs/operators';
 import { Product } from '../interfaces/product.interface';
 import { Category } from '../interfaces/category.interface';
 import { environment } from '../../environments/environment';
+import { MockDataService } from './mock-data.service';
 
 @Injectable({
   providedIn: 'root'
@@ -20,8 +21,8 @@ export class ProductService {
   private randomProductCache: Product[] = [];
 
   constructor(
-    private http: HttpClient
-    // Removed dependency on MockDataService
+    private http: HttpClient,
+    private mockDataService: MockDataService
   ) {}
 
   // Get products with optional filtering

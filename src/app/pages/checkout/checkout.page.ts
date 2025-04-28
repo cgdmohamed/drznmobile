@@ -9,8 +9,7 @@ import { AuthService } from '../../services/auth.service';
 import { JwtAuthService } from '../../services/jwt-auth.service';
 import { PaymentService } from '../../services/payment.service';
 import { OtpService } from '../../services/otp.service';
-import { AddressService, CustomAddress } from '../../services/address.service';
-import { AddressHelper } from '../../helpers/address-helper';
+import { AddressService } from '../../services/address.service';
 import { User } from '../../interfaces/user.interface';
 import { Cart } from '../../interfaces/cart.interface';
 import { Address, AddressResponse } from '../../interfaces/address.interface';
@@ -64,7 +63,6 @@ export class CheckoutPage implements OnInit, OnDestroy {
     private paymentService: PaymentService,
     private otpService: OtpService,
     private addressService: AddressService, // Added Address service
-    private addressHelper: AddressHelper, // Added AddressHelper service
     private router: Router,
     private route: ActivatedRoute,
     private loadingController: LoadingController,
@@ -334,9 +332,9 @@ export class CheckoutPage implements OnInit, OnDestroy {
     });
   }
   
-  // Load saved addresses using the AddressHelper
+  // Load saved addresses using the AddressService
   loadSavedAddresses() {
-    console.log('Loading saved addresses from the AddressHelper');
+    console.log('Loading saved addresses from the Address service');
     const loading = this.loadingController.create({
       message: 'جاري تحميل العناوين...',
       spinner: 'crescent'
@@ -345,163 +343,119 @@ export class CheckoutPage implements OnInit, OnDestroy {
     loading.then(loader => {
       loader.present();
       
-      // Initialize the AddressHelper if not already initialized
-      if (!this.addressHelper.initialized) {
-        this.addressHelper.initialize();
-      }
-      
-      // Use the AddressHelper to get all addresses
-      this.addressHelper.getAllAddresses().subscribe(
-        (addresses) => {
-          console.log('Addresses received from helper:', addresses);
+      this.addressService.getAddresses().subscribe(
+        (addressResponse: AddressResponse) => {
+          console.log('Address response received:', addressResponse);
           this.savedAddresses = [];
           
-          // Process all addresses from the helper
-          if (addresses && addresses.length > 0) {
-            addresses.forEach(address => {
-              // Format each address for the UI with proper type and ID
-              const formattedAddress: any = {
-                ...address,
-                type: address.type || (address.id === 'shipping' ? 'shipping' : 
-                       address.id === 'billing' ? 'billing' : 'custom'),
-                isDefault: !!address.is_default,
-                // Make sure each address has a valid ID
-                id: address.id || 'custom_' + Math.random().toString(36).substring(2, 9)
-              };
-              
-              console.log('Adding address to saved addresses:', formattedAddress);
-              this.savedAddresses.push(formattedAddress);
-            });
-            
-            // Select the default address if available
-            const defaultAddress = this.savedAddresses.find(addr => addr.isDefault);
-            if (defaultAddress) {
-              this.selectedAddressId = defaultAddress.id;
-              console.log('Selected default address ID:', this.selectedAddressId);
-            } 
-            // Or find a shipping address for preference
-            else {
-              const shippingAddress = this.savedAddresses.find(addr => addr.type === 'shipping');
-              this.selectedAddressId = shippingAddress ? shippingAddress.id : 
-                                    this.savedAddresses.length > 0 ? this.savedAddresses[0].id : null;
-              console.log('Selected address ID:', this.selectedAddressId);
-            }
+          // Transform billing address
+          if (addressResponse.billing && addressResponse.billing.first_name) {
+            const billingAddress: any = {
+              ...addressResponse.billing,
+              type: 'billing',
+              isDefault: true,
+              id: 'billing' // Use 'billing' as ID to match with select-based UI
+            };
+            console.log('Adding billing address to saved addresses:', billingAddress);
+            this.savedAddresses.push(billingAddress);
           } else {
-            // Fallback to using the standard API if helper returned no addresses
-            console.log('No addresses from helper, falling back to direct API call');
-            this.loadSavedAddressesFromAPI(loader);
-            return;
+            console.log('No valid billing address found in response');
+          }
+          
+          // Transform shipping address
+          if (addressResponse.shipping && addressResponse.shipping.first_name) {
+            const shippingAddress: any = {
+              ...addressResponse.shipping,
+              type: 'shipping',
+              isDefault: true,
+              id: 'shipping' // Use 'shipping' as ID to match with select-based UI
+            };
+            console.log('Adding shipping address to saved addresses:', shippingAddress);
+            this.savedAddresses.push(shippingAddress);
+          } else {
+            console.log('No valid shipping address found in response');
+          }
+          
+          // Select shipping address by default if available, otherwise select billing
+          if (this.savedAddresses.length > 0) {
+            const shippingAddress = this.savedAddresses.find(addr => addr.type === 'shipping');
+            this.selectedAddressId = shippingAddress ? 'shipping' : 'billing';
+            console.log('Selected address ID:', this.selectedAddressId);
+          }
+          
+          // If no addresses found but we have user data, create temporary addresses from user profile
+          if (this.savedAddresses.length === 0 && this.user) {
+            console.log('No addresses found from API, creating from user profile');
+            
+            // Add billing address from user profile if available
+            if (this.user.billing && this.user.billing.first_name) {
+              const billingAddress: any = {
+                ...this.user.billing,
+                type: 'billing',
+                isDefault: true,
+                id: 'billing'
+              };
+              console.log('Adding billing address from user profile:', billingAddress);
+              this.savedAddresses.push(billingAddress);
+            }
+            
+            // Add shipping address from user profile if available
+            if (this.user.shipping && this.user.shipping.first_name) {
+              const shippingAddress: any = {
+                ...this.user.shipping,
+                type: 'shipping',
+                isDefault: true,
+                id: 'shipping'
+              };
+              console.log('Adding shipping address from user profile:', shippingAddress);
+              this.savedAddresses.push(shippingAddress);
+              this.selectedAddressId = 'shipping';
+            } else if (this.savedAddresses.length > 0) {
+              this.selectedAddressId = 'billing';
+            }
           }
           
           console.log('Final saved addresses:', this.savedAddresses);
           loader.dismiss();
         },
         error => {
-          console.error('Error loading addresses from helper:', error);
+          console.error('Error loading addresses:', error);
           
-          // Fallback to direct API call if helper fails
-          this.loadSavedAddressesFromAPI(loader);
+          // Fallback to user profile data if address service fails
+          if (this.user) {
+            console.log('Falling back to user profile for addresses');
+            this.savedAddresses = [];
+            
+            // Add billing address from user profile if available
+            if (this.user.billing && this.user.billing.first_name) {
+              const billingAddress: any = {
+                ...this.user.billing,
+                type: 'billing',
+                isDefault: true,
+                id: 'billing'
+              };
+              this.savedAddresses.push(billingAddress);
+            }
+            
+            // Add shipping address from user profile if available
+            if (this.user.shipping && this.user.shipping.first_name) {
+              const shippingAddress: any = {
+                ...this.user.shipping,
+                type: 'shipping',
+                isDefault: true,
+                id: 'shipping'
+              };
+              this.savedAddresses.push(shippingAddress);
+              this.selectedAddressId = 'shipping';
+            } else if (this.savedAddresses.length > 0) {
+              this.selectedAddressId = 'billing';
+            }
+          }
+          
+          loader.dismiss();
         }
       );
     });
-  }
-  
-  // Fallback method to load addresses directly from the API
-  private loadSavedAddressesFromAPI(loader?: HTMLIonLoadingElement) {
-    console.log('Loading saved addresses directly from the API');
-    
-    this.addressService.getAddresses().subscribe(
-      (addressResponse: AddressResponse) => {
-        console.log('Address response received from API:', addressResponse);
-        this.savedAddresses = [];
-        
-        // Transform billing address
-        if (addressResponse.billing && addressResponse.billing.first_name) {
-          const billingAddress: any = {
-            ...addressResponse.billing,
-            type: 'billing',
-            isDefault: true,
-            id: 'billing' // Use 'billing' as ID to match with select-based UI
-          };
-          console.log('Adding billing address to saved addresses:', billingAddress);
-          this.savedAddresses.push(billingAddress);
-        } else {
-          console.log('No valid billing address found in response');
-        }
-        
-        // Transform shipping address
-        if (addressResponse.shipping && addressResponse.shipping.first_name) {
-          const shippingAddress: any = {
-            ...addressResponse.shipping,
-            type: 'shipping',
-            isDefault: true,
-            id: 'shipping' // Use 'shipping' as ID to match with select-based UI
-          };
-          console.log('Adding shipping address to saved addresses:', shippingAddress);
-          this.savedAddresses.push(shippingAddress);
-        } else {
-          console.log('No valid shipping address found in response');
-        }
-        
-        // Select shipping address by default if available, otherwise select billing
-        if (this.savedAddresses.length > 0) {
-          const shippingAddress = this.savedAddresses.find(addr => addr.type === 'shipping');
-          this.selectedAddressId = shippingAddress ? 'shipping' : 'billing';
-          console.log('Selected address ID:', this.selectedAddressId);
-        }
-        
-        // If no addresses found but we have user data, create temporary addresses from user profile
-        if (this.savedAddresses.length === 0 && this.user) {
-          this.createAddressesFromUserProfile();
-        }
-        
-        console.log('Final saved addresses from API:', this.savedAddresses);
-        if (loader) loader.dismiss();
-      },
-      error => {
-        console.error('Error loading addresses from API:', error);
-        
-        // Fallback to user profile data if API call fails
-        if (this.user) {
-          this.createAddressesFromUserProfile();
-        }
-        
-        if (loader) loader.dismiss();
-      }
-    );
-  }
-  
-  // Create addresses from user profile when no addresses are found
-  private createAddressesFromUserProfile() {
-    console.log('Creating addresses from user profile');
-    this.savedAddresses = [];
-    
-    // Add billing address from user profile if available
-    if (this.user.billing && this.user.billing.first_name) {
-      const billingAddress: any = {
-        ...this.user.billing,
-        type: 'billing',
-        isDefault: true,
-        id: 'billing'
-      };
-      console.log('Adding billing address from user profile:', billingAddress);
-      this.savedAddresses.push(billingAddress);
-    }
-    
-    // Add shipping address from user profile if available
-    if (this.user.shipping && this.user.shipping.first_name) {
-      const shippingAddress: any = {
-        ...this.user.shipping,
-        type: 'shipping',
-        isDefault: true,
-        id: 'shipping'
-      };
-      console.log('Adding shipping address from user profile:', shippingAddress);
-      this.savedAddresses.push(shippingAddress);
-      this.selectedAddressId = 'shipping';
-    } else if (this.savedAddresses.length > 0) {
-      this.selectedAddressId = 'billing';
-    }
   }
   
   // Select a saved address
@@ -627,13 +581,28 @@ export class CheckoutPage implements OnInit, OnDestroy {
                 is_default: true
               };
               
-              // Save using AddressHelper
-              this.addressHelper.saveAddress(newAddress).subscribe(
+              // Save to API using AddressService
+              this.addressService.addAddress(newAddress).subscribe(
                 response => {
-                  console.log('Address added successfully via helper:', response);
+                  console.log('Address added successfully:', response);
                   
-                  // Refresh the address list
-                  this.loadSavedAddresses();
+                  // Add to local addresses array with proper ID for UI
+                  const addressForUI = {
+                    ...newAddress,
+                    id: 'shipping',
+                    isDefault: true
+                  };
+                  
+                  // Find and replace existing shipping address or add new one
+                  const existingIndex = this.savedAddresses.findIndex(a => a.id === 'shipping' || a.type === 'shipping');
+                  if (existingIndex >= 0) {
+                    this.savedAddresses[existingIndex] = addressForUI;
+                  } else {
+                    this.savedAddresses.push(addressForUI);
+                  }
+                  
+                  // Select the new address
+                  this.selectSavedAddress(addressForUI);
                   
                   this.presentToast('تم إضافة العنوان بنجاح', 'success');
                   loading.dismiss();
@@ -642,36 +611,6 @@ export class CheckoutPage implements OnInit, OnDestroy {
                   console.error('Error adding address:', error);
                   this.presentToast('حدث خطأ أثناء إضافة العنوان', 'danger');
                   loading.dismiss();
-                  
-                  // Fallback to direct API call if helper fails
-                  this.addressService.addAddress(newAddress).subscribe(
-                    response => {
-                      console.log('Address added successfully via direct API:', response);
-                      
-                      // Add to local addresses array with proper ID for UI
-                      const addressForUI = {
-                        ...newAddress,
-                        id: 'shipping',
-                        isDefault: true
-                      };
-                      
-                      // Find and replace existing shipping address or add new one
-                      const existingIndex = this.savedAddresses.findIndex(a => a.id === 'shipping' || a.type === 'shipping');
-                      if (existingIndex >= 0) {
-                        this.savedAddresses[existingIndex] = addressForUI;
-                      } else {
-                        this.savedAddresses.push(addressForUI);
-                      }
-                      
-                      // Select the new address
-                      this.selectSavedAddress(addressForUI);
-                      
-                      this.presentToast('تم إضافة العنوان بنجاح', 'success');
-                    },
-                    error => {
-                      console.error('Error adding address via direct API:', error);
-                    }
-                  );
                 }
               );
             });
@@ -790,57 +729,41 @@ export class CheckoutPage implements OnInit, OnDestroy {
                 is_default: true
               };
               
-              // Update address using AddressHelper
-              this.addressHelper.saveAddress(updatedAddress).subscribe(
+              // Update address in API using AddressService
+              this.addressService.updateAddress(addressType, updatedAddress).subscribe(
                 response => {
-                  console.log(`Address updated successfully via helper:`, response);
+                  console.log(`${addressType} address updated successfully:`, response);
                   
-                  // Refresh the address list
-                  this.loadSavedAddresses();
+                  // Update address in local array
+                  const index = this.savedAddresses.findIndex(a => 
+                    a.id === address.id || 
+                    a.id === addressType || 
+                    a.type === addressType
+                  );
+                  
+                  if (index !== -1) {
+                    // Create UI version of the address
+                    const addressForUI = {
+                      ...updatedAddress,
+                      id: addressType,
+                      isDefault: true
+                    };
+                    
+                    this.savedAddresses[index] = addressForUI;
+                    
+                    // If this was the selected address, update the form
+                    if (this.selectedAddressId === address.id || 
+                        this.selectedAddressId === addressType) {
+                      this.selectSavedAddress(addressForUI);
+                    }
+                  }
                   
                   this.presentToast('تم تحديث العنوان بنجاح', 'success');
                   loading.dismiss();
                 },
                 error => {
-                  console.error(`Error updating address via helper:`, error);
-                  
-                  // Fallback to direct API call if helper fails
-                  this.addressService.updateAddress(addressType, updatedAddress).subscribe(
-                    response => {
-                      console.log(`${addressType} address updated successfully via direct API:`, response);
-                      
-                      // Update address in local array
-                      const index = this.savedAddresses.findIndex(a => 
-                        a.id === address.id || 
-                        a.id === addressType || 
-                        a.type === addressType
-                      );
-                      
-                      if (index !== -1) {
-                        // Create UI version of the address
-                        const addressForUI = {
-                          ...updatedAddress,
-                          id: addressType,
-                          isDefault: true
-                        };
-                        
-                        this.savedAddresses[index] = addressForUI;
-                        
-                        // If this was the selected address, update the form
-                        if (this.selectedAddressId === address.id || 
-                            this.selectedAddressId === addressType) {
-                          this.selectSavedAddress(addressForUI);
-                        }
-                      }
-                      
-                      this.presentToast('تم تحديث العنوان بنجاح', 'success');
-                    },
-                    error => {
-                      console.error(`Error updating ${addressType} address via direct API:`, error);
-                      this.presentToast('حدث خطأ أثناء تحديث العنوان', 'danger');
-                    }
-                  );
-                  
+                  console.error(`Error updating ${addressType} address:`, error);
+                  this.presentToast('حدث خطأ أثناء تحديث العنوان', 'danger');
                   loading.dismiss();
                 }
               );
@@ -909,106 +832,61 @@ export class CheckoutPage implements OnInit, OnDestroy {
                   type: addressType
                 };
                 
-                // Update with empty values using AddressHelper
-                this.addressHelper.saveAddress(emptyAddress).subscribe(
+                // Update with empty values
+                this.addressService.updateAddress(addressType, emptyAddress).subscribe(
                   () => {
-                    console.log(`Address cleared successfully via helper`);
+                    console.log(`${addressType} address cleared successfully`);
                     
-                    // Refresh addresses in UI
-                    this.loadSavedAddresses();
+                    // Remove from UI saved addresses
+                    const index = this.savedAddresses.findIndex(a => 
+                      a.id === address.id || 
+                      a.id === addressType || 
+                      a.type === addressType
+                    );
+                    
+                    if (index !== -1) {
+                      this.savedAddresses.splice(index, 1);
+                    }
+                    
+                    // If this was the selected address, clear selection
+                    if (this.selectedAddressId === address.id || 
+                        this.selectedAddressId === addressType) {
+                      this.selectedAddressId = null;
+                      
+                      // If we have other addresses, select one
+                      if (this.savedAddresses.length > 0) {
+                        this.selectSavedAddress(this.savedAddresses[0]);
+                      }
+                    }
                     
                     this.presentToast('تم إزالة العنوان بنجاح', 'success');
                     loading.dismiss();
                   },
                   error => {
-                    console.error(`Error clearing address via helper:`, error);
-                    
-                    // Fallback to direct API call if helper fails
-                    this.addressService.updateAddress(addressType, emptyAddress).subscribe(
-                      () => {
-                        console.log(`${addressType} address cleared successfully via direct API`);
-                        
-                        // Remove from UI saved addresses
-                        const index = this.savedAddresses.findIndex(a => 
-                          a.id === address.id || 
-                          a.id === addressType || 
-                          a.type === addressType
-                        );
-                        
-                        if (index !== -1) {
-                          this.savedAddresses.splice(index, 1);
-                        }
-                        
-                        // If this was the selected address, clear selection
-                        if (this.selectedAddressId === address.id || 
-                            this.selectedAddressId === addressType) {
-                          this.selectedAddressId = null;
-                          
-                          // If we have other addresses, select one
-                          if (this.savedAddresses.length > 0) {
-                            this.selectSavedAddress(this.savedAddresses[0]);
-                          }
-                        }
-                        
-                        this.presentToast('تم إزالة العنوان بنجاح', 'success');
-                      },
-                      error => {
-                        console.error(`Error clearing ${addressType} address via direct API:`, error);
-                        this.presentToast('حدث خطأ أثناء إزالة العنوان', 'danger');
-                      }
-                    );
-                    
+                    console.error(`Error clearing ${addressType} address:`, error);
+                    this.presentToast('حدث خطأ أثناء إزالة العنوان', 'danger');
                     loading.dismiss();
                   }
                 );
               });
             } else {
-              // For custom addresses, use the AddressHelper to delete
-              // Show loading indicator
-              this.loadingController.create({
-                message: 'جاري إزالة العنوان...',
-                spinner: 'crescent'
-              }).then(loading => {
-                loading.present();
+              // For custom addresses, we can just remove from the local array
+              // This is for backward compatibility and may not be needed with our new approach
+              const index = this.savedAddresses.findIndex(a => a.id === address.id);
+              if (index !== -1) {
+                this.savedAddresses.splice(index, 1);
                 
-                // Delete using AddressHelper
-                this.addressHelper.deleteAddress(address.id).subscribe(
-                  () => {
-                    console.log('Custom address deleted successfully via helper');
-                    
-                    // Refresh the address list
-                    this.loadSavedAddresses();
-                    
-                    this.presentToast('تم إزالة العنوان بنجاح', 'success');
-                    loading.dismiss();
-                  },
-                  error => {
-                    console.error('Error deleting custom address via helper:', error);
-                    
-                    // If helper fails, just remove from the local array
-                    // This is for backward compatibility
-                    const index = this.savedAddresses.findIndex(a => a.id === address.id);
-                    if (index !== -1) {
-                      this.savedAddresses.splice(index, 1);
-                      
-                      // If this was the selected address, select another if available
-                      if (this.selectedAddressId === address.id) {
-                        this.selectedAddressId = null;
-                        
-                        if (this.savedAddresses.length > 0) {
-                          this.selectSavedAddress(this.savedAddresses[0]);
-                        }
-                      }
-                      
-                      this.presentToast('تم إزالة العنوان بنجاح', 'success');
-                    } else {
-                      this.presentToast('حدث خطأ أثناء إزالة العنوان', 'danger');
-                    }
-                    
-                    loading.dismiss();
+                // If this was the selected address, select another if available
+                if (this.selectedAddressId === address.id) {
+                  this.selectedAddressId = null;
+                  
+                  if (this.savedAddresses.length > 0) {
+                    this.selectSavedAddress(this.savedAddresses[0]);
                   }
-                );
-              });
+                }
+                
+                this.presentToast('تم إزالة العنوان بنجاح', 'success');
+              }
             }
           }
         }
@@ -1019,7 +897,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
   }
   
   // Set an address as default
-  async setDefaultAddress(address: any) {
+  setDefaultAddress(address: any) {
     // For shipping/billing addresses, we'll set them as default through the API
     if (address.id === 'shipping' || address.id === 'billing' || 
         address.type === 'shipping' || address.type === 'billing') {
@@ -1029,99 +907,58 @@ export class CheckoutPage implements OnInit, OnDestroy {
         : 'shipping';
       
       // Show loading indicator
-      const loading = await this.loadingController.create({
+      this.loadingController.create({
         message: 'جاري تعيين العنوان الافتراضي...',
         spinner: 'crescent'
+      }).then(loading => {
+        loading.present();
+        
+        // Update address with is_default flag
+        const updatedAddress: Address = {
+          ...address,
+          type: addressType,
+          is_default: true
+        };
+        
+        this.addressService.updateAddress(addressType, updatedAddress).subscribe(
+          () => {
+            console.log(`${addressType} address set as default successfully`);
+            
+            // Update UI addresses
+            this.savedAddresses.forEach(a => {
+              a.isDefault = (a.id === address.id || a.id === addressType || a.type === addressType);
+            });
+            
+            // Select this address
+            this.selectSavedAddress(address);
+            
+            this.presentToast('تم تعيين العنوان كعنوان افتراضي', 'success');
+            loading.dismiss();
+          },
+          error => {
+            console.error(`Error setting ${addressType} address as default:`, error);
+            this.presentToast('حدث خطأ أثناء تعيين العنوان الافتراضي', 'danger');
+            loading.dismiss();
+          }
+        );
       });
-      
-      await loading.present();
-        
-      // Update address with is_default flag
-      const updatedAddress: Address = {
-        ...address,
-        type: addressType,
-        is_default: true
-      };
-        
-      // Set default address using AddressHelper
-      this.addressHelper.setDefaultAddress(addressType).subscribe(
-        () => {
-          console.log(`Address set as default successfully via helper`);
-          
-          // Refresh the address list
-          this.loadSavedAddresses();
-          
-          this.presentToast('تم تعيين العنوان كعنوان افتراضي', 'success');
-          loading.dismiss();
-        },
-        error => {
-          console.error(`Error setting address as default via helper:`, error);
-          
-          // Fallback to direct API call if helper fails
-          this.addressService.updateAddress(addressType, updatedAddress).subscribe(
-            () => {
-              console.log(`${addressType} address set as default successfully via direct API`);
-              
-              // Update UI addresses
-              this.savedAddresses.forEach(a => {
-                a.isDefault = (a.id === address.id || a.id === addressType || a.type === addressType);
-              });
-              
-              // Select this address
-              this.selectSavedAddress(address);
-              
-              this.presentToast('تم تعيين العنوان كعنوان افتراضي', 'success');
-            },
-            error => {
-              console.error(`Error setting ${addressType} address as default via direct API:`, error);
-              this.presentToast('حدث خطأ أثناء تعيين العنوان الافتراضي', 'danger');
-            }
-          );
-          
-          loading.dismiss();
-        }
-      );
     } else {
-      // For custom addresses, use the AddressHelper to set as default
-      const loading = await this.loadingController.create({
-        message: 'جاري تعيين العنوان الافتراضي...',
-        spinner: 'crescent'
+      // For custom addresses, update the local array
+      // This is for backward compatibility and may not be needed with our new approach
+      this.savedAddresses.forEach(a => {
+        a.isDefault = a.id === address.id;
       });
       
-      await loading.present();
+      // Select this address
+      this.selectSavedAddress(address);
       
-      this.addressHelper.setDefaultAddress(address.id).subscribe(
-        () => {
-          console.log('Custom address set as default successfully via helper');
-          
-          // Refresh the address list
-          this.loadSavedAddresses();
-          
-          this.presentToast('تم تعيين العنوان كعنوان افتراضي', 'success');
-          loading.dismiss();
-        },
-        error => {
-          console.error('Error setting custom address as default via helper:', error);
-          
-          // If helper fails, just update the local array
-          // This is for backward compatibility
-          this.savedAddresses.forEach(a => {
-            a.isDefault = a.id === address.id;
-          });
-          
-          // Select this address
-          this.selectSavedAddress(address);
-          
-          this.presentToast('تم تعيين العنوان كعنوان افتراضي', 'success');
-          loading.dismiss();
-        }
-      );
+      this.presentToast('تم تعيين العنوان كعنوان افتراضي', 'success');
     }
   }
   
-  // Save addresses using the AddressHelper
+  // Save addresses using the AddressService
   saveAddressesToUser() {
-    console.log('Saving addresses using the AddressHelper');
+    console.log('Saving addresses using the Address service');
     
     // For each address in the savedAddresses array, save it to the API
     // The addresses created/edited in the UI will be custom addresses with generated IDs
@@ -1140,19 +977,13 @@ export class CheckoutPage implements OnInit, OnDestroy {
       
       let saveOperations = 0;
       let completedOperations = 0;
-      let errors = false;
       
       // Function to check if all operations are complete
       const checkCompletion = () => {
         completedOperations++;
         if (completedOperations === saveOperations) {
           loading.dismiss();
-          if (!errors) {
-            this.presentToast('تم حفظ العناوين بنجاح', 'success');
-            
-            // Refresh addresses list after saving
-            this.loadSavedAddresses();
-          }
+          this.presentToast('تم حفظ العناوين بنجاح', 'success');
         }
       };
       
@@ -1166,29 +997,15 @@ export class CheckoutPage implements OnInit, OnDestroy {
           is_default: true
         };
         
-        // Save using AddressHelper
-        this.addressHelper.saveAddress(addressToSave).subscribe(
+        this.addressService.updateAddress('billing', addressToSave).subscribe(
           () => {
-            console.log('Billing address saved successfully via helper');
+            console.log('Billing address saved successfully');
             checkCompletion();
           },
           error => {
-            console.error('Error saving billing address via helper:', error);
-            errors = true;
-            
-            // Fallback to direct API call
-            this.addressService.updateAddress('billing', addressToSave).subscribe(
-              () => {
-                console.log('Billing address saved successfully via direct API');
-                errors = false;
-              },
-              error => {
-                console.error('Error saving billing address via direct API:', error);
-                this.presentToast('حدث خطأ أثناء حفظ عنوان الفواتير', 'danger');
-              }
-            );
-            
-            checkCompletion();
+            console.error('Error saving billing address:', error);
+            this.presentToast('حدث خطأ أثناء حفظ عنوان الفواتير', 'danger');
+            loading.dismiss();
           }
         );
       }
@@ -1203,29 +1020,15 @@ export class CheckoutPage implements OnInit, OnDestroy {
           is_default: true
         };
         
-        // Save using AddressHelper
-        this.addressHelper.saveAddress(addressToSave).subscribe(
+        this.addressService.updateAddress('shipping', addressToSave).subscribe(
           () => {
-            console.log('Shipping address saved successfully via helper');
+            console.log('Shipping address saved successfully');
             checkCompletion();
           },
           error => {
-            console.error('Error saving shipping address via helper:', error);
-            errors = true;
-            
-            // Fallback to direct API call
-            this.addressService.updateAddress('shipping', addressToSave).subscribe(
-              () => {
-                console.log('Shipping address saved successfully via direct API');
-                errors = false;
-              },
-              error => {
-                console.error('Error saving shipping address via direct API:', error);
-                this.presentToast('حدث خطأ أثناء حفظ عنوان الشحن', 'danger');
-              }
-            );
-            
-            checkCompletion();
+            console.error('Error saving shipping address:', error);
+            this.presentToast('حدث خطأ أثناء حفظ عنوان الشحن', 'danger');
+            loading.dismiss();
           }
         );
       }
@@ -1233,9 +1036,6 @@ export class CheckoutPage implements OnInit, OnDestroy {
       // If no operations were scheduled, dismiss the loading indicator
       if (saveOperations === 0) {
         loading.dismiss();
-        
-        // Even with no operations, refresh the address list just in case
-        this.loadSavedAddresses();
       }
     });
   }

@@ -1,7 +1,7 @@
 export interface Address {
   id?: string | number;       // Optional for API response, can be string or number
   name?: string;              // User-friendly name for this address
-  type?: 'shipping' | 'billing' | string; // Allow string for type flexibility
+  type?: 'shipping' | 'billing';
   is_default?: boolean;
   first_name: string;
   last_name: string;

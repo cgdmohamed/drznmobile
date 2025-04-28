@@ -4,7 +4,6 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { RouterModule, Routes } from '@angular/router';
 import { AddressesPage } from './addresses.page';
-import { AddressHelper } from 'src/app/helpers/address-helper';
 
 const routes: Routes = [
   {
@@ -21,9 +20,6 @@ const routes: Routes = [
     IonicModule,
     RouterModule.forChild(routes)
   ],
-  declarations: [AddressesPage],
-  providers: [
-    AddressHelper
-  ]
+  declarations: [AddressesPage]
 })
 export class AddressesPageModule {}

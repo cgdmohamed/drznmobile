@@ -372,55 +372,6 @@ export class AddressService {
   }
   
   /**
-   * Delete an address (handles both standard and custom addresses)
-   * This is a convenience method for components
-   */
-  deleteAddress(type: 'billing' | 'shipping' | string | number): Observable<any> {
-    console.log(`Deleting address: ${type}`);
-    
-    // If it's a string but not 'billing' or 'shipping', treat as custom address ID
-    if (typeof type === 'string' && type !== 'billing' && type !== 'shipping') {
-      return this.deleteCustomAddress(type);
-    }
-    
-    // If it's a number, treat as custom address ID
-    if (typeof type === 'number') {
-      return this.deleteCustomAddress(type);
-    }
-    
-    // For billing/shipping, we create an empty address (can't fully delete)
-    const emptyAddress: Address = {
-      first_name: '',
-      last_name: '',
-      address_1: '',
-      city: '',
-      state: '',
-      postcode: '',
-      country: ''
-    };
-    
-    return this.updateAddress(type as 'billing' | 'shipping', emptyAddress);
-  }
-  
-  /**
-   * Set a standard address as default
-   */
-  setDefaultAddress(type: 'billing' | 'shipping'): Observable<any> {
-    console.log(`Setting ${type} address as default`);
-    return this.getAddress(type).pipe(
-      switchMap(address => {
-        // Set is_default to true
-        const updatedAddress = {
-          ...address,
-          is_default: true
-        };
-        
-        return this.updateAddress(type, updatedAddress);
-      })
-    );
-  }
-  
-  /**
    * Clear cache and reload all addresses
    */
   refreshAddresses(): Observable<any> {
