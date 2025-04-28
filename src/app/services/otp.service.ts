@@ -10,7 +10,7 @@ import { EnvironmentService } from './environment.service';
   providedIn: 'root'
 })
 export class OtpService {
-  private apiUrl = '/taqnyat-api';
+  private apiUrl = 'https://api.taqnyat.sa';
   private sender = 'DARZN';
   private readonly OTP_STORAGE_KEY = 'otp_verification_data';
   private readonly OTP_EXPIRATION_MINUTES = 10;

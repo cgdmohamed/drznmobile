@@ -4,9 +4,9 @@
 
 export const environment = {
   production: false,
-  // Use local proxy to avoid CORS issues
-  storeUrl: 'app.drzn.sa', 
-  apiUrl: '/wp-json/wc/v3',
+  // Direct API URLs without proxy
+  storeUrl: 'app.drzn.sa',
+  apiUrl: 'https://app.drzn.sa',
   consumerKey: 'ck_6255526889b609ea53066560b71fdc41da7b866f',
   consumerSecret: 'cs_bf2088d5f696a0b9f364d6090c48e9b4343c11a3',
   moyasarPublishableKey: 'pk_test_RU3BN2JEMDqyMGS6HcEiKcCw2bGhgR9tQnU6ihmY',
@@ -14,7 +14,7 @@ export const environment = {
   taqnyatApiKey: 'TAQNYAT_API_KEY_PLACEHOLDER',
   oneSignalAppId: '2a550f67-58af-4101-a500-28a97612f69c',
   // JWT Authentication
-  jwtAuthUrl: '/wp-json/jwt-auth/v1/token',
+  jwtAuthUrl: 'https://app.drzn.sa/wp-json/jwt-auth/v1/token',
   authCode: 'Wt9-Y+a5WPDJ7f+Uz{iKlOCs)S.J6oqMP/4M*KzJFr!NpIto5@3)hBZ9=*7#X.J', // Used for Simple JWT Login plugin
   
   // Note: Demo mode has been removed from the application

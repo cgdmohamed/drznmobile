@@ -70,8 +70,7 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
             "buildTarget": "app:build",
-            "disableHostCheck": true,
-            "proxyConfig": "proxy.conf.json"
+            "disableHostCheck": true
           },
           "configurations": {
             "production": {

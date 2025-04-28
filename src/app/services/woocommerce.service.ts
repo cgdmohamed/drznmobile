@@ -15,8 +15,8 @@ import { ToastController } from '@ionic/angular';
   providedIn: 'root'
 })
 export class WoocommerceService {
-  // Use local proxy to prevent CORS issues
-  private apiUrl = environment.apiUrl;
+  // Use direct API URL with full path
+  private apiUrl = `${environment.apiUrl}/wp-json/wc/v3`;
   private consumerKey = environment.consumerKey;
   private consumerSecret = environment.consumerSecret;
   

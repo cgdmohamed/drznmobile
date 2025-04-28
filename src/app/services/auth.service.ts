@@ -80,7 +80,7 @@ export class AuthService {
 
   // Login user
   login(username: string, password: string): Observable<any> {
-    const url = `${this.apiUrl}/wp-json/jwt-auth/v1/token`;
+    const url = environment.jwtAuthUrl;
     const body = { username, password };
     
     return this.http.post<{token: string, user: any}>(url, body).pipe(
@@ -148,7 +148,7 @@ export class AuthService {
   // Register a new user
   register(userData: any): Observable<any> {
     // First create the user account
-    const createUserUrl = `${this.apiUrl}/wp-json/wc/v3/customers`;
+    const createUserUrl = `${environment.apiUrl}/wp-json/wc/v3/customers`;
     
     const customerData = {
       email: userData.email,
@@ -230,7 +230,7 @@ export class AuthService {
     }
     
     // Create API endpoint URL
-    const updateUrl = `${this.apiUrl}/wp-json/wc/v3/customers/${currentUser.id}`;
+    const updateUrl = `${environment.apiUrl}/wp-json/wc/v3/customers/${currentUser.id}`;
     const authParams = `?consumer_key=${environment.consumerKey}&consumer_secret=${environment.consumerSecret}`;
     
     return this.http.put<any>(`${updateUrl}${authParams}`, userData).pipe(
@@ -257,7 +257,7 @@ export class AuthService {
   // Reset password
   forgotPassword(email: string): Observable<any> {
     // Use WordPress reset password endpoint
-    const resetUrl = `${this.apiUrl}/wp-json/wp/v2/users/lostpassword`;
+    const resetUrl = `${environment.apiUrl}/wp-json/wp/v2/users/lostpassword`;
     const body = { user_login: email };
     
     return this.http.post(resetUrl, body).pipe(
