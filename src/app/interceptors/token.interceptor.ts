@@ -20,7 +20,12 @@ export class TokenInterceptor implements HttpInterceptor {
   constructor(private jwtAuthService: JwtAuthService) {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    // Only intercept requests to our API
+    // Skip JWT token for WooCommerce endpoints that use consumer key/secret auth
+    if (request.url.includes('consumer_key=') && request.url.includes('consumer_secret=')) {
+      return next.handle(request);
+    }
+    
+    // Only intercept requests to our API that don't have consumer key auth
     if (request.url.startsWith(this.apiUrl)) {
       return from(this.jwtAuthService.getToken()).pipe(
         switchMap(token => {
