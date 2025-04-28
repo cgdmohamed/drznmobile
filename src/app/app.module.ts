@@ -19,6 +19,7 @@ import { TokenInterceptor } from './interceptors/token.interceptor';
 
 // Services
 import { JwtAuthService } from './services/jwt-auth.service';
+import { AddressHelper } from './helpers/address-helper';
 
 @NgModule({
   declarations: [AppComponent],
@@ -36,7 +37,8 @@ import { JwtAuthService } from './services/jwt-auth.service';
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true },
-    JwtAuthService
+    JwtAuthService,
+    AddressHelper
   ],
   bootstrap: [AppComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
