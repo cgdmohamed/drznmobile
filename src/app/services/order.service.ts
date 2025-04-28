@@ -9,7 +9,6 @@ import { Cart } from '../interfaces/cart.interface';
 import { ToastController, AlertController } from '@ionic/angular';
 import { AuthService } from './auth.service';
 import { NotificationService, NotificationData } from './notification.service';
-import { demoProducts } from '../demo/demo-products';
 
 @Injectable({
   providedIn: 'root'
@@ -408,119 +407,10 @@ export class OrderService {
       // It's already a prepared order object
       orderData = orderDataOrCart;
       
-      // If we're in demo mode, return a fake order
+      // If API credentials are missing, return an error
       if (!this.apiUrl || !this.consumerKey || !this.consumerSecret) {
-        console.log('Using demo order creation mode');
-        
-        // Create a fake order response
-        const demoOrder: Order = {
-          id: Math.floor(Math.random() * 10000),
-          number: `ORDER-${Date.now()}`,
-          status: 'processing',
-          date_created: new Date().toISOString(),
-          total: orderData.line_items.reduce((total: number, item: any) => 
-            total + (parseFloat(item.price || '0') * item.quantity), 0).toString(),
-          line_items: orderData.line_items.map((item: any) => ({
-            id: item.product_id,
-            name: `Product #${item.product_id}`,
-            product_id: item.product_id,
-            variation_id: 0,
-            quantity: item.quantity,
-            tax_class: '',
-            subtotal: '0',
-            subtotal_tax: '0',
-            total: '0',
-            total_tax: '0',
-            taxes: [],
-            meta_data: [],
-            sku: '',
-            price: 0,
-            image: {
-              id: '',
-              src: 'https://via.placeholder.com/50'
-            }
-          })),
-          // Add other required Order fields
-          parent_id: 0,
-          order_key: `wc_order_${Date.now()}`,
-          created_via: 'app',
-          version: '1.0',
-          currency: 'SAR',
-          date_modified: new Date().toISOString(),
-          discount_total: '0',
-          discount_tax: '0',
-          shipping_total: '0',
-          shipping_tax: '0',
-          cart_tax: '0',
-          total_tax: '0',
-          prices_include_tax: false,
-          customer_id: 0,
-          customer_ip_address: '',
-          customer_user_agent: '',
-          customer_note: orderData.customer_note || '',
-          billing: orderData.billing || {
-            first_name: '',
-            last_name: '',
-            company: '',
-            address_1: '',
-            address_2: '',
-            city: '',
-            state: '',
-            postcode: '',
-            country: 'SA',
-            email: '',
-            phone: ''
-          },
-          shipping: orderData.shipping || {
-            first_name: '',
-            last_name: '',
-            company: '',
-            address_1: '',
-            address_2: '',
-            city: '',
-            state: '',
-            postcode: '',
-            country: 'SA'
-          },
-          payment_method: orderData.payment_method || 'cod',
-          payment_method_title: orderData.payment_method_title || 'Cash on Delivery',
-          transaction_id: '',
-          date_paid: new Date().toISOString(),
-          date_completed: '',
-          cart_hash: '',
-          tax_lines: [],
-          shipping_lines: [{
-            id: 1,
-            method_title: 'Flat Rate',
-            method_id: 'flat_rate',
-            instance_id: '',
-            total: '0',
-            total_tax: '0',
-            taxes: [],
-            meta_data: []
-          }],
-          fee_lines: [],
-          coupon_lines: [],
-          refunds: [],
-          meta_data: orderData.meta_data || [],
-          _links: {
-            self: [{
-              href: ''
-            }],
-            collection: [{
-              href: ''
-            }]
-          }
-        };
-        
-        // Add to local orders list
-        const currentOrders = this.ordersValue;
-        const updatedOrders = [demoOrder, ...currentOrders];
-        this._orders.next(updatedOrders);
-        this.saveOrders(updatedOrders);
-        
-        this.presentToast('Order placed successfully!');
-        return of(demoOrder);
+        console.error('API credentials missing, cannot create order');
+        return throwError(() => new Error('API credentials are not configured. Please check your environment settings.'));
       }
     } else if (orderDataOrCart && orderDataOrCart.items && billingDetails) {
       // It's a cart object, need to build order data

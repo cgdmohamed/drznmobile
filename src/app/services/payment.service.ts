@@ -28,9 +28,7 @@ export class PaymentService {
   private moyasarPublishableKey = environment.moyasarPublishableKey;
   private _paymentResult = new BehaviorSubject<PaymentResult | null>(null);
   
-  // Use environment settings to determine whether to use demo payments
-  private useDemoPayments = environment.useDemoPayments;
-  private allowDemoCheckout = environment.allowDemoCheckout;
+  // All demo code has been completely removed
   
   constructor(
     private http: HttpClient,
@@ -38,13 +36,6 @@ export class PaymentService {
     private loadingController: LoadingController
   ) {
     console.log('Payment service initialized');
-    
-    // Force refresh of settings from environment
-    this.useDemoPayments = environment.useDemoPayments;
-    this.allowDemoCheckout = environment.allowDemoCheckout;
-    
-    console.log('Using demo payments:', this.useDemoPayments);
-    console.log('Allow demo checkout:', this.allowDemoCheckout);
     console.log('Moyasar API key:', this.moyasarPublishableKey ? 'available' : 'not available');
   }
   
@@ -181,10 +172,6 @@ export class PaymentService {
    * @param billingDetails The billing details
    */
   async processCreditCardPayment(cart: Cart, billingDetails: any): Promise<PaymentResult> {
-    // Check if we're using demo payments
-    if (this.useDemoPayments) {
-      return this.showDemoPaymentProcess(cart, 'البطاقة الائتمانية');
-    }
     
     const loading = await this.loadingController.create({
       message: 'جاري معالجة الدفع...',
@@ -435,10 +422,6 @@ export class PaymentService {
    * @param billingDetails The billing details
    */
   async processApplePay(cart: Cart, billingDetails: any): Promise<PaymentResult> {
-    // If using demo payments, show demo payment process
-    if (this.useDemoPayments) {
-      return this.showDemoPaymentProcess(cart, 'Apple Pay');
-    }
     
     // Check if Apple Pay is available
     if (!this.isApplePaySupported()) {
@@ -753,10 +736,6 @@ export class PaymentService {
    * @param billingDetails The billing details
    */
   async processSTCPay(cart: Cart, billingDetails: any): Promise<PaymentResult> {
-    // If using demo payments, show demo payment process
-    if (this.useDemoPayments) {
-      return this.showDemoPaymentProcess(cart, 'STC Pay');
-    }
     
     const loading = await this.loadingController.create({
       message: 'جاري تجهيز الدفع عبر STC Pay...',
