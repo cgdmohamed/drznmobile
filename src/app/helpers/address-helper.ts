@@ -15,7 +15,7 @@ import { JwtAuthService } from '../services/jwt-auth.service';
 export class AddressHelper {
   // Local cache for all addresses (billing, shipping, custom)
   private allAddresses: (Address | CustomAddress)[] = [];
-  private initialized = false;
+  public initialized = false;
   
   constructor(
     private addressService: AddressService,
