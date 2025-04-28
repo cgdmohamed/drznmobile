@@ -16,7 +16,7 @@ import { ToastController } from '@ionic/angular';
 })
 export class WoocommerceService {
   // Use direct API URL with full path
-  private apiUrl = `${environment.apiUrl}/wp-json/wc/v3`;
+  private apiUrl = environment.apiUrl;
   private consumerKey = environment.consumerKey;
   private consumerSecret = environment.consumerSecret;
   
