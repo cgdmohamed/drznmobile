@@ -80,14 +80,15 @@ export class AddressesPage implements OnInit, OnDestroy {
         console.log('User data loaded:', user);
         this.user = user;
         
-        // Check if user is authenticated
-        if (!user || !user.id) {
-          console.log('User not authenticated, cannot access addresses');
-          // Optional: show login alert here
+        // Check if user is authenticated and has a valid ID (greater than 0)
+        if (!user || !user.id || user.id === 0) {
+          console.log('User not authenticated or has invalid ID, cannot access addresses');
+          this.presentLoginAlert();
         }
       },
       (error) => {
         console.error('Error loading user data:', error);
+        this.presentLoginAlert();
       }
     );
   }
@@ -98,6 +99,13 @@ export class AddressesPage implements OnInit, OnDestroy {
   loadAddresses() {
     console.log('Loading addresses');
     this.isLoading = true;
+    
+    // Check if user has a valid ID
+    if (!this.user || !this.user.id || this.user.id === 0) {
+      console.log('User not authenticated or has invalid ID, cannot load addresses');
+      this.isLoading = false;
+      return;
+    }
     
     this.addressesSubscription = this.addressHelper.getAllAddresses().pipe(
       catchError(error => {
@@ -123,10 +131,14 @@ export class AddressesPage implements OnInit, OnDestroy {
    * Refresh addresses from the server
    */
   refreshAddresses(event?: any) {
-    // First ensure user is authenticated
-    if (!this.jwtAuthService.isAuthenticated) {
-      console.log('User not authenticated, cannot refresh addresses');
+    // First ensure user is authenticated and has a valid ID
+    if (!this.jwtAuthService.isAuthenticated || !this.user || !this.user.id || this.user.id === 0) {
+      console.log('User not authenticated or has invalid ID, cannot refresh addresses');
       if (event) event.target.complete();
+      // Present login alert if this was a manual refresh
+      if (!event) {
+        this.presentLoginAlert();
+      }
       return;
     }
     
@@ -150,8 +162,9 @@ export class AddressesPage implements OnInit, OnDestroy {
    * Open the form to add a new address
    */
   openAddressForm(type: 'shipping' | 'billing') {
-    // Check if user is authenticated
-    if (!this.jwtAuthService.isAuthenticated || !this.user) {
+    // Check if user is authenticated and has a valid ID
+    if (!this.jwtAuthService.isAuthenticated || !this.user || !this.user.id || this.user.id === 0) {
+      console.log('User not authenticated or has invalid ID, cannot open address form');
       this.presentLoginAlert();
       return;
     }
@@ -178,8 +191,9 @@ export class AddressesPage implements OnInit, OnDestroy {
    * Open the form to edit an existing address
    */
   editAddress(address: Address) {
-    // Check if user is authenticated
-    if (!this.jwtAuthService.isAuthenticated || !this.user) {
+    // Check if user is authenticated and has a valid ID
+    if (!this.jwtAuthService.isAuthenticated || !this.user || !this.user.id || this.user.id === 0) {
+      console.log('User not authenticated or has invalid ID, cannot edit address');
       this.presentLoginAlert();
       return;
     }
@@ -227,8 +241,9 @@ export class AddressesPage implements OnInit, OnDestroy {
       return;
     }
     
-    // Check if user is authenticated
-    if (!this.jwtAuthService.isAuthenticated || !this.user) {
+    // Check if user is authenticated and has a valid ID
+    if (!this.jwtAuthService.isAuthenticated || !this.user || !this.user.id || this.user.id === 0) {
+      console.log('User not authenticated or has invalid ID, cannot save address');
       this.presentLoginAlert();
       return;
     }
@@ -283,8 +298,9 @@ export class AddressesPage implements OnInit, OnDestroy {
    * Set an address as the default for checkout
    */
   setDefaultAddress(address: Address) {
-    // Check if user is authenticated
-    if (!this.jwtAuthService.isAuthenticated || !this.user) {
+    // Check if user is authenticated and has a valid ID
+    if (!this.jwtAuthService.isAuthenticated || !this.user || !this.user.id || this.user.id === 0) {
+      console.log('User not authenticated or has invalid ID, cannot set default address');
       this.presentLoginAlert();
       return;
     }
@@ -321,8 +337,9 @@ export class AddressesPage implements OnInit, OnDestroy {
    * Delete an address
    */
   deleteAddress(address: Address) {
-    // Check if user is authenticated
-    if (!this.jwtAuthService.isAuthenticated || !this.user) {
+    // Check if user is authenticated and has a valid ID
+    if (!this.jwtAuthService.isAuthenticated || !this.user || !this.user.id || this.user.id === 0) {
+      console.log('User not authenticated or has invalid ID, cannot delete address');
       this.presentLoginAlert();
       return;
     }
