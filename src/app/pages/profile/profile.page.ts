@@ -1,13 +1,14 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { IonicModule, NavController, AlertController } from '@ionic/angular';
+import { IonicModule, NavController, AlertController, Platform } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { JwtAuthService } from '../../services/jwt-auth.service';
 import { User } from '../../interfaces/user.interface';
 import { Subscription, combineLatest } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { ComponentsModule } from '../../components/components.module';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-profile',
@@ -26,7 +27,8 @@ export class ProfilePage implements OnInit, OnDestroy {
     private authService: AuthService,
     private jwtAuthService: JwtAuthService,
     private navCtrl: NavController,
-    private alertCtrl: AlertController
+    private alertCtrl: AlertController,
+    private platform: Platform
   ) {}
 
   ngOnInit() {
@@ -155,37 +157,94 @@ export class ProfilePage implements OnInit, OnDestroy {
     await alert.present();
   }
 
-  async deleteAccount() {
+  /**
+   * Navigate to the contact page
+   */
+  navigateToContact() {
+    this.navCtrl.navigateForward('/contact');
+  }
+
+  /**
+   * Open the app store page to rate the app
+   */
+  rateApp() {
+    const appId = this.platform.is('ios') ? 'id1234567890' : 'com.drzn.app';
+    
+    let storeUrl = '';
+    if (this.platform.is('ios')) {
+      storeUrl = `itms-apps://itunes.apple.com/app/${appId}?action=write-review`;
+    } else if (this.platform.is('android')) {
+      storeUrl = `market://details?id=${appId}`;
+    } else {
+      // Fallback to web URL if not on a mobile device
+      storeUrl = `https://play.google.com/store/apps/details?id=${appId}`;
+    }
+    
+    window.open(storeUrl, '_system');
+  }
+
+  /**
+   * Share the app with others
+   */
+  shareApp() {
+    const appName = 'تطبيق دزن';
+    const appUrl = this.platform.is('ios') 
+      ? 'https://apps.apple.com/app/id1234567890' 
+      : 'https://play.google.com/store/apps/details?id=com.drzn.app';
+    
+    if (navigator.share) {
+      navigator.share({
+        title: appName,
+        text: 'جرب تطبيق دزن للتسوق الإلكتروني!',
+        url: appUrl
+      }).catch((error) => {
+        console.error('Error sharing:', error);
+      });
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      const tempInput = document.createElement('input');
+      document.body.appendChild(tempInput);
+      tempInput.value = appUrl;
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      
+      this.presentToast('تم نسخ رابط التطبيق');
+    }
+  }
+
+  /**
+   * Open backend links for legal pages
+   */
+  openBackendLink(page: string) {
+    const baseUrl = environment.apiUrl.split('/wp-json')[0];
+    let pageUrl = '';
+    
+    switch (page) {
+      case 'privacy-policy':
+        pageUrl = `${baseUrl}/privacy-policy`;
+        break;
+      case 'terms-conditions':
+        pageUrl = `${baseUrl}/terms-conditions`;
+        break;
+      case 'shipping-delivery':
+        pageUrl = `${baseUrl}/shipping-delivery`;
+        break;
+      default:
+        pageUrl = baseUrl;
+    }
+    
+    window.open(pageUrl, '_system');
+  }
+
+  /**
+   * Show a toast message
+   */
+  async presentToast(message: string) {
     const alert = await this.alertCtrl.create({
-      header: 'حذف الحساب',
-      message: 'هل أنت متأكد من رغبتك في حذف حسابك؟ لا يمكن التراجع عن هذه العملية.',
-      cssClass: 'custom-alert',
-      buttons: [
-        {
-          text: 'إلغاء',
-          role: 'cancel',
-          cssClass: 'secondary'
-        }, {
-          text: 'حذف',
-          cssClass: 'danger',
-          handler: () => {
-            // This would typically call a service method to delete the account
-            // For now, we'll just logout the user
-            this.jwtAuthService.logout().subscribe({
-              next: () => {
-                console.log('Account deletion requested, logged out');
-                this.navCtrl.navigateRoot('/login');
-              },
-              error: (error) => {
-                console.error('Error during account deletion process', error);
-                // Fall back to legacy logout
-                this.authService.logout();
-                this.navCtrl.navigateRoot('/login');
-              }
-            });
-          }
-        }
-      ]
+      header: 'نجاح',
+      message: message,
+      buttons: ['حسناً']
     });
     await alert.present();
   }
