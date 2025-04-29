@@ -30,10 +30,8 @@ export class AddressHelper {
    */
   initialize(): void {
     console.log('Initializing AddressHelper');
-    if (!this.jwtAuthService.isAuthenticated) {
-      console.log('User not authenticated, skipping address initialization');
-      return;
-    }
+    // Always attempt to load addresses regardless of authentication state
+    // The loadAllAddresses method will handle unauthenticated users
     
     this.loadAllAddresses().subscribe(
       addresses => {

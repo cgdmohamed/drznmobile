@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { LoadingController, ToastController, AlertController } from '@ionic/angular';
+import { LoadingController, ToastController, AlertController, NavController } from '@ionic/angular';
 import { AuthService } from 'src/app/services/auth.service';
 import { AddressService, CustomAddress } from 'src/app/services/address.service';
 import { JwtAuthService } from 'src/app/services/jwt-auth.service';
@@ -34,7 +34,8 @@ export class AddressesPage implements OnInit, OnDestroy {
     private addressHelper: AddressHelper,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController,
-    private alertCtrl: AlertController
+    private alertCtrl: AlertController,
+    private navCtrl: NavController
   ) {
     this.addressForm = this.formBuilder.group({
       name: ['', Validators.required],
@@ -53,7 +54,35 @@ export class AddressesPage implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Just load data - the address API calls will return errors if not authenticated
+    console.log('AddressesPage: Initializing');
     this.loadData();
+  }
+  
+  // Present login alert
+  async presentLoginAlert() {
+    const alert = await this.alertCtrl.create({
+      header: 'تنبيه',
+      message: 'يجب تسجيل الدخول أولاً للوصول إلى العناوين',
+      buttons: [
+        {
+          text: 'إلغاء',
+          role: 'cancel',
+          handler: () => {
+            this.loadingCtrl.dismiss().catch(() => {});
+            history.back();
+          }
+        },
+        {
+          text: 'تسجيل الدخول',
+          handler: () => {
+            this.loadingCtrl.dismiss().catch(() => {});
+            this.navCtrl.navigateForward('/login');
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   ngOnDestroy() {

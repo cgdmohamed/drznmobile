@@ -89,21 +89,10 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
   
   navigateToAddresses() {
-    // Ensure the user is authenticated before navigating
-    if (this.user && this.user.id) {
-      this.navCtrl.navigateForward('/addresses');
-    } else {
-      // If user data is not loaded yet, try to get it from storage
-      this.jwtAuthService.getUser().then(user => {
-        if (user && user.id) {
-          this.navCtrl.navigateForward('/addresses');
-        } else {
-          this.presentAuthAlert();
-        }
-      }).catch(() => {
-        this.presentAuthAlert();
-      });
-    }
+    console.log('Attempting to navigate to addresses, current user:', this.user);
+    
+    // Just navigate to addresses page - the page itself will handle authentication checks
+    this.navCtrl.navigateForward('/addresses');
   }
   
   async presentAuthAlert() {
