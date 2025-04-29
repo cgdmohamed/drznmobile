@@ -1,15 +1,19 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { IonicModule, NavController, AlertController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { JwtAuthService } from '../../services/jwt-auth.service';
 import { User } from '../../interfaces/user.interface';
-import { NavController, AlertController } from '@ionic/angular';
 import { Subscription, combineLatest } from 'rxjs';
 import { take } from 'rxjs/operators';
+import { ComponentsModule } from '../../components/components.module';
 
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
+  standalone: false
 })
 export class ProfilePage implements OnInit, OnDestroy {
   user: User | null = null;
