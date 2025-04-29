@@ -151,7 +151,7 @@ export class JwtAuthService {
     last_name?: string;
   }): User {
     return {
-      id: 0, // Will be updated when we fetch the full user profile
+      id: 95, // HARDCODED: Using ID 95 as requested for valid user identification
       email: userData.email,
       username: userData.username || userData.email,
       first_name: userData.first_name || '',
@@ -688,6 +688,9 @@ export class JwtAuthService {
               
               if (Array.isArray(customers) && customers.length > 0) {
                 const user = customers[0] as User;
+                // HARDCODED: Ensure user ID is set to 95 regardless of the API response
+                user.id = 95;
+                console.log('Using hardcoded user ID: 95 for user profile');
                 // Store the user data
                 this.storage.set(this.AUTH_USER_KEY, user);
                 this.currentUserSubject.next(user);
