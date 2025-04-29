@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
+import { ValidUserGuard } from './guards/valid-user.guard';
 
 const routes: Routes = [
   {
@@ -79,7 +80,7 @@ const routes: Routes = [
   {
     path: 'addresses',
     loadChildren: () => import('./pages/addresses/addresses.module').then(m => m.AddressesPageModule),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, ValidUserGuard]
   },
   {
     path: 'search-results',

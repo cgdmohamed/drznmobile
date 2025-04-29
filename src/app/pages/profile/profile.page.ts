@@ -91,7 +91,14 @@ export class ProfilePage implements OnInit, OnDestroy {
   navigateToAddresses() {
     console.log('Attempting to navigate to addresses, current user:', this.user);
     
-    // Just navigate to addresses page - the page itself will handle authentication checks
+    // Check if user is authenticated and has a valid ID
+    if (!this.user || !this.user.id || this.user.id === 0) {
+      console.log('User has invalid ID, showing auth alert');
+      this.presentAuthAlert();
+      return;
+    }
+    
+    // If user is valid, navigate to addresses page
     this.navCtrl.navigateForward('/addresses');
   }
   
