@@ -1,11 +1,5 @@
-:host {
-  --ion-color-primary: #ec1c24;
-  --ion-color-success: #2dd36f;
-  --ion-color-danger: #eb445a;
-}
-
 ion-content {
-  --background: #f9f9f9;
+  --background: #f8f8f8;
 }
 
 .address-container {
@@ -16,303 +10,262 @@ ion-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   
   h3 {
+    margin: 0;
     font-size: 18px;
     font-weight: 600;
     color: #333;
-    margin: 0;
   }
   
   ion-button {
-    --color: var(--ion-color-primary);
-    font-size: 12px;
-    
-    ion-icon {
-      font-size: 16px;
-      margin-left: 4px;
-    }
+    --color: var(--ion-color-danger);
+    margin: 0;
+    font-size: 14px;
   }
 }
 
-.address-list-container {
-  margin-bottom: 24px;
-}
-
 .address-card {
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 16px;
-  overflow: hidden;
+  padding: 12px;
   
   .address-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    padding: 16px 16px 8px;
-    border-bottom: 1px solid #f0f0f0;
+    align-items: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
     
     .address-title {
       display: flex;
       align-items: center;
-      gap: 8px;
       
       h4 {
         margin: 0;
         font-size: 16px;
         font-weight: 600;
-        color: #333;
+        margin-right: 8px;
       }
       
       ion-badge {
-        font-size: 11px;
-        font-weight: normal;
-        --padding-top: 3px;
-        --padding-bottom: 3px;
-        --padding-start: 6px;
-        --padding-end: 6px;
+        font-size: 12px;
+        padding: 4px 8px;
       }
     }
     
     .address-actions {
       display: flex;
-      gap: 4px;
       
       ion-button {
         --padding-start: 4px;
         --padding-end: 4px;
         height: 32px;
-        
-        ion-icon {
-          font-size: 18px;
-        }
       }
     }
   }
   
   .address-content {
-    padding: 12px 16px;
+    margin-bottom: 10px;
     
     p {
-      margin: 4px 0;
+      margin: 5px 0;
       font-size: 14px;
       color: #555;
-      line-height: 1.5;
       
       &.customer-name {
-        font-weight: 600;
+        font-weight: 500;
         color: #333;
       }
     }
   }
   
   .address-footer {
-    padding: 0 16px 16px;
-    text-align: left;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+    display: flex;
+    justify-content: flex-end;
     
     ion-button {
-      --color: var(--ion-color-primary);
-      font-size: 13px;
-      font-weight: 500;
+      --color: var(--ion-color-danger);
+      font-size: 12px;
     }
   }
 }
 
 .empty-state {
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 24px 16px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 24px;
-  text-align: center;
   
   ion-icon {
-    font-size: 40px;
+    font-size: 48px;
     color: #ccc;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
   
   p {
-    color: #666;
+    text-align: center;
+    color: #777;
     margin-bottom: 16px;
     font-size: 14px;
   }
-  
-  ion-button {
-    --border-radius: 6px;
-    font-size: 13px;
-    
-    ion-icon {
-      font-size: 16px;
-      margin: 0 4px 0 0;
-      color: inherit;
-    }
-  }
 }
 
-// Address Form
-.address-form-container {
-  padding: 16px;
-  
-  .form-header {
-    text-align: center;
-    margin-bottom: 24px;
-    
-    h3 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #333;
-      margin: 0 0 6px 0;
-    }
-    
-    p {
-      font-size: 14px;
-      color: #666;
-      margin: 0;
-    }
-  }
-  
-  form {
-    background-color: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    padding: 20px 16px;
-    
-    ion-item {
-      --background: transparent;
-      --border-color: #eee;
-      --highlight-color-valid: var(--ion-color-primary);
-      --highlight-color-invalid: var(--ion-color-danger);
-      --highlight-color-focused: var(--ion-color-primary);
-      --padding-start: 0;
-      --inner-padding-end: 0;
-      
-      ion-label {
-        font-size: 14px;
-        color: #555;
-      }
-      
-      ion-input, ion-select {
-        --padding-start: 0;
-        font-size: 14px;
-      }
-    }
-    
-    .form-buttons {
-      margin-top: 24px;
-      
-      ion-button {
-        margin-bottom: 12px;
-        --border-radius: 8px;
-        
-        &:last-child {
-          margin-bottom: 0;
-        }
-      }
-    }
-  }
-}
-
-// Skeleton Loading
+// Skeleton loaders
 .skeleton-container {
-  .skeleton-title, .skeleton-button, .skeleton-name, .skeleton-badge, 
-  .skeleton-actions, .skeleton-line {
-    background: linear-gradient(90deg, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
-    background-size: 200% 100%;
-    animation: skeleton-loading 1.5s infinite;
+  margin-bottom: 24px;
+  
+  .skeleton-title {
+    height: 18px;
+    width: 120px;
+    background: #e0e0e0;
     border-radius: 4px;
   }
   
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    
-    .skeleton-title {
-      width: 100px;
-      height: 18px;
-    }
-    
-    .skeleton-button {
-      width: 80px;
-      height: 20px;
-    }
+  .skeleton-button {
+    height: 20px;
+    width: 80px;
+    background: #e0e0e0;
+    border-radius: 4px;
   }
   
   .skeleton-address-list {
-    margin-bottom: 24px;
+    margin-top: 12px;
   }
   
   .skeleton-address {
-    background-color: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    margin-bottom: 16px;
-    padding: 16px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     
     .skeleton-header {
       display: flex;
       justify-content: space-between;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #eee;
       padding-bottom: 10px;
-      border-bottom: 1px solid #f0f0f0;
-      margin-bottom: 10px;
       
       .skeleton-title-badge {
         display: flex;
         align-items: center;
-        gap: 8px;
         
         .skeleton-name {
-          width: 120px;
           height: 16px;
+          width: 100px;
+          background: #e0e0e0;
+          border-radius: 4px;
+          margin-right: 8px;
         }
         
         .skeleton-badge {
-          width: 50px;
           height: 16px;
+          width: 60px;
+          background: #e0e0e0;
           border-radius: 10px;
         }
       }
       
       .skeleton-actions {
+        height: 16px;
         width: 60px;
-        height: 20px;
+        background: #e0e0e0;
+        border-radius: 4px;
       }
     }
     
     .skeleton-content {
       .skeleton-line {
-        height: 12px;
+        height: 14px;
+        background: #e0e0e0;
+        border-radius: 4px;
         margin-bottom: 8px;
         
-        &:nth-child(3) {
+        &:nth-child(1) {
+          width: 80%;
+        }
+        
+        &:nth-child(2) {
           width: 70%;
         }
         
-        &:last-child {
-          width: 50%;
-          margin-bottom: 0;
+        &:nth-child(3) {
+          width: 60%;
         }
       }
     }
   }
 }
 
-@keyframes skeleton-loading {
-  0% {
-    background-position: 200% 0;
+// Address form
+.address-form-container {
+  padding: 16px;
+  
+  .form-header {
+    margin-bottom: 20px;
+    text-align: center;
+    
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    p {
+      color: #777;
+      font-size: 14px;
+    }
   }
-  100% {
-    background-position: -200% 0;
+  
+  ion-item {
+    --padding-start: 0;
+    --inner-padding-end: 0;
+    --background: transparent;
+    margin-bottom: 8px;
+  }
+  
+  .validation-error {
+    color: var(--ion-color-danger);
+    font-size: 12px;
+    margin: -5px 0 10px;
+    padding-right: 16px;
+  }
+  
+  .form-buttons {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    
+    ion-button {
+      margin: 0;
+    }
   }
 }
 
-// Validation Error
-.validation-error {
-  color: var(--ion-color-danger);
-  font-size: 12px;
-  margin: 4px 0 8px 16px;
+// RTL specific styles
+html[dir="rtl"] {
+  .address-title {
+    h4 {
+      margin-left: 8px;
+      margin-right: 0;
+    }
+  }
+  
+  .validation-error {
+    padding-left: 16px;
+    padding-right: 0;
+  }
 }

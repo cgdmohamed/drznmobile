@@ -167,8 +167,8 @@
   <!-- Address Form -->
   <div class="address-form-container" *ngIf="showAddressForm">
     <div class="form-header">
-      <h3 *ngIf="!editingAddressType">إضافة عنوان {{ currentAddressType === 'shipping' ? 'شحن' : 'فواتير' }} جديد</h3>
-      <h3 *ngIf="editingAddressType">تعديل عنوان {{ currentAddressType === 'shipping' ? 'الشحن' : 'الفواتير' }}</h3>
+      <h3 *ngIf="!editingAddressId">إضافة عنوان {{ currentAddressType === 'shipping' ? 'شحن' : 'فواتير' }} جديد</h3>
+      <h3 *ngIf="editingAddressId">تعديل عنوان {{ currentAddressType === 'shipping' ? 'الشحن' : 'الفواتير' }}</h3>
       <p>قم بإدخال تفاصيل العنوان الكاملة</p>
     </div>
     
@@ -264,7 +264,7 @@
       <ion-item lines="none">
         <div class="form-buttons">
           <ion-button expand="block" type="submit" color="danger">
-            {{ editingAddressType ? 'تحديث العنوان' : 'حفظ العنوان' }}
+            {{ editingAddressId ? 'تحديث العنوان' : 'حفظ العنوان' }}
           </ion-button>
           <ion-button expand="block" fill="outline" type="button" (click)="cancelAddressForm()">
             إلغاء
