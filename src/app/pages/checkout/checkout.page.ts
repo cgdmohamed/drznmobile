@@ -1444,15 +1444,52 @@ export class CheckoutPage implements OnInit, OnDestroy {
         },
         error => {
           loading.dismiss();
-          console.error('Error creating order', error);
-          this.presentToast('حدث خطأ أثناء إنشاء الطلب. الرجاء المحاولة مرة أخرى.', 'danger');
+          console.error('Error creating order:', error);
+          
+          // Provide a more specific error message based on the error response
+          let errorMessage = 'حدث خطأ أثناء إنشاء الطلب. الرجاء المحاولة مرة أخرى.';
+          
+          if (error.error && error.error.message) {
+            console.log('API error message:', error.error.message);
+            // Try to provide a more specific error based on the API response
+            if (error.error.code === 'woocommerce_rest_cannot_create') {
+              errorMessage = 'غير مسموح لك بإنشاء طلب. يرجى التأكد من تسجيل الدخول الصحيح.';
+            } else if (error.error.message.includes('authentication')) {
+              errorMessage = 'مشكلة في المصادقة. يرجى تسجيل الدخول مرة أخرى.';
+            }
+          } else if (error.status === 403) {
+            errorMessage = 'غير مصرح لك بإنشاء طلب. قد تحتاج إلى تسجيل الدخول مرة أخرى.';
+          } else if (error.status === 400) {
+            errorMessage = 'بيانات الطلب غير صحيحة. يرجى التحقق من المعلومات المدخلة.';
+          } else if (error.status === 0) {
+            errorMessage = 'تعذر الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.';
+          }
+          
+          this.presentToast(errorMessage, 'danger');
           this.placingOrder = false;
         }
       );
     } catch (error) {
       loading.dismiss();
       console.error('Exception during order placement:', error);
-      this.presentToast('حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى.', 'danger');
+      
+      // Provide more detailed error information for debugging
+      if (error instanceof Error) {
+        console.log('Error name:', error.name);
+        console.log('Error message:', error.message);
+        console.log('Error stack:', error.stack);
+      }
+      
+      let errorMessage = 'حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى.';
+      
+      // Try to provide a more helpful message based on the type of error
+      if (error.message && error.message.includes('network')) {
+        errorMessage = 'مشكلة في الاتصال بالإنترنت. يرجى التحقق من اتصالك والمحاولة مرة أخرى.';
+      } else if (error.message && error.message.includes('timeout')) {
+        errorMessage = 'استغرقت العملية وقتًا طويلاً. يرجى المحاولة مرة أخرى.';
+      }
+      
+      this.presentToast(errorMessage, 'danger');
       this.placingOrder = false;
     }
   }
@@ -1532,7 +1569,24 @@ export class CheckoutPage implements OnInit, OnDestroy {
       error => {
         loading.dismiss();
         console.error('Error verifying payment:', error);
-        this.presentToast('حدث خطأ أثناء التحقق من حالة الدفع', 'danger');
+        
+        // Provide more detailed error information for debugging
+        if (error.error) {
+          console.log('Error response data:', error.error);
+        }
+        
+        let errorMessage = 'حدث خطأ أثناء التحقق من حالة الدفع';
+        
+        // Try to be more specific based on error type
+        if (error.status === 0) {
+          errorMessage = 'تعذر الاتصال بخدمة الدفع. يرجى التحقق من اتصالك بالإنترنت.';
+        } else if (error.status === 404) {
+          errorMessage = 'معرف الدفع غير موجود أو تم إلغاؤه.';
+        } else if (error.status >= 500) {
+          errorMessage = 'هناك مشكلة في خدمة الدفع. يرجى المحاولة مرة أخرى لاحقًا.';
+        }
+        
+        this.presentToast(errorMessage, 'danger');
         this.step = 2; // Back to payment step
       }
     );
