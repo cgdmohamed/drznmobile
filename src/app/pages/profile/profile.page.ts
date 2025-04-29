@@ -163,6 +163,13 @@ export class ProfilePage implements OnInit, OnDestroy {
   navigateToContact() {
     this.navCtrl.navigateForward('/contact');
   }
+  
+  /**
+   * Navigate to the wishlist page
+   */
+  navigateToWishlist() {
+    this.navCtrl.navigateForward('/wishlist');
+  }
 
   /**
    * Open the app store page to rate the app
