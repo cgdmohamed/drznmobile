@@ -5,38 +5,39 @@ import { AuthService } from 'src/app/services/auth.service';
 import { AddressService, CustomAddress } from 'src/app/services/address.service';
 import { JwtAuthService } from 'src/app/services/jwt-auth.service';
 import { User } from 'src/app/interfaces/user.interface';
-import { Address, AddressResponse } from 'src/app/interfaces/address.interface';
-import { Subscription, forkJoin, Observable } from 'rxjs';
+import { Address } from 'src/app/interfaces/address.interface';
+import { Subscription, forkJoin, Observable, of } from 'rxjs';
+import { catchError, finalize, switchMap, tap } from 'rxjs/operators';
 import { AddressHelper } from 'src/app/helpers/address-helper';
 
 @Component({
   selector: 'app-addresses',
   templateUrl: './addresses.page.html',
-  styleUrls: ['./addresses.page.scss'],
+  styleUrls: ['./addresses.page.scss']
 })
 export class AddressesPage implements OnInit, OnDestroy {
-  // Transformed array of addresses from the billing and shipping objects
   addresses: Address[] = [];
   user: User | null = null;
   isLoading = true;
   showAddressForm = false;
   currentAddressType: 'shipping' | 'billing' = 'shipping';
-  editingAddressType: 'shipping' | 'billing' | null = null;
+  editingAddressId: string | number | null = null;
   addressForm: FormGroup;
-  private addressesSubscription: Subscription;
-  private userSubscription: Subscription;
+  
+  private userSubscription: Subscription | null = null;
+  private addressesSubscription: Subscription | null = null;
 
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
     private jwtAuthService: JwtAuthService,
-    private addressService: AddressService,
     private addressHelper: AddressHelper,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController,
     private alertCtrl: AlertController,
     private navCtrl: NavController
   ) {
+    // Create form with validation
     this.addressForm = this.formBuilder.group({
       name: ['', Validators.required],
       first_name: ['', Validators.required],
@@ -49,149 +50,172 @@ export class AddressesPage implements OnInit, OnDestroy {
       postcode: ['', Validators.required],
       country: ['SA', Validators.required],
       email: ['', [Validators.email]],
-      phone: ['']
+      phone: [''],
+      type: ['shipping'] // Hidden field to track the address type
     });
   }
 
   ngOnInit() {
-    // Just load data - the address API calls will return errors if not authenticated
     console.log('AddressesPage: Initializing');
-    this.loadData();
-  }
-  
-  // Present login alert
-  async presentLoginAlert() {
-    const alert = await this.alertCtrl.create({
-      header: 'تنبيه',
-      message: 'يجب تسجيل الدخول أولاً للوصول إلى العناوين',
-      buttons: [
-        {
-          text: 'إلغاء',
-          role: 'cancel',
-          handler: () => {
-            this.loadingCtrl.dismiss().catch(() => {});
-            history.back();
-          }
-        },
-        {
-          text: 'تسجيل الدخول',
-          handler: () => {
-            this.loadingCtrl.dismiss().catch(() => {});
-            this.navCtrl.navigateForward('/login');
-          }
-        }
-      ]
-    });
-    await alert.present();
+    this.loadUserData();
+    this.loadAddresses();
   }
 
   ngOnDestroy() {
-    if (this.addressesSubscription) {
-      this.addressesSubscription.unsubscribe();
-    }
-    
     if (this.userSubscription) {
       this.userSubscription.unsubscribe();
     }
+    
+    if (this.addressesSubscription) {
+      this.addressesSubscription.unsubscribe();
+    }
   }
 
-  loadData() {
-    console.log('Loading addresses page data');
+  /**
+   * Load the current user information
+   */
+  private loadUserData() {
+    this.userSubscription = this.jwtAuthService.getUserAsObservable().subscribe(
+      (user) => {
+        console.log('User data loaded:', user);
+        this.user = user;
+        
+        // Check if user is authenticated
+        if (!user || !user.id) {
+          console.log('User not authenticated, cannot access addresses');
+          // Optional: show login alert here
+        }
+      },
+      (error) => {
+        console.error('Error loading user data:', error);
+      }
+    );
+  }
+
+  /**
+   * Load all addresses for the user
+   */
+  loadAddresses() {
+    console.log('Loading addresses');
     this.isLoading = true;
     
-    // Load user data
-    this.userSubscription = this.authService.user.subscribe(user => {
-      this.user = user;
-      console.log('User loaded from AuthService:', user);
-      
-      // For debugging - log user's billing and shipping from their profile
-      if (user && user.billing) {
-        console.log('User has billing in profile:', user.billing);
-      }
-      if (user && user.shipping) {
-        console.log('User has shipping in profile:', user.shipping);
-      }
-    });
-    
-    // Load addresses using the address helper
-    console.log('Requesting addresses from address helper');
-    this.addressesSubscription = this.addressHelper.getAllAddresses().subscribe((allAddresses) => {
-      console.log('Received all addresses from helper:', allAddresses);
-      
-      // Convert to Address[] array for display
-      this.addresses = allAddresses as Address[];
-      console.log('Final addresses array:', this.addresses);
-      this.isLoading = false;
-    }, error => {
-      console.error('Error loading addresses:', error);
-      this.isLoading = false;
-      this.presentToast('فشل في تحميل العناوين', 'danger');
-      
-      // Fallback to user data directly
-      if (this.user) {
-        console.log('Attempting fallback to user profile data for addresses');
-        this.addresses = [];
+    this.addressesSubscription = this.addressHelper.getAllAddresses().pipe(
+      catchError(error => {
+        console.error('Error loading addresses:', error);
+        return of([]);
+      }),
+      finalize(() => {
+        this.isLoading = false;
+      })
+    ).subscribe(
+      (addresses) => {
+        console.log('Addresses loaded:', addresses);
+        this.addresses = addresses as Address[];
         
-        if (this.user.billing && this.user.billing.first_name) {
-          this.addresses.push({
-            ...this.user.billing,
-            type: 'billing',
-            is_default: true,
-            id: 'billing'
-          });
+        if (this.addresses.length === 0 && this.user && this.user.id) {
+          console.log('No addresses found for authenticated user');
         }
-        
-        if (this.user.shipping && this.user.shipping.first_name) {
-          this.addresses.push({
-            ...this.user.shipping,
-            type: 'shipping',
-            is_default: true,
-            id: 'shipping'
-          });
-        }
-        
-        console.log('Fallback addresses:', this.addresses);
       }
-    });
+    );
   }
 
+  /**
+   * Refresh addresses from the server
+   */
+  refreshAddresses(event?: any) {
+    // First ensure user is authenticated
+    if (!this.jwtAuthService.isAuthenticated) {
+      console.log('User not authenticated, cannot refresh addresses');
+      if (event) event.target.complete();
+      return;
+    }
+    
+    this.addressHelper.refreshAddresses().pipe(
+      finalize(() => {
+        if (event) event.target.complete();
+      })
+    ).subscribe(
+      (addresses) => {
+        console.log('Addresses refreshed:', addresses);
+        this.addresses = addresses as Address[];
+      },
+      (error) => {
+        console.error('Error refreshing addresses:', error);
+        this.presentToast('فشل في تحديث العناوين', 'danger');
+      }
+    );
+  }
+
+  /**
+   * Open the form to add a new address
+   */
   openAddressForm(type: 'shipping' | 'billing') {
+    // Check if user is authenticated
+    if (!this.jwtAuthService.isAuthenticated || !this.user) {
+      this.presentLoginAlert();
+      return;
+    }
+    
     this.currentAddressType = type;
-    this.editingAddressType = null;
+    this.editingAddressId = null;
     this.addressForm.reset();
     
     // Set default values
     this.addressForm.patchValue({
       name: type === 'shipping' ? 'عنوان الشحن' : 'عنوان الفواتير',
       country: 'SA',
+      type: type,
       first_name: this.user?.first_name || '',
       last_name: this.user?.last_name || '',
-      email: type === 'billing' ? this.user?.email : '',
-      phone: type === 'billing' ? this.user?.billing?.phone : ''
+      email: type === 'billing' ? this.user?.email || '' : '',
+      phone: type === 'billing' ? this.user?.billing?.phone || '' : ''
     });
     
     this.showAddressForm = true;
   }
 
+  /**
+   * Open the form to edit an existing address
+   */
   editAddress(address: Address) {
+    // Check if user is authenticated
+    if (!this.jwtAuthService.isAuthenticated || !this.user) {
+      this.presentLoginAlert();
+      return;
+    }
+    
     if (!address.type) {
       this.presentToast('نوع العنوان غير محدد', 'danger');
       return;
     }
     
     this.currentAddressType = address.type;
-    this.editingAddressType = address.type;
-    this.addressForm.patchValue(address);
+    this.editingAddressId = address.id;
+    
+    // Reset form and patch with address data
+    this.addressForm.reset();
+    this.addressForm.patchValue({
+      ...address,
+      type: address.type
+    });
+    
     this.showAddressForm = true;
   }
 
+  /**
+   * Cancel the address form
+   */
   cancelAddressForm() {
     this.showAddressForm = false;
-    this.editingAddressType = null;
+    this.editingAddressId = null;
     this.addressForm.reset();
   }
 
+  /**
+   * Save the address (create or update)
+   */
   saveAddress() {
+    // Validate the form
     if (!this.addressForm.valid) {
       // Mark all controls as touched to show validation errors
       Object.keys(this.addressForm.controls).forEach(key => {
@@ -203,6 +227,13 @@ export class AddressesPage implements OnInit, OnDestroy {
       return;
     }
     
+    // Check if user is authenticated
+    if (!this.jwtAuthService.isAuthenticated || !this.user) {
+      this.presentLoginAlert();
+      return;
+    }
+    
+    // Show loading indicator
     this.loadingCtrl.create({
       message: 'جاري حفظ العنوان...',
       spinner: 'crescent'
@@ -210,47 +241,51 @@ export class AddressesPage implements OnInit, OnDestroy {
       loading.present();
       
       const formData = this.addressForm.value;
+      const type = formData.type;
       
-      // Create address object with proper ID and type
+      // Create a complete address object
       const address: Address = {
         ...formData,
-        type: this.currentAddressType,
+        type: type,
         is_default: true
       };
       
-      // If editing, set the id
-      if (this.editingAddressType) {
-        address.id = this.editingAddressType;
+      // If editing, add the ID to the address
+      if (this.editingAddressId) {
+        address.id = this.editingAddressId;
       }
       
-      // Use the address helper to save the address
-      this.addressHelper.saveAddress(address).subscribe(
-        () => {
-          this.presentToast(
-            this.editingAddressType ? 'تم تحديث العنوان بنجاح' : 'تم إضافة العنوان بنجاح', 
-            'success'
-          );
-          
-          this.showAddressForm = false;
-          this.editingAddressType = null;
-          this.addressForm.reset();
-          
-          // Refresh the addresses list
-          this.loadData();
+      // Save the address using the helper
+      this.addressHelper.saveAddress(address).pipe(
+        finalize(() => {
           loading.dismiss();
+        })
+      ).subscribe(
+        () => {
+          const message = this.editingAddressId ? 'تم تحديث العنوان بنجاح' : 'تم إضافة العنوان بنجاح';
+          this.presentToast(message, 'success');
+          
+          // Close form and refresh addresses
+          this.showAddressForm = false;
+          this.editingAddressId = null;
+          this.addressForm.reset();
+          this.loadAddresses();
         },
-        error => {
+        (error) => {
           console.error('Error saving address:', error);
           this.presentToast('حدث خطأ أثناء حفظ العنوان', 'danger');
-          loading.dismiss();
         }
       );
     });
   }
 
+  /**
+   * Set an address as the default for checkout
+   */
   setDefaultAddress(address: Address) {
-    if (!address.type) {
-      this.presentToast('نوع العنوان غير محدد', 'danger');
+    // Check if user is authenticated
+    if (!this.jwtAuthService.isAuthenticated || !this.user) {
+      this.presentLoginAlert();
       return;
     }
     
@@ -265,39 +300,51 @@ export class AddressesPage implements OnInit, OnDestroy {
     }).then(loading => {
       loading.present();
       
-      this.addressHelper.setDefaultAddress(address.id).subscribe(
+      this.addressHelper.setDefaultAddress(address.id).pipe(
+        finalize(() => {
+          loading.dismiss();
+        })
+      ).subscribe(
         () => {
           this.presentToast('تم تعيين العنوان الافتراضي بنجاح', 'success');
-          // Refresh the addresses list
-          this.loadData();
-          loading.dismiss();
+          this.loadAddresses();
         },
-        error => {
+        (error) => {
           console.error('Error setting default address:', error);
           this.presentToast('حدث خطأ أثناء تعيين العنوان الافتراضي', 'danger');
-          loading.dismiss();
         }
       );
     });
   }
 
+  /**
+   * Delete an address
+   */
   deleteAddress(address: Address) {
+    // Check if user is authenticated
+    if (!this.jwtAuthService.isAuthenticated || !this.user) {
+      this.presentLoginAlert();
+      return;
+    }
+    
     if (!address.id) {
       this.presentToast('معرف العنوان غير محدد', 'danger');
       return;
     }
     
-    // Don't allow deletion of primary addresses
-    if (address.id === 'billing' || address.id === 'shipping') {
-      this.presentToast('لا يمكن حذف العناوين الأساسية', 'warning');
-      return;
-    }
-    
+    // Don't allow deletion of default addresses
     if (address.is_default) {
       this.presentToast('لا يمكن حذف العنوان الافتراضي', 'warning');
       return;
     }
     
+    // Primary addresses cannot be deleted
+    if (address.id === 'billing' || address.id === 'shipping') {
+      this.presentToast('لا يمكن حذف العنوان الأساسي', 'warning');
+      return;
+    }
+    
+    // Show confirmation alert
     this.alertCtrl.create({
       header: 'تأكيد الحذف',
       message: 'هل أنت متأكد من رغبتك في حذف هذا العنوان؟',
@@ -308,7 +355,6 @@ export class AddressesPage implements OnInit, OnDestroy {
         },
         {
           text: 'حذف',
-          role: 'destructive',
           handler: () => {
             this.loadingCtrl.create({
               message: 'جاري حذف العنوان...',
@@ -316,17 +362,18 @@ export class AddressesPage implements OnInit, OnDestroy {
             }).then(loading => {
               loading.present();
               
-              this.addressHelper.deleteAddress(address.id).subscribe(
+              this.addressHelper.deleteAddress(address.id).pipe(
+                finalize(() => {
+                  loading.dismiss();
+                })
+              ).subscribe(
                 () => {
                   this.presentToast('تم حذف العنوان بنجاح', 'success');
-                  // Refresh the addresses list
-                  this.loadData();
-                  loading.dismiss();
+                  this.loadAddresses();
                 },
-                error => {
+                (error) => {
                   console.error('Error deleting address:', error);
                   this.presentToast('حدث خطأ أثناء حذف العنوان', 'danger');
-                  loading.dismiss();
                 }
               );
             });
@@ -336,6 +383,38 @@ export class AddressesPage implements OnInit, OnDestroy {
     }).then(alert => alert.present());
   }
 
+  /**
+   * Present a login alert when user tries to access addresses without authentication
+   */
+  async presentLoginAlert() {
+    const alert = await this.alertCtrl.create({
+      header: 'تنبيه',
+      message: 'يجب تسجيل الدخول أولاً للوصول إلى العناوين',
+      buttons: [
+        {
+          text: 'إلغاء',
+          role: 'cancel',
+          handler: () => {
+            // Go back to previous page
+            this.navCtrl.back();
+          }
+        },
+        {
+          text: 'تسجيل الدخول',
+          handler: () => {
+            // Navigate to login page
+            this.navCtrl.navigateForward('/login');
+          }
+        }
+      ]
+    });
+    
+    await alert.present();
+  }
+
+  /**
+   * Present a toast message
+   */
   async presentToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
     const toast = await this.toastCtrl.create({
       message,
@@ -344,10 +423,13 @@ export class AddressesPage implements OnInit, OnDestroy {
       color,
       cssClass: 'toast-custom'
     });
-    toast.present();
+    
+    await toast.present();
   }
 
-  // Check if form control is invalid
+  /**
+   * Check if a form field is invalid
+   */
   isFieldInvalid(field: string): boolean {
     const control = this.addressForm.get(field);
     return !!(control && control.invalid && (control.dirty || control.touched));
