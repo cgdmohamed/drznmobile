@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="900" height="200" viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1DA1F2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0077B5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" rx="10" ry="10" fill="url(#grad2)" />
+  <text x="50" y="80" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="white">تخفيضات الموسم</text>
+  <text x="50" y="120" font-family="Arial, sans-serif" font-size="24" fill="white">تشكيلة جديدة من الإكسسوارات</text>
+  <text x="50" y="160" font-family="Arial, sans-serif" font-size="18" fill="white">اكتشف المجموعة الآن</text>
+  
+  <!-- Simple icon for accessories -->
+  <g transform="translate(730,100) scale(0.8)">
+    <circle cx="0" cy="0" r="60" fill="white" fill-opacity="0.2" />
+    <path d="M-30,-15 L30,-15 C35,-15 40,-10 40,-5 L40,15 C40,20 35,25 30,25 L-30,25 C-35,25 -40,20 -40,15 L-40,-5 C-40,-10 -35,-15 -30,-15 Z" stroke="white" stroke-width="3" fill="none" />
+    <circle cx="-15" cy="25" r="8" stroke="white" stroke-width="2" fill="none" />
+    <circle cx="15" cy="25" r="8" stroke="white" stroke-width="2" fill="none" />
+  </g>
+</svg>

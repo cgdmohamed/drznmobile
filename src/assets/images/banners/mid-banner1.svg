@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="900" height="200" viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ec1c24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff5e62;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" rx="10" ry="10" fill="url(#grad1)" />
+  <text x="50" y="80" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="white">خصم حصري</text>
+  <text x="50" y="120" font-family="Arial, sans-serif" font-size="24" fill="white">حتى 50٪ على الملابس الرياضية</text>
+  <text x="50" y="160" font-family="Arial, sans-serif" font-size="18" fill="white">العرض ساري حتى نهاية الشهر</text>
+  <circle cx="750" cy="100" r="60" fill="white" fill-opacity="0.2" />
+  <circle cx="750" cy="100" r="40" fill="white" fill-opacity="0.3" />
+  <path d="M750 70 L750 130 M720 100 L780 100" stroke="white" stroke-width="8" />
+</svg>

@@ -285,6 +285,48 @@
   }
 }
 
+// Mid banners
+.mid-banner {
+  margin: 24px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .mid-banner-img {
+    width: 100%;
+    border-radius: 8px;
+    display: block;
+  }
+}
+
+// Bottom banner
+.bottom-banner {
+  margin: 24px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .bottom-banner-img {
+    width: 100%;
+    border-radius: 8px;
+    display: block;
+  }
+}
+
 // RTL specific styles
 :host-context([dir="rtl"]) {
   .product-price {

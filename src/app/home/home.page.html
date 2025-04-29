@@ -85,6 +85,11 @@
       description="مبنية على تفضيلاتك السابقة"
       [maxItems]="8">
     </app-recommendation-carousel>
+    
+    <!-- Mid Banner 1 -->
+    <div class="mid-banner" *ngIf="!isLoading">
+      <img src="assets/images/banners/mid-banner1.svg" alt="خصم حصري" class="mid-banner-img" routerLink="/products/sale">
+    </div>
 
     <!-- Featured products -->
     <div class="section-header">
@@ -125,6 +130,11 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Mid Banner 2 -->
+    <div class="mid-banner" *ngIf="!isLoading">
+      <img src="assets/images/banners/mid-banner2.svg" alt="تخفيضات الموسم" class="mid-banner-img" routerLink="/products/accessories">
     </div>
 
     <!-- New arrivals -->
@@ -207,6 +217,11 @@
           </div>
         </div>
       </div>
+    </div>
+    
+    <!-- Bottom Newsletter Banner -->
+    <div class="bottom-banner" *ngIf="!isLoading">
+      <img src="assets/images/banners/bottom-banner.svg" alt="النشرة البريدية" class="bottom-banner-img" routerLink="/newsletter">
     </div>
   </div>
 </ion-content>
