@@ -19,6 +19,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   user: User | null = null;
   orderStatusTabs = ['in-progress', 'delivered', 'returned'];
   activeTab = 'in-progress';
+  orders: any[] = [];
   private authSubscription: Subscription | null = null;
 
   constructor(
@@ -85,6 +86,44 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   goToPage(route: string) {
     this.navCtrl.navigateForward(route);
+  }
+  
+  navigateToAddresses() {
+    // Ensure the user is authenticated before navigating
+    if (this.user && this.user.id) {
+      this.navCtrl.navigateForward('/addresses');
+    } else {
+      // If user data is not loaded yet, try to get it from storage
+      this.jwtAuthService.getUser().then(user => {
+        if (user && user.id) {
+          this.navCtrl.navigateForward('/addresses');
+        } else {
+          this.presentAuthAlert();
+        }
+      }).catch(() => {
+        this.presentAuthAlert();
+      });
+    }
+  }
+  
+  async presentAuthAlert() {
+    const alert = await this.alertCtrl.create({
+      header: 'تنبيه',
+      message: 'يجب تسجيل الدخول أولاً للوصول إلى العناوين',
+      buttons: [
+        {
+          text: 'إلغاء',
+          role: 'cancel'
+        },
+        {
+          text: 'تسجيل الدخول',
+          handler: () => {
+            this.navCtrl.navigateForward('/login');
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   async logout() {
