@@ -63,46 +63,16 @@ export class SplashScreenService {
     splash.style.right = '0';
     splash.style.bottom = '0';
     splash.style.zIndex = '99999';
-    splash.style.background = '#E9324A';
+    splash.style.backgroundImage = 'url(assets/splash/splash.png)';
+    splash.style.backgroundSize = 'cover';
+    splash.style.backgroundPosition = 'center';
     splash.style.display = 'flex';
     splash.style.flexDirection = 'column';
     splash.style.alignItems = 'center';
     splash.style.justifyContent = 'center';
     splash.style.transition = 'opacity 0.5s ease-out';
 
-    // Add logo
-    const logo = document.createElement('img');
-    logo.src = 'assets/images/logo.svg';
-    logo.alt = 'DARZN Logo';
-    logo.style.width = '180px';
-    logo.style.marginBottom = '30px';
-    splash.appendChild(logo);
-
-    // Add spinner
-    const spinnerContainer = document.createElement('div');
-    spinnerContainer.style.width = '40px';
-    spinnerContainer.style.height = '40px';
-    spinnerContainer.style.position = 'relative';
-
-    const spinner = document.createElement('div');
-    spinner.style.border = '4px solid rgba(255, 255, 255, 0.3)';
-    spinner.style.borderRadius = '50%';
-    spinner.style.borderTop = '4px solid #ffffff';
-    spinner.style.width = '40px';
-    spinner.style.height = '40px';
-    spinner.style.animation = 'splash-spin 1s linear infinite';
-    spinnerContainer.appendChild(spinner);
-    splash.appendChild(spinnerContainer);
-
-    // Add animation style
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes splash-spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    `;
-    document.head.appendChild(style);
+    // No spinner - just using the full-screen splash image
 
     // Append to body
     document.body.appendChild(splash);
