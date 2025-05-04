@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
-import { LoadingController, AlertController, ToastController, ModalController } from '@ionic/angular';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
+import { IonicModule, LoadingController, AlertController, ToastController, ModalController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { CartService } from '../../services/cart.service';
 import { OrderService } from '../../services/order.service';
@@ -29,6 +30,8 @@ export type CheckoutStep = 'shipping' | 'payment' | 'confirmation';
   selector: 'app-checkout',
   templateUrl: './checkout-new.page.html',
   styleUrls: ['./checkout-new.page.scss'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule, RouterModule]
 })
 export class CheckoutNewPage implements OnInit, OnDestroy {
   // Basic data
@@ -278,7 +281,7 @@ export class CheckoutNewPage implements OnInit, OnDestroy {
     window.scrollTo(0, 0);
   }
   
-  // Handle step change from checkout-steps component
+  // Handle step change from step indicator
   onStepChange(step: CheckoutStep) {
     // Only allow going back to previous steps
     if (

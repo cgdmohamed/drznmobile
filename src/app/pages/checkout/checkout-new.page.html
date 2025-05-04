@@ -15,7 +15,8 @@
     <div class="step-indicator-wrapper">
       <div class="step-indicator">
         <div class="step" 
-             [ngClass]="{'active': currentStep === 'shipping', 'completed': currentStep === 'payment' || currentStep === 'confirmation'}">
+             [ngClass]="{'active': currentStep === 'shipping', 'completed': currentStep === 'payment' || currentStep === 'confirmation'}"
+             (click)="onStepChange('shipping')">
           <div class="step-number">
             <ng-container *ngIf="currentStep === 'payment' || currentStep === 'confirmation'; else stepNumber1">
               <ion-icon name="checkmark"></ion-icon>
@@ -28,7 +29,8 @@
         <div class="step-line"></div>
         
         <div class="step" 
-             [ngClass]="{'active': currentStep === 'payment', 'completed': currentStep === 'confirmation'}">
+             [ngClass]="{'active': currentStep === 'payment', 'completed': currentStep === 'confirmation'}"
+             (click)="onStepChange('payment')">
           <div class="step-number">
             <ng-container *ngIf="currentStep === 'confirmation'; else stepNumber2">
               <ion-icon name="checkmark"></ion-icon>
