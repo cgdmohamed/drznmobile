@@ -14,6 +14,7 @@ import { AddressHelper } from '../../helpers/address-helper';
 import { User } from '../../interfaces/user.interface';
 import { Cart } from '../../interfaces/cart.interface';
 import { Address, AddressResponse } from '../../interfaces/address.interface';
+import { CheckoutStep } from '../../components/checkout-steps/checkout-steps.component';
 
 
 /**
@@ -36,17 +37,29 @@ export class CheckoutPage implements OnInit, OnDestroy {
   user: User;
   shippingForm: FormGroup;
   paymentMethod = 'creditCard'; // Default payment method
-  step = 0; // 0: Initial OTP Verification, 1: Shipping, 2: Payment, 3: Review, 4: Confirmation
+  
+  // New multi-step checkout flow
+  currentStep: CheckoutStep = 'shipping';
   isLoading = true;
+  
+  // Verification and order states
   otpConfirmed = false;
   otpVerificationInProgress = false;
   verificationCode = '';
   placingOrder = false;
   orderId: number | null = null;
-  creditCardFormSubmitted = false; // Track if the credit card form has been submitted
-  paymentId: string | null = null; // Store the payment ID from Moyasar
-  showCreditCardModal = false; // Control for the credit card modal
-  isApplePayAvailable = false; // Flag to check if Apple Pay is available
+  
+  // Payment related properties
+  creditCardFormSubmitted = false;
+  paymentId: string | null = null;
+  phoneNumber: string = '';
+  showCreditCardForm = false;
+  isApplePayAvailable = false;
+  isStcPaySelected = false;
+  creditCardHolderName: string = '';
+  creditCardNumber: string = '';
+  creditCardExpiry: string = '';
+  creditCardCvc: string = '';
   
   // Address management
   savedAddresses: any[] = [];

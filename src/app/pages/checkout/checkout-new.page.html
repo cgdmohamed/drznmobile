@@ -1,0 +1,312 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/cart" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>
+      {{ currentStep === 'shipping' ? 'إتمام الطلب' : currentStep === 'payment' ? 'طريقة الدفع' : 'تأكيد الطلب' }}
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="checkout-container">
+    <!-- Step indicator -->
+    <div class="step-indicator-wrapper">
+      <div class="step-indicator">
+        <div class="step" 
+             [ngClass]="{'active': currentStep === 'shipping', 'completed': currentStep === 'payment' || currentStep === 'confirmation'}">
+          <div class="step-number">
+            <ng-container *ngIf="currentStep === 'payment' || currentStep === 'confirmation'; else stepNumber1">
+              <ion-icon name="checkmark"></ion-icon>
+            </ng-container>
+            <ng-template #stepNumber1>1</ng-template>
+          </div>
+          <div class="step-label">الشحن</div>
+        </div>
+        
+        <div class="step-line"></div>
+        
+        <div class="step" 
+             [ngClass]="{'active': currentStep === 'payment', 'completed': currentStep === 'confirmation'}">
+          <div class="step-number">
+            <ng-container *ngIf="currentStep === 'confirmation'; else stepNumber2">
+              <ion-icon name="checkmark"></ion-icon>
+            </ng-container>
+            <ng-template #stepNumber2>2</ng-template>
+          </div>
+          <div class="step-label">الدفع</div>
+        </div>
+        
+        <div class="step-line"></div>
+        
+        <div class="step" 
+             [ngClass]="{'active': currentStep === 'confirmation'}">
+          <div class="step-number">3</div>
+          <div class="step-label">التأكيد</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shipping Information (Step 1) -->
+    <div *ngIf="currentStep === 'shipping'" class="section-container">
+      <h2 class="section-title">معلومات الشحن</h2>
+      
+      <!-- Saved addresses section -->
+      <div *ngIf="savedAddresses && savedAddresses.length > 0" class="saved-addresses">
+        <div class="address-card" *ngFor="let address of savedAddresses" 
+             [ngClass]="{'selected': selectedAddressId === address.id}"
+             (click)="selectAddress(address.id)">
+          <h3 class="address-name">{{ address.name || 'المنزل' }}</h3>
+          <p class="address-details">
+            {{ address.first_name }} {{ address.last_name }}<br>
+            {{ address.address_1 }}<br>
+            {{ address.city }}, {{ address.state }}<br>
+            {{ address.phone }}
+          </p>
+          <div class="address-email">{{ address.email }}</div>
+        </div>
+      </div>
+      
+      <!-- Add new address form -->
+      <div class="divider-text">أو إضافة عنوان جديد</div>
+      
+      <form [formGroup]="shippingForm" (ngSubmit)="nextStep()">
+        <div class="form-row">
+          <ion-item>
+            <ion-input formControlName="firstName" label="الاسم الأول" placeholder="الاسم الأول"></ion-input>
+          </ion-item>
+          <div class="validation-error" 
+               *ngIf="shippingForm.get('firstName')?.invalid && (shippingForm.get('firstName')?.dirty || shippingForm.get('firstName')?.touched)">
+            الاسم الأول مطلوب
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <ion-item>
+            <ion-input formControlName="lastName" label="الاسم الأخير" placeholder="الاسم الأخير"></ion-input>
+          </ion-item>
+          <div class="validation-error" 
+               *ngIf="shippingForm.get('lastName')?.invalid && (shippingForm.get('lastName')?.dirty || shippingForm.get('lastName')?.touched)">
+            الاسم الأخير مطلوب
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <ion-item>
+            <ion-input formControlName="address1" label="رقم البناية واسم الشارع" placeholder="رقم البناية واسم الشارع"></ion-input>
+          </ion-item>
+          <div class="validation-error" 
+               *ngIf="shippingForm.get('address1')?.invalid && (shippingForm.get('address1')?.dirty || shippingForm.get('address1')?.touched)">
+            العنوان مطلوب
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <ion-item>
+            <ion-select formControlName="city" label="الحي / المنطقة" placeholder="اختر المنطقة" interface="action-sheet">
+              <ion-select-option value="الرياض">الرياض</ion-select-option>
+              <ion-select-option value="جدة">جدة</ion-select-option>
+              <ion-select-option value="مكة">مكة</ion-select-option>
+              <ion-select-option value="المدينة">المدينة</ion-select-option>
+              <ion-select-option value="الدمام">الدمام</ion-select-option>
+            </ion-select>
+          </ion-item>
+          <div class="validation-error" 
+               *ngIf="shippingForm.get('city')?.invalid && (shippingForm.get('city')?.dirty || shippingForm.get('city')?.touched)">
+            المدينة مطلوبة
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <ion-item>
+            <ion-input formControlName="state" value="الرياض" readonly label="المدينة"></ion-input>
+          </ion-item>
+        </div>
+        
+        <div class="form-row">
+          <ion-item>
+            <ion-input formControlName="country" value="المملكة العربية السعودية" readonly label="البلد"></ion-input>
+          </ion-item>
+        </div>
+        
+        <div class="form-row">
+          <ion-item>
+            <ion-input formControlName="phone" label="رقم الجوال" placeholder="05xxxxxxxx" type="tel"></ion-input>
+          </ion-item>
+          <div class="validation-error" 
+               *ngIf="shippingForm.get('phone')?.invalid && (shippingForm.get('phone')?.dirty || shippingForm.get('phone')?.touched)">
+            رقم الجوال مطلوب
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <ion-item>
+            <ion-input formControlName="email" label="البريد الإلكتروني" placeholder="example@email.com" type="email"></ion-input>
+          </ion-item>
+          <div class="validation-error" 
+               *ngIf="shippingForm.get('email')?.invalid && (shippingForm.get('email')?.dirty || shippingForm.get('email')?.touched)">
+            البريد الإلكتروني غير صحيح
+          </div>
+        </div>
+        
+        <div class="nav-buttons">
+          <ion-button type="submit" expand="block" [disabled]="!shippingForm.valid && !selectedAddressId">
+            متابعة إلى الدفع
+          </ion-button>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Payment Method (Step 2) -->
+    <div *ngIf="currentStep === 'payment'" class="section-container">
+      <h2 class="section-title">طريقة الدفع</h2>
+      
+      <div class="payment-methods">
+        <div class="payment-method-item" 
+             [ngClass]="{'selected': paymentMethod === 'creditCard'}"
+             (click)="selectPaymentMethod('creditCard')">
+          <div class="payment-method-radio">
+            <ion-icon name="radio-button-on-outline" *ngIf="paymentMethod === 'creditCard'"></ion-icon>
+            <ion-icon name="radio-button-off-outline" *ngIf="paymentMethod !== 'creditCard'"></ion-icon>
+          </div>
+          <div class="payment-method-content">
+            <div class="payment-method-title">البطاقات الائتمانية</div>
+            <div class="payment-method-cards">
+              <img src="assets/icons/payment/mada.svg" alt="Mada">
+              <img src="assets/icons/payment/visa.svg" alt="Visa">
+              <img src="assets/icons/payment/mastercard.svg" alt="Mastercard">
+            </div>
+          </div>
+        </div>
+        
+        <div *ngIf="isApplePayAvailable" class="payment-method-item" 
+             [ngClass]="{'selected': paymentMethod === 'applePay'}"
+             (click)="selectPaymentMethod('applePay')">
+          <div class="payment-method-radio">
+            <ion-icon name="radio-button-on-outline" *ngIf="paymentMethod === 'applePay'"></ion-icon>
+            <ion-icon name="radio-button-off-outline" *ngIf="paymentMethod !== 'applePay'"></ion-icon>
+          </div>
+          <div class="payment-method-content">
+            <div class="payment-method-title">Apple Pay</div>
+            <div class="payment-method-cards">
+              <img src="assets/icons/payment/applepay.svg" alt="Apple Pay">
+            </div>
+          </div>
+        </div>
+        
+        <div class="payment-method-item" 
+             [ngClass]="{'selected': paymentMethod === 'stcPay'}"
+             (click)="selectPaymentMethod('stcPay')">
+          <div class="payment-method-radio">
+            <ion-icon name="radio-button-on-outline" *ngIf="paymentMethod === 'stcPay'"></ion-icon>
+            <ion-icon name="radio-button-off-outline" *ngIf="paymentMethod !== 'stcPay'"></ion-icon>
+          </div>
+          <div class="payment-method-content">
+            <div class="payment-method-title">STCPay</div>
+            <div class="payment-method-cards">
+              <img src="assets/icons/payment/stcpay.svg" alt="STC Pay">
+            </div>
+          </div>
+        </div>
+        
+        <div class="payment-method-item" 
+             [ngClass]="{'selected': paymentMethod === 'cod'}"
+             (click)="selectPaymentMethod('cod')">
+          <div class="payment-method-radio">
+            <ion-icon name="radio-button-on-outline" *ngIf="paymentMethod === 'cod'"></ion-icon>
+            <ion-icon name="radio-button-off-outline" *ngIf="paymentMethod !== 'cod'"></ion-icon>
+          </div>
+          <div class="payment-method-content">
+            <div class="payment-method-title">الدفع عند الاستلام</div>
+            <div class="payment-method-cards">
+              <img src="assets/icons/payment/cod.svg" alt="Cash on Delivery">
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Credit Card Form -->
+      <div *ngIf="paymentMethod === 'creditCard' && showCreditCardForm" class="credit-card-form">
+        <div class="form-row">
+          <ion-item>
+            <ion-input [(ngModel)]="creditCardHolderName" label="الإسم على البطاقة" placeholder="الإسم على البطاقة"></ion-input>
+          </ion-item>
+        </div>
+        
+        <div class="form-row">
+          <ion-item>
+            <ion-input [(ngModel)]="creditCardNumber" label="رقم البطاقة" placeholder="رقم البطاقة"></ion-input>
+          </ion-item>
+        </div>
+        
+        <div class="form-row-split">
+          <ion-item>
+            <ion-input [(ngModel)]="creditCardExpiry" label="MM / YY" placeholder="MM / YY"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input [(ngModel)]="creditCardCvc" label="CVC" placeholder="CVC" type="number"></ion-input>
+          </ion-item>
+        </div>
+      </div>
+      
+      <!-- STC Pay Form -->
+      <div *ngIf="paymentMethod === 'stcPay' && isStcPaySelected" class="stc-pay-container">
+        <h3 class="stc-pay-title">أدخل رقم هاتفك المرتبط بـ STC Pay</h3>
+        <div class="stc-pay-form">
+          <ion-input [(ngModel)]="phoneNumber" placeholder="05X XXX XXXX" type="tel"></ion-input>
+          <ion-button (click)="processStcPay()">
+            <ion-icon name="arrow-forward" slot="end"></ion-icon>
+            دفع ﷼{{ cart?.total || '120.00' }}
+          </ion-button>
+        </div>
+      </div>
+      
+      <div class="nav-buttons">
+        <ng-container *ngIf="paymentMethod === 'creditCard'">
+          <ion-button expand="block" (click)="processPayment()">
+            دفع ﷼{{ cart?.total || '120.00' }}
+          </ion-button>
+        </ng-container>
+        
+        <ng-container *ngIf="paymentMethod === 'applePay'">
+          <ion-button expand="block" (click)="processApplePay()" class="apple-pay-button">
+            شراء باستخدام Apple Pay
+          </ion-button>
+        </ng-container>
+        
+        <ng-container *ngIf="paymentMethod === 'cod'">
+          <ion-button expand="block" (click)="processCashOnDelivery()">
+            دفع
+          </ion-button>
+        </ng-container>
+        
+        <ion-button expand="block" fill="outline" (click)="prevStep()">
+          عودة
+        </ion-button>
+      </div>
+    </div>
+    
+    <!-- Order Confirmation (Step 3) -->
+    <div *ngIf="currentStep === 'confirmation'" class="section-container">
+      <div class="order-confirmation">
+        <ion-icon name="checkmark-circle"></ion-icon>
+        <h2>تم استلام طلبك بنجاح</h2>
+        <div class="order-number">
+          #123456
+        </div>
+        <p class="confirmation-message">
+          شكرا لك على طلبك. سوف تتلقى تنبيهات بإتمام طلبك.
+        </p>
+        <div class="confirmation-buttons">
+          <ion-button expand="block" routerLink="/home">
+            العودة للرئيسية
+          </ion-button>
+          <ion-button expand="block" fill="outline" routerLink="/orders">
+            تتبع الطلب
+          </ion-button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>

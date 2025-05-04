@@ -1,0 +1,17 @@
+<div class="step-indicator">
+  <ng-container *ngFor="let step of steps; let i = index; let isLast = last">
+    <div class="step" 
+         [ngClass]="{'active': isActive(step.id), 'completed': isCompleted(step.id)}"
+         (click)="changeStep(step.id)">
+      <div class="step-number">
+        <ng-container *ngIf="isCompleted(step.id); else stepNumber">
+          <ion-icon name="checkmark"></ion-icon>
+        </ng-container>
+        <ng-template #stepNumber>{{ i + 1 }}</ng-template>
+      </div>
+      <div class="step-label">{{ step.label }}</div>
+    </div>
+    
+    <div class="step-line" *ngIf="!isLast"></div>
+  </ng-container>
+</div>

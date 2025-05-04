@@ -35,7 +35,7 @@ const routes: Routes = [
   },
   {
     path: 'checkout',
-    loadChildren: () => import('./pages/checkout/checkout.module').then(m => m.CheckoutPageModule)
+    loadChildren: () => import('./pages/checkout/checkout-new.module').then(m => m.CheckoutNewPageModule)
   },
   {
     path: 'otp',

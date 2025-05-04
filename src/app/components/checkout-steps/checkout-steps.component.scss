@@ -1,0 +1,87 @@
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  direction: rtl;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+  
+  .step-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e0e0e0;
+    color: #777;
+    font-weight: 500;
+    font-size: 16px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+    
+    ion-icon {
+      font-size: 18px;
+    }
+  }
+  
+  .step-label {
+    font-size: 13px;
+    color: #777;
+    font-weight: 500;
+  }
+  
+  &.active {
+    .step-number {
+      background-color: var(--ion-color-primary);
+      color: white;
+    }
+    
+    .step-label {
+      color: var(--ion-color-primary);
+      font-weight: bold;
+    }
+  }
+  
+  &.completed {
+    .step-number {
+      background-color: #4caf50;
+      color: white;
+    }
+    
+    .step-label {
+      color: #4caf50;
+    }
+  }
+}
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background-color: #e0e0e0;
+  position: relative;
+  z-index: 1;
+  margin: 0 -5px;
+  margin-bottom: 25px;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 100%;
+    background-color: #4caf50;
+    transition: width 0.3s ease;
+  }
+}
+
+.step.completed + .step-line:after {
+  width: 100%;
+}
