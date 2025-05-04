@@ -56,17 +56,20 @@
       
       <!-- Saved addresses section -->
       <div *ngIf="savedAddresses && savedAddresses.length > 0" class="saved-addresses">
-        <div class="address-card" *ngFor="let address of savedAddresses" 
-             [ngClass]="{'selected': selectedAddressId === address.id}"
-             (click)="selectAddress(address.id)">
-          <h3 class="address-name">{{ address.name || 'المنزل' }}</h3>
-          <p class="address-details">
-            {{ address.first_name }} {{ address.last_name }}<br>
-            {{ address.address_1 }}<br>
-            {{ address.city }}, {{ address.state }}<br>
-            {{ address.phone }}
-          </p>
-          <div class="address-email">{{ address.email }}</div>
+        <div class="address-scroll-container">
+          <div class="address-card" *ngFor="let address of savedAddresses" 
+              [ngClass]="{'selected': selectedAddressId === address.id}"
+              (click)="selectAddress(address.id)">
+            <h3 class="address-name">{{ address.name || 'المنزل' }}</h3>
+            <p class="address-details">
+              {{ address.first_name }} {{ address.last_name }}<br>
+              {{ address.address_1 }}<br>
+              {{ address.city }} / {{ address.state }}<br>
+              {{ address.country || 'المملكة العربية السعودية' }}<br>
+              {{ address.phone }}
+            </p>
+            <div class="address-email">{{ address.email }}</div>
+          </div>
         </div>
       </div>
       
@@ -74,29 +77,33 @@
       <div class="divider-text">أو إضافة عنوان جديد</div>
       
       <form [formGroup]="shippingForm" (ngSubmit)="nextStep()">
-        <div class="form-row">
-          <ion-item>
-            <ion-input formControlName="firstName" label="الاسم الأول" placeholder="الاسم الأول"></ion-input>
-          </ion-item>
-          <div class="validation-error" 
-               *ngIf="shippingForm.get('firstName')?.invalid && (shippingForm.get('firstName')?.dirty || shippingForm.get('firstName')?.touched)">
-            الاسم الأول مطلوب
+        <!-- First row with first and last name side by side -->
+        <div class="form-row-split">
+          <div class="split-item">
+            <ion-item>
+              <ion-input formControlName="firstName" placeholder="الاسم الأول"></ion-input>
+            </ion-item>
+            <div class="validation-error" 
+                *ngIf="shippingForm.get('firstName')?.invalid && (shippingForm.get('firstName')?.dirty || shippingForm.get('firstName')?.touched)">
+              الاسم الأول مطلوب
+            </div>
+          </div>
+          
+          <div class="split-item">
+            <ion-item>
+              <ion-input formControlName="lastName" placeholder="الاسم الأخير"></ion-input>
+            </ion-item>
+            <div class="validation-error" 
+                *ngIf="shippingForm.get('lastName')?.invalid && (shippingForm.get('lastName')?.dirty || shippingForm.get('lastName')?.touched)">
+              الاسم الأخير مطلوب
+            </div>
           </div>
         </div>
         
+        <!-- Building and street name -->
         <div class="form-row">
           <ion-item>
-            <ion-input formControlName="lastName" label="الاسم الأخير" placeholder="الاسم الأخير"></ion-input>
-          </ion-item>
-          <div class="validation-error" 
-               *ngIf="shippingForm.get('lastName')?.invalid && (shippingForm.get('lastName')?.dirty || shippingForm.get('lastName')?.touched)">
-            الاسم الأخير مطلوب
-          </div>
-        </div>
-        
-        <div class="form-row">
-          <ion-item>
-            <ion-input formControlName="address1" label="رقم البناية واسم الشارع" placeholder="رقم البناية واسم الشارع"></ion-input>
+            <ion-input formControlName="address1" placeholder="رقم البناية واسم الشارع"></ion-input>
           </ion-item>
           <div class="validation-error" 
                *ngIf="shippingForm.get('address1')?.invalid && (shippingForm.get('address1')?.dirty || shippingForm.get('address1')?.touched)">
@@ -104,9 +111,10 @@
           </div>
         </div>
         
+        <!-- Neighborhood selector -->
         <div class="form-row">
           <ion-item>
-            <ion-select formControlName="city" label="الحي / المنطقة" placeholder="اختر المنطقة" interface="popover" cancelText="إلغاء" okText="اختيار">
+            <ion-select formControlName="city" placeholder="الحي / المنطقة" interface="popover" cancelText="إلغاء" okText="اختيار">
               <ion-select-option value="حي الربيع">حي الربيع</ion-select-option>
               <ion-select-option value="حي الندى">حي الندى</ion-select-option>
               <ion-select-option value="حي الصحافة">حي الصحافة</ion-select-option>
@@ -262,25 +270,28 @@
           </ion-item>
           <div class="validation-error" 
                *ngIf="shippingForm.get('city')?.invalid && (shippingForm.get('city')?.dirty || shippingForm.get('city')?.touched)">
-            المدينة مطلوبة
+            الحي / المنطقة مطلوب
           </div>
         </div>
         
-        <div class="form-row">
+        <!-- Hidden city field (fixed to Riyadh) -->
+        <div class="form-row hidden-field">
           <ion-item>
-            <ion-input formControlName="state" value="الرياض" readonly label="المدينة"></ion-input>
+            <ion-input formControlName="state" value="الرياض" readonly></ion-input>
           </ion-item>
         </div>
         
-        <div class="form-row">
+        <!-- Hidden country field (fixed to Saudi Arabia) -->
+        <div class="form-row hidden-field">
           <ion-item>
-            <ion-input formControlName="country" value="المملكة العربية السعودية" readonly label="البلد"></ion-input>
+            <ion-input formControlName="country" value="المملكة العربية السعودية" readonly></ion-input>
           </ion-item>
         </div>
         
+        <!-- Phone number -->
         <div class="form-row">
           <ion-item>
-            <ion-input formControlName="phone" label="رقم الجوال" placeholder="05xxxxxxxx" type="tel"></ion-input>
+            <ion-input formControlName="phone" placeholder="رقم الجوال (05xxxxxxxx)" type="tel"></ion-input>
           </ion-item>
           <div class="validation-error" 
                *ngIf="shippingForm.get('phone')?.invalid && (shippingForm.get('phone')?.dirty || shippingForm.get('phone')?.touched)">
@@ -288,9 +299,10 @@
           </div>
         </div>
         
+        <!-- Email -->
         <div class="form-row">
           <ion-item>
-            <ion-input formControlName="email" label="البريد الإلكتروني" placeholder="example@email.com" type="email"></ion-input>
+            <ion-input formControlName="email" placeholder="البريد الإلكتروني (example@email.com)" type="email"></ion-input>
           </ion-item>
           <div class="validation-error" 
                *ngIf="shippingForm.get('email')?.invalid && (shippingForm.get('email')?.dirty || shippingForm.get('email')?.touched)">

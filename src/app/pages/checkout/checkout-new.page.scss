@@ -132,15 +132,37 @@
   margin-bottom: 24px;
 }
 
+.address-scroll-container {
+  display: flex;
+  overflow-x: auto;
+  padding: 5px 0;
+  gap: 15px;
+  margin-bottom: 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  direction: ltr; // Ensure scroll direction is correct for RTL content
+  
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+}
+
 .address-card {
   border: 1px solid #eee;
   border-radius: 12px;
   padding: 16px;
-  margin-bottom: 16px;
+  min-width: 250px;
+  flex: 0 0 auto;
   transition: all 0.3s ease;
   background-color: #f9f9f9;
   position: relative;
   cursor: pointer;
+  direction: rtl; // Restore RTL direction for the card content
   
   &:before {
     content: '';
@@ -379,6 +401,11 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
     border: 1px solid #e0e0e0;
   }
+}
+
+// Hide country and city fields since they're fixed
+.hidden-field {
+  display: none;
 }
 
 // Payment methods styling

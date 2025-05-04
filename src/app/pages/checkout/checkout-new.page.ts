@@ -15,6 +15,8 @@ import { AddressHelper } from '../../helpers/address-helper';
 import { User } from '../../interfaces/user.interface';
 import { Cart } from '../../interfaces/cart.interface';
 import { Address, AddressResponse } from '../../interfaces/address.interface';
+import { environment } from '../../../environments/environment';
+
 // Define the CheckoutStep type locally
 export type CheckoutStep = 'shipping' | 'payment' | 'confirmation';
 
@@ -328,14 +330,14 @@ export class CheckoutNewPage implements OnInit, OnDestroy {
         // Additional validation for STC Pay if that's the selected method
         if (this.paymentMethod === 'stcPay' && this.isStcPaySelected) {
           if (!this.phoneNumber || this.phoneNumber.length < 9) {
-            this.presentToast('يرجى إدخال رقم هاتف صحيح', 'danger');
+            this.presentToast('يرجى إدخال رقم هاتف صحيح لـ STC Pay', 'danger');
             return false;
           }
         }
         
         return true;
       } else {
-        this.presentToast('يرجى اختيار طريقة دفع', 'danger');
+        this.presentToast('يرجى اختيار طريقة الدفع', 'danger');
         return false;
       }
     }
@@ -346,8 +348,6 @@ export class CheckoutNewPage implements OnInit, OnDestroy {
   // Select payment method
   selectPaymentMethod(method: string) {
     this.paymentMethod = method;
-    
-    // Update related flags based on payment method
     this.showCreditCardForm = method === 'creditCard';
     this.isStcPaySelected = method === 'stcPay';
   }
@@ -365,15 +365,120 @@ export class CheckoutNewPage implements OnInit, OnDestroy {
     await loading.present();
     
     try {
-      // Simulate payment processing
-      setTimeout(() => {
-        loading.dismiss();
-        this.nextStep(); // Move to confirmation step
-        this.presentToast('تم إتمام الدفع بنجاح', 'success');
-      }, 2000);
+      // Prepare billing information from the form or selected address
+      let billingDetails;
       
-      // In a real implementation, you would call your payment service here
-      // this.paymentService.processCreditCardPayment(...)
+      if (this.selectedAddressId) {
+        // Use the selected saved address
+        const selectedAddress = this.savedAddresses.find(address => 
+          address.id === this.selectedAddressId);
+          
+        if (selectedAddress) {
+          billingDetails = {
+            first_name: selectedAddress.first_name,
+            last_name: selectedAddress.last_name,
+            company: selectedAddress.company || '',
+            address_1: selectedAddress.address_1,
+            address_2: selectedAddress.address_2 || '',
+            city: selectedAddress.city,
+            state: selectedAddress.state || 'الرياض',
+            postcode: selectedAddress.postcode || '',
+            country: selectedAddress.country || 'SA',
+            email: selectedAddress.email || this.jwtAuthService.currentUserValue?.email || '',
+            phone: selectedAddress.phone || ''
+          };
+        }
+      } else {
+        // Use form values with proper field mapping to WooCommerce expected format
+        billingDetails = {
+          first_name: this.shippingForm.get('firstName').value,
+          last_name: this.shippingForm.get('lastName').value,
+          address_1: this.shippingForm.get('address1').value,
+          address_2: this.shippingForm.get('address2').value || '',
+          city: this.shippingForm.get('city').value, // This is the neighborhood/district
+          state: this.shippingForm.get('state').value || 'الرياض', // City (Riyadh)
+          postcode: this.shippingForm.get('postalCode').value || '',
+          country: this.shippingForm.get('country').value || 'SA',
+          email: this.shippingForm.get('email').value,
+          phone: this.shippingForm.get('phone').value
+        };
+      }
+
+      try {
+        // Create credit card payment data
+        const creditCardData = {
+          cardHolderName: this.creditCardHolderName,
+          cardNumber: this.creditCardNumber,
+          cardExpiry: this.creditCardExpiry,
+          cardCvc: this.creditCardCvc
+        };
+        
+        // Process payment - async/await pattern
+        const paymentResult = await this.paymentService.processCreditCardPayment(
+          this.cart, 
+          billingDetails
+        );
+        
+        if (paymentResult.success) {
+          // Create order with payment information
+          this.orderService.createOrder(
+            this.cart,
+            billingDetails,
+            billingDetails, // Use same address for shipping
+            'moyasar_cc', // Payment method code
+            paymentResult
+          ).subscribe(
+            (order) => {
+              this.orderId = order.id;
+              loading.dismiss();
+              this.nextStep(); // Move to confirmation step
+              this.presentToast('تم إتمام الدفع وإنشاء الطلب بنجاح', 'success');
+              
+              // Clear cart after successful order
+              this.cartService.clearCart();
+            },
+            (error) => {
+              loading.dismiss();
+              this.presentToast('تم الدفع ولكن حدث خطأ أثناء إنشاء الطلب', 'warning');
+              console.error('Order error:', error);
+            }
+          );
+        } else {
+          loading.dismiss();
+          this.presentToast('فشل في معالجة الدفع: ' + paymentResult.message, 'danger');
+        }
+      } catch (paymentError) {
+        console.error('Payment processing error:', paymentError);
+        
+        // If demo checkout is allowed, create order anyway
+        if (environment.allowDemoCheckout) {
+          // Create order without actual payment processing
+          this.orderService.createOrder(
+            this.cart,
+            billingDetails,
+            billingDetails, // Use same address for shipping
+            'moyasar_cc' // Payment method code
+          ).subscribe(
+            (order) => {
+              this.orderId = order.id;
+              loading.dismiss();
+              this.nextStep(); // Move to confirmation step
+              this.presentToast('تم إتمام الدفع وإنشاء الطلب بنجاح', 'success');
+              
+              // Clear cart after successful order
+              this.cartService.clearCart();
+            },
+            (error) => {
+              loading.dismiss();
+              this.presentToast('حدث خطأ أثناء إنشاء الطلب', 'danger');
+              console.error('Order error:', error);
+            }
+          );
+        } else {
+          loading.dismiss();
+          this.presentToast('حدث خطأ أثناء معالجة الدفع', 'danger');
+        }
+      }
     } catch (error) {
       loading.dismiss();
       this.presentToast('حدث خطأ أثناء معالجة الدفع', 'danger');
@@ -390,15 +495,112 @@ export class CheckoutNewPage implements OnInit, OnDestroy {
     await loading.present();
     
     try {
-      // Simulate Apple Pay processing
-      setTimeout(() => {
-        loading.dismiss();
-        this.nextStep(); // Move to confirmation step
-        this.presentToast('تم إتمام الدفع بنجاح عبر Apple Pay', 'success');
-      }, 2000);
+      // Prepare billing information from the form or selected address
+      let billingDetails;
       
-      // In a real implementation, you would call your payment service here
-      // this.paymentService.processApplePay(...)
+      if (this.selectedAddressId) {
+        // Use the selected saved address
+        const selectedAddress = this.savedAddresses.find(address => 
+          address.id === this.selectedAddressId);
+          
+        if (selectedAddress) {
+          billingDetails = {
+            first_name: selectedAddress.first_name,
+            last_name: selectedAddress.last_name,
+            company: selectedAddress.company || '',
+            address_1: selectedAddress.address_1,
+            address_2: selectedAddress.address_2 || '',
+            city: selectedAddress.city,
+            state: selectedAddress.state || 'الرياض',
+            postcode: selectedAddress.postcode || '',
+            country: selectedAddress.country || 'SA',
+            email: selectedAddress.email || this.jwtAuthService.currentUserValue?.email || '',
+            phone: selectedAddress.phone || ''
+          };
+        }
+      } else {
+        // Use form values with proper field mapping
+        billingDetails = {
+          first_name: this.shippingForm.get('firstName').value,
+          last_name: this.shippingForm.get('lastName').value,
+          address_1: this.shippingForm.get('address1').value,
+          address_2: this.shippingForm.get('address2').value || '',
+          city: this.shippingForm.get('city').value, // Neighborhood/district
+          state: this.shippingForm.get('state').value || 'الرياض', // City (Riyadh)
+          postcode: this.shippingForm.get('postalCode').value || '',
+          country: this.shippingForm.get('country').value || 'SA',
+          email: this.shippingForm.get('email').value,
+          phone: this.shippingForm.get('phone').value
+        };
+      }
+
+      try {
+        // Process payment - async/await pattern
+        const paymentResult = await this.paymentService.processApplePay(
+          this.cart, 
+          billingDetails
+        );
+        
+        if (paymentResult.success) {
+          // Create order with payment information
+          this.orderService.createOrder(
+            this.cart,
+            billingDetails,
+            billingDetails, // Use same address for shipping
+            'moyasar_applepay', // Payment method code
+            paymentResult
+          ).subscribe(
+            (order) => {
+              this.orderId = order.id;
+              loading.dismiss();
+              this.nextStep(); // Move to confirmation step
+              this.presentToast('تم إتمام الدفع وإنشاء الطلب بنجاح', 'success');
+              
+              // Clear cart after successful order
+              this.cartService.clearCart();
+            },
+            (error) => {
+              loading.dismiss();
+              this.presentToast('تم الدفع ولكن حدث خطأ أثناء إنشاء الطلب', 'warning');
+              console.error('Order error:', error);
+            }
+          );
+        } else {
+          loading.dismiss();
+          this.presentToast('فشل في معالجة الدفع: ' + paymentResult.message, 'danger');
+        }
+      } catch (paymentError) {
+        console.error('Apple Pay processing error:', paymentError);
+        
+        // If demo checkout is allowed, create order anyway
+        if (environment.allowDemoCheckout) {
+          // Create order without actual payment processing
+          this.orderService.createOrder(
+            this.cart,
+            billingDetails,
+            billingDetails, // Use same address for shipping
+            'moyasar_applepay' // Payment method code
+          ).subscribe(
+            (order) => {
+              this.orderId = order.id;
+              loading.dismiss();
+              this.nextStep(); // Move to confirmation step
+              this.presentToast('تم إتمام الدفع وإنشاء الطلب بنجاح عبر Apple Pay', 'success');
+              
+              // Clear cart after successful order
+              this.cartService.clearCart();
+            },
+            (error) => {
+              loading.dismiss();
+              this.presentToast('حدث خطأ أثناء إنشاء الطلب', 'danger');
+              console.error('Order error:', error);
+            }
+          );
+        } else {
+          loading.dismiss();
+          this.presentToast('حدث خطأ أثناء معالجة الدفع', 'danger');
+        }
+      }
     } catch (error) {
       loading.dismiss();
       this.presentToast('حدث خطأ أثناء معالجة الدفع', 'danger');
@@ -420,15 +622,115 @@ export class CheckoutNewPage implements OnInit, OnDestroy {
     await loading.present();
     
     try {
-      // Simulate STC Pay processing
-      setTimeout(() => {
-        loading.dismiss();
-        this.nextStep(); // Move to confirmation step
-        this.presentToast('تم إتمام الدفع بنجاح عبر STC Pay', 'success');
-      }, 2000);
+      // Prepare billing information from the form or selected address
+      let billingDetails;
       
-      // In a real implementation, you would call your payment service here
-      // this.paymentService.processStcPay(this.phoneNumber, this.cart.total)
+      if (this.selectedAddressId) {
+        // Use the selected saved address
+        const selectedAddress = this.savedAddresses.find(address => 
+          address.id === this.selectedAddressId);
+          
+        if (selectedAddress) {
+          billingDetails = {
+            first_name: selectedAddress.first_name,
+            last_name: selectedAddress.last_name,
+            company: selectedAddress.company || '',
+            address_1: selectedAddress.address_1,
+            address_2: selectedAddress.address_2 || '',
+            city: selectedAddress.city,
+            state: selectedAddress.state || 'الرياض',
+            postcode: selectedAddress.postcode || '',
+            country: selectedAddress.country || 'SA',
+            email: selectedAddress.email || this.jwtAuthService.currentUserValue?.email || '',
+            phone: selectedAddress.phone || ''
+          };
+        }
+      } else {
+        // Use form values with proper field mapping
+        billingDetails = {
+          first_name: this.shippingForm.get('firstName').value,
+          last_name: this.shippingForm.get('lastName').value,
+          address_1: this.shippingForm.get('address1').value,
+          address_2: this.shippingForm.get('address2').value || '',
+          city: this.shippingForm.get('city').value, // Neighborhood/district
+          state: this.shippingForm.get('state').value || 'الرياض', // City (Riyadh)
+          postcode: this.shippingForm.get('postalCode').value || '',
+          country: this.shippingForm.get('country').value || 'SA',
+          email: this.shippingForm.get('email').value,
+          phone: this.shippingForm.get('phone').value
+        };
+      }
+
+      try {
+        // Process payment with STCPay
+        // Include phone number in billing details
+        billingDetails.phone = this.phoneNumber;
+        
+        const paymentResult = await this.paymentService.processSTCPay(
+          this.cart, 
+          billingDetails
+        );
+        
+        if (paymentResult.success) {
+          // Create order with payment information
+          this.orderService.createOrder(
+            this.cart,
+            billingDetails,
+            billingDetails, // Use same address for shipping
+            'moyasar_stcpay', // Payment method code
+            paymentResult
+          ).subscribe(
+            (order) => {
+              this.orderId = order.id;
+              loading.dismiss();
+              this.nextStep(); // Move to confirmation step
+              this.presentToast('تم إتمام الدفع وإنشاء الطلب بنجاح', 'success');
+              
+              // Clear cart after successful order
+              this.cartService.clearCart();
+            },
+            (error) => {
+              loading.dismiss();
+              this.presentToast('تم الدفع ولكن حدث خطأ أثناء إنشاء الطلب', 'warning');
+              console.error('Order error:', error);
+            }
+          );
+        } else {
+          loading.dismiss();
+          this.presentToast('فشل في معالجة الدفع: ' + paymentResult.message, 'danger');
+        }
+      } catch (paymentError) {
+        console.error('STC Pay processing error:', paymentError);
+        
+        // If demo checkout is allowed, create order anyway
+        if (environment.allowDemoCheckout) {
+          // Create order without actual payment processing
+          this.orderService.createOrder(
+            this.cart,
+            billingDetails,
+            billingDetails, // Use same address for shipping
+            'moyasar_stcpay' // Payment method code
+          ).subscribe(
+            (order) => {
+              this.orderId = order.id;
+              loading.dismiss();
+              this.nextStep(); // Move to confirmation step
+              this.presentToast('تم إتمام الدفع وإنشاء الطلب بنجاح عبر STC Pay', 'success');
+              
+              // Clear cart after successful order
+              this.cartService.clearCart();
+            },
+            (error) => {
+              loading.dismiss();
+              this.presentToast('حدث خطأ أثناء إنشاء الطلب', 'danger');
+              console.error('Order error:', error);
+            }
+          );
+        } else {
+          loading.dismiss();
+          this.presentToast('حدث خطأ أثناء معالجة الدفع', 'danger');
+        }
+      }
     } catch (error) {
       loading.dismiss();
       this.presentToast('حدث خطأ أثناء معالجة الدفع', 'danger');
@@ -445,15 +747,67 @@ export class CheckoutNewPage implements OnInit, OnDestroy {
     await loading.present();
     
     try {
-      // Simulate order processing
-      setTimeout(() => {
-        loading.dismiss();
-        this.nextStep(); // Move to confirmation step
-        this.presentToast('تم إنشاء طلبك بنجاح', 'success');
-      }, 2000);
+      // Prepare billing information from the form or selected address
+      let billingDetails;
       
-      // In a real implementation, you would call your order service here
-      // this.orderService.createOrder({...})
+      if (this.selectedAddressId) {
+        // Use the selected saved address
+        const selectedAddress = this.savedAddresses.find(address => 
+          address.id === this.selectedAddressId);
+          
+        if (selectedAddress) {
+          billingDetails = {
+            first_name: selectedAddress.first_name,
+            last_name: selectedAddress.last_name,
+            company: selectedAddress.company || '',
+            address_1: selectedAddress.address_1,
+            address_2: selectedAddress.address_2 || '',
+            city: selectedAddress.city,
+            state: selectedAddress.state || 'الرياض',
+            postcode: selectedAddress.postcode || '',
+            country: selectedAddress.country || 'SA',
+            email: selectedAddress.email || this.jwtAuthService.currentUserValue?.email || '',
+            phone: selectedAddress.phone || ''
+          };
+        }
+      } else {
+        // Use form values with proper field mapping to WooCommerce expected format
+        billingDetails = {
+          first_name: this.shippingForm.get('firstName').value,
+          last_name: this.shippingForm.get('lastName').value,
+          address_1: this.shippingForm.get('address1').value,
+          address_2: this.shippingForm.get('address2').value || '',
+          city: this.shippingForm.get('city').value, // This is the neighborhood/district
+          state: this.shippingForm.get('state').value || 'الرياض', // City (Riyadh)
+          postcode: this.shippingForm.get('postalCode').value || '',
+          country: this.shippingForm.get('country').value || 'SA',
+          email: this.shippingForm.get('email').value,
+          phone: this.shippingForm.get('phone').value
+        };
+      }
+      
+      // Create order with proper data mapping
+      this.orderService.createOrder(
+        this.cart,
+        billingDetails,
+        billingDetails, // Use same address for shipping
+        'cod' // Payment method code
+      ).subscribe(
+        (order) => {
+          this.orderId = order.id;
+          loading.dismiss();
+          this.nextStep(); // Move to confirmation step
+          this.presentToast('تم إنشاء طلبك بنجاح', 'success');
+          
+          // Clear cart after successful order
+          this.cartService.clearCart();
+        },
+        (error) => {
+          loading.dismiss();
+          this.presentToast('حدث خطأ أثناء إنشاء الطلب', 'danger');
+          console.error('Order error:', error);
+        }
+      );
     } catch (error) {
       loading.dismiss();
       this.presentToast('حدث خطأ أثناء إنشاء الطلب', 'danger');
