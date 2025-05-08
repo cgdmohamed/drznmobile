@@ -417,7 +417,7 @@
           <ion-input [(ngModel)]="phoneNumber" placeholder="05X XXX XXXX" type="tel"></ion-input>
           <ion-button (click)="processStcPay()">
             <ion-icon name="arrow-forward" slot="end"></ion-icon>
-            دفع ﷼{{ cart?.total || '120.00' }}
+            دفع ﷼{{ (cart?.total | number:'1.2-2') || '120.00' }}
           </ion-button>
         </div>
       </div>
@@ -425,7 +425,7 @@
       <div class="nav-buttons">
         <ng-container *ngIf="paymentMethod === 'creditCard'">
           <ion-button expand="block" (click)="processPayment()">
-            دفع ﷼{{ cart?.total || '120.00' }}
+            دفع ﷼{{ (cart?.total | number:'1.2-2') || '120.00' }}
           </ion-button>
         </ng-container>
         
