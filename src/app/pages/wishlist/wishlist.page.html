@@ -33,8 +33,8 @@
         <div class="product-details">
           <h4 [routerLink]="['/product', product.id]">{{ product.name }}</h4>
           <div class="price-row">
-            <span class="price" [class.sale]="product.on_sale">{{ product.price }} ر.س</span>
-            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} ر.س</span>
+            <span class="price" [class.sale]="product.on_sale">{{ product.price }} <app-currency-icon size="small"></app-currency-icon></span>
+            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} <app-currency-icon size="small"></app-currency-icon></span>
           </div>
           <div class="action-buttons">
             <ion-button fill="clear" color="primary" (click)="addToCart(product)">

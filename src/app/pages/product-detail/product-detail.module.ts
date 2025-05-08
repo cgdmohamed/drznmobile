@@ -6,6 +6,7 @@ import { IonicModule } from '@ionic/angular';
 import { ProductDetailPage } from './product-detail.page';
 import { ComponentsModule } from '../../components/components.module';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CurrencyIconComponent } from '../../components/currency-icon/currency-icon.component';
 
 const routes: Routes = [
   {
@@ -21,7 +22,8 @@ const routes: Routes = [
     ReactiveFormsModule,
     IonicModule,
     ComponentsModule,
-    RouterModule.forChild(routes)
+    RouterModule.forChild(routes),
+    CurrencyIconComponent
   ],
   declarations: [ProductDetailPage],
   schemas: [CUSTOM_ELEMENTS_SCHEMA] // Add this to support custom elements

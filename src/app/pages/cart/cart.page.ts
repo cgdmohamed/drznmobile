@@ -8,6 +8,7 @@ import { JwtAuthService } from '../../services/jwt-auth.service';
 import { ProductService } from '../../services/product.service';
 import { Cart, CartItem } from '../../interfaces/cart.interface';
 import { Product } from '../../interfaces/product.interface';
+import { CurrencyIconComponent } from '../../components/currency-icon/currency-icon.component';
 
 @Component({
   selector: 'app-cart',

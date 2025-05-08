@@ -6,6 +6,7 @@ import { Routes, RouterModule } from '@angular/router';
 
 import { OrderDetailPage } from './order-detail.page';
 import { ComponentsModule } from '../../components/components.module';
+import { CurrencyIconComponent } from '../../components/currency-icon/currency-icon.component';
 
 const routes: Routes = [
   {
@@ -20,7 +21,8 @@ const routes: Routes = [
     FormsModule,
     IonicModule,
     RouterModule.forChild(routes),
-    ComponentsModule
+    ComponentsModule,
+    CurrencyIconComponent
   ],
   declarations: [OrderDetailPage]
 })

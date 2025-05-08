@@ -61,10 +61,10 @@
       <!-- Price -->
       <div class="price-container">
         <span class="current-price" [class.sale]="product.on_sale">
-          {{ product.price }} ر.س
+          {{ product.price }} <app-currency-icon size="small"></app-currency-icon>
         </span>
         <span class="original-price" *ngIf="product.on_sale">
-          {{ product.regular_price }} ر.س
+          {{ product.regular_price }} <app-currency-icon size="small"></app-currency-icon>
         </span>
         <span class="discount-badge" *ngIf="product.on_sale">
           خصم {{ calculateDiscount(product.regular_price, product.sale_price) }}%
@@ -256,10 +256,10 @@
                 
                 <div class="product-price">
                   <span class="current-price" [class.sale]="product.on_sale">
-                    {{ product.price }} ر.س
+                    {{ product.price }} <app-currency-icon size="small"></app-currency-icon>
                   </span>
                   <span class="original-price" *ngIf="product.on_sale">
-                    {{ product.regular_price }} ر.س
+                    {{ product.regular_price }} <app-currency-icon size="small"></app-currency-icon>
                   </span>
                 </div>
                 
