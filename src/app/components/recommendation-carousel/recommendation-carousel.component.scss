@@ -58,7 +58,6 @@
 
 .recommendations-slider {
   min-height: 260px;
-
   .product-slide {
     height: 100%;
   }
@@ -131,6 +130,7 @@
 
   .price-container {
     display: flex;
+    justify-content: flex-end;
     flex-direction: row-reverse;
     align-items: center;
     font-weight: 600;

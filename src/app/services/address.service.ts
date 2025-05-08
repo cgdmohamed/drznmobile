@@ -144,7 +144,7 @@ export class AddressService {
         }
         
         // According to your Postman collection, use this URL format for custom addresses
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/my-addresses`;
+        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses`;
         console.log('Fetching custom addresses from URL:', url);
         
         return this.http.get<CustomAddress[]>(url).pipe(
@@ -246,7 +246,7 @@ export class AddressService {
           return throwError(() => new Error('User not authenticated'));
         }
         
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/my-addresses/${addressId}`;
+        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${addressId}`;
         console.log(`Updating custom address at URL:`, url);
         
         return this.http.put<any>(url, address).pipe(
@@ -318,7 +318,7 @@ export class AddressService {
           return throwError(() => new Error('User not authenticated'));
         }
         
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/my-addresses`;
+        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses`;
         console.log(`Adding custom address at URL:`, url);
         
         return this.http.post<any>(url, address).pipe(
@@ -350,7 +350,7 @@ export class AddressService {
           return throwError(() => new Error('User not authenticated'));
         }
         
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/my-addresses/${addressId}`;
+        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${addressId}`;
         console.log(`Deleting custom address at URL:`, url);
         
         return this.http.delete<any>(url).pipe(
