@@ -15,6 +15,7 @@ import { CustomIconComponent } from './custom-icon/custom-icon.component';
 import { RecommendationCarouselComponent } from './recommendation-carousel/recommendation-carousel.component';
 import { PageTransitionComponent } from './page-transition/page-transition.component';
 import { CachedImageComponent } from './cached-image/cached-image.component';
+import { CurrencyIconComponent } from './currency-icon/currency-icon.component';
 
 @NgModule({
   declarations: [
@@ -34,7 +35,8 @@ import { CachedImageComponent } from './cached-image/cached-image.component';
     RouterModule,
     FormsModule,
     ReactiveFormsModule,
-    CustomIconComponent
+    CustomIconComponent,
+    CurrencyIconComponent
   ],
   exports: [
     ProductCardComponent,
@@ -46,7 +48,8 @@ import { CachedImageComponent } from './cached-image/cached-image.component';
     CustomIconComponent,
     RecommendationCarouselComponent,
     PageTransitionComponent,
-    CachedImageComponent
+    CachedImageComponent,
+    CurrencyIconComponent
   ]
 })
 export class ComponentsModule { }

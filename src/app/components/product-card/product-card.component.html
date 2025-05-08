@@ -26,10 +26,10 @@
     
     <div class="product-price">
       <span class="current-price" [class.sale-price]="product.on_sale">
-        {{ product.on_sale ? product.sale_price : product.regular_price }} ر.س
+        {{ product.on_sale ? product.sale_price : product.regular_price }} <app-currency-icon size="small"></app-currency-icon>
       </span>
       <span class="original-price" *ngIf="product.on_sale">
-        {{ product.regular_price }} ر.س
+        {{ product.regular_price }} <app-currency-icon size="small"></app-currency-icon>
       </span>
     </div>
     
