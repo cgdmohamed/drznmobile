@@ -46,8 +46,8 @@
           <h3 class="product-name">{{ product.name }}</h3>
           
           <div class="price-container">
-            <span *ngIf="product.on_sale" class="sale-price">{{ product.sale_price }} ر.س</span>
-            <span [class.original-price]="product.on_sale">{{ product.regular_price }} ر.س</span>
+            <span *ngIf="product.on_sale" class="sale-price">{{ product.sale_price }} <app-currency-icon size="small"></app-currency-icon></span>
+            <span [class.original-price]="product.on_sale">{{ product.regular_price }} <app-currency-icon size="small"></app-currency-icon></span>
           </div>
           
           <ion-button fill="clear" (click)="addToCart($event, product)" class="add-to-cart-btn">

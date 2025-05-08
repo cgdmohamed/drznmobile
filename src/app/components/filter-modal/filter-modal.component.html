@@ -17,8 +17,8 @@
       [max]="maxPrice"
       [(ngModel)]="priceRange.upper"
       color="danger">
-      <ion-label slot="start">0 ريال</ion-label>
-      <ion-label slot="end">{{priceRange.upper}} ريال</ion-label>
+      <ion-label slot="start">0 <app-currency-icon size="x-small"></app-currency-icon></ion-label>
+      <ion-label slot="end">{{priceRange.upper}} <app-currency-icon size="x-small"></app-currency-icon></ion-label>
     </ion-range>
   </div>
 
