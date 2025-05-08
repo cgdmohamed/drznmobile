@@ -115,8 +115,8 @@
           <h3 class="product-name" [routerLink]="['/product', product.id]">{{ product.name }}</h3>
           
           <div class="product-price">
-            <span class="current-price">{{ product.on_sale ? product.sale_price : product.regular_price }} ر.س</span>
-            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} ر.س</span>
+            <span class="current-price">{{ product.on_sale ? product.sale_price : product.regular_price }} <app-currency-icon size="small"></app-currency-icon></span>
+            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} <app-currency-icon size="small"></app-currency-icon></span>
           </div>
           
           <div class="product-actions">
@@ -161,8 +161,8 @@
           <h3 class="product-name" [routerLink]="['/product', product.id]">{{ product.name }}</h3>
           
           <div class="product-price">
-            <span class="current-price">{{ product.on_sale ? product.sale_price : product.regular_price }} ر.س</span>
-            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} ر.س</span>
+            <span class="current-price">{{ product.on_sale ? product.sale_price : product.regular_price }} <app-currency-icon size="small"></app-currency-icon></span>
+            <span class="original-price" *ngIf="product.on_sale">{{ product.regular_price }} <app-currency-icon size="small"></app-currency-icon></span>
           </div>
           
           <div class="product-actions">
@@ -202,8 +202,8 @@
           <h3 class="product-name" [routerLink]="['/product', product.id]">{{ product.name }}</h3>
           
           <div class="product-price">
-            <span class="current-price">{{ product.sale_price }} ر.س</span>
-            <span class="original-price">{{ product.regular_price }} ر.س</span>
+            <span class="current-price">{{ product.sale_price }} <app-currency-icon size="small"></app-currency-icon></span>
+            <span class="original-price">{{ product.regular_price }} <app-currency-icon size="small"></app-currency-icon></span>
           </div>
           
           <div class="product-actions">

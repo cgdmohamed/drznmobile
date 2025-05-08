@@ -428,29 +428,29 @@
             <div class="order-item-name">{{ item.product.name }}</div>
             <div class="order-item-quantity">الكمية: {{ item.quantity }}</div>
           </div>
-          <div class="order-item-price">{{ (Number(item.product.price) * item.quantity).toFixed(2) }} ر.س</div>
+          <div class="order-item-price">{{ (Number(item.product.price) * item.quantity).toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
       </div>
       
       <div class="order-summary">
         <div class="summary-line">
           <span class="label">المجموع الفرعي</span>
-          <span class="value">{{ cart.subtotal.toFixed(2) }} ر.س</span>
+          <span class="value">{{ cart.subtotal.toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
         </div>
         
         <div class="summary-line" *ngIf="cart.discount > 0">
           <span class="label">الخصم</span>
-          <span class="value discount">- {{ cart.discount.toFixed(2) }} ر.س</span>
+          <span class="value discount">- {{ cart.discount.toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
         </div>
         
         <div class="summary-line">
           <span class="label">الشحن</span>
-          <span class="value">{{ cart.shipping.toFixed(2) }} ر.س</span>
+          <span class="value">{{ cart.shipping.toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
         </div>
         
         <div class="summary-line tax-line">
           <span class="label">ضريبة القيمة المضافة (15%)</span>
-          <span class="value">{{ cart.vat.toFixed(2) }} ر.س</span>
+          <span class="value">{{ cart.vat.toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
           <div class="tax-info">
             <ion-icon name="information-circle-outline"></ion-icon>
             <div class="tax-tooltip">
@@ -461,7 +461,7 @@
         
         <div class="summary-line total">
           <span class="label">الإجمالي</span>
-          <span class="value">{{ cart.total.toFixed(2) }} ر.س</span>
+          <span class="value">{{ cart.total.toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
         </div>
       </div>
     </div>
@@ -516,7 +516,7 @@
       <div class="payment-modal-content">
         <div class="order-details-summary">
           <h4>تفاصيل الطلب</h4>
-          <p class="total-amount">المبلغ الإجمالي: <span>{{ cart.total.toFixed(2) }} ر.س</span></p>
+          <p class="total-amount">المبلغ الإجمالي: <span>{{ cart.total.toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span></p>
           <p class="order-number">رقم الطلب: {{ getTempOrderNumber() }}</p>
         </div>
         

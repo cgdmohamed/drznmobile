@@ -90,11 +90,11 @@
             <h4 class="product-name">{{ item.name }}</h4>
             <div class="product-meta">
               <span class="product-quantity">{{ item.quantity }} × </span>
-              <span class="product-price">{{ item.price }} ر.س</span>
+              <span class="product-price">{{ item.price }} <app-currency-icon size="small"></app-currency-icon></span>
             </div>
             <div class="product-total">
               <span>الإجمالي: </span>
-              <span class="product-total-price">{{ item.total }} ر.س</span>
+              <span class="product-total-price">{{ item.total }} <app-currency-icon size="small"></app-currency-icon></span>
             </div>
           </div>
         </div>
@@ -107,27 +107,27 @@
       <div class="order-summary">
         <div class="summary-row">
           <div class="summary-label">المجموع الفرعي</div>
-          <div class="summary-value">{{ order.subtotal }} ر.س</div>
+          <div class="summary-value">{{ order.subtotal }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
         
         <div class="summary-row" *ngIf="parseFloat(order.discount_total) > 0">
           <div class="summary-label">الخصم</div>
-          <div class="summary-value discount">- {{ order.discount_total }} ر.س</div>
+          <div class="summary-value discount">- {{ order.discount_total }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
         
         <div class="summary-row">
           <div class="summary-label">الشحن</div>
-          <div class="summary-value">{{ order.shipping_total }} ر.س</div>
+          <div class="summary-value">{{ order.shipping_total }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
         
         <div class="summary-row">
           <div class="summary-label">ضريبة القيمة المضافة</div>
-          <div class="summary-value">{{ order.total_tax }} ر.س</div>
+          <div class="summary-value">{{ order.total_tax }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
         
         <div class="summary-row total">
           <div class="summary-label">الإجمالي</div>
-          <div class="summary-value">{{ order.total }} ر.س</div>
+          <div class="summary-value">{{ order.total }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
       </div>
     </div>

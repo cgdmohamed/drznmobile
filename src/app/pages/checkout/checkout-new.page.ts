@@ -16,6 +16,7 @@ import { User } from '../../interfaces/user.interface';
 import { Cart } from '../../interfaces/cart.interface';
 import { Address, AddressResponse } from '../../interfaces/address.interface';
 import { environment } from '../../../environments/environment';
+import { CurrencyIconComponent } from '../../components/currency-icon/currency-icon.component';
 
 // Define the CheckoutStep type locally
 export type CheckoutStep = 'shipping' | 'payment' | 'confirmation';
@@ -33,7 +34,7 @@ export type CheckoutStep = 'shipping' | 'payment' | 'confirmation';
   templateUrl: './checkout-new.page.html',
   styleUrls: ['./checkout-new.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule, RouterModule]
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IonicModule, RouterModule, CurrencyIconComponent]
 })
 export class CheckoutNewPage implements OnInit, OnDestroy {
   // Basic data
