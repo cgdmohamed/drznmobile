@@ -23,9 +23,10 @@ const routes: Routes = [
     IonicModule,
     ComponentsModule,
     RouterModule.forChild(routes),
-    CurrencyIconComponent
-  ],
-  declarations: [ProductDetailPage],
+    CurrencyIconComponent,
+    ProductDetailPage // Import instead of declare for standalone components
+],
+  // declarations: [ProductDetailPage],
   schemas: [CUSTOM_ELEMENTS_SCHEMA] // Add this to support custom elements
 })
 export class ProductDetailPageModule {}

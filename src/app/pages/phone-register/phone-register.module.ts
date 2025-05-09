@@ -20,8 +20,9 @@ const routes: Routes = [
     ReactiveFormsModule,
     IonicModule,
     RouterModule.forChild(routes),
-    ComponentsModule
-  ],
-  declarations: [PhoneRegisterPage]
+    ComponentsModule,
+    PhoneRegisterPage // Import instead of declare for standalone components
+],
+  // declarations: [PhoneRegisterPage]
 })
 export class PhoneRegisterPageModule {}

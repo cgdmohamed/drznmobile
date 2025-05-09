@@ -13,8 +13,9 @@ import { ComponentsModule } from '../../components/components.module';
     FormsModule,
     IonicModule,
     NotificationsPageRoutingModule,
-    ComponentsModule
-  ],
-  declarations: [NotificationsPage]
+    ComponentsModule,
+    NotificationsPage // Import instead of declare for standalone components
+],
+  // // declarations: [NotificationsPage]
 })
 export class NotificationsPageModule {}

@@ -21,8 +21,10 @@ const routes: Routes = [
     ReactiveFormsModule,
     IonicModule,
     RouterModule.forChild(routes),
-    ComponentsModule
+    ComponentsModule,
+    EditProfilePage // Import instead of declare for standalone components
   ],
-  declarations: [EditProfilePage]
+  // Remove declarations for standalone components
+  // declarations: [EditProfilePage]
 })
 export class EditProfilePageModule {}

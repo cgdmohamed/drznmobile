@@ -18,8 +18,10 @@ const routes: Routes = [
     FormsModule,
     ReactiveFormsModule,
     IonicModule,
-    RouterModule.forChild(routes)
+    RouterModule.forChild(routes),
+    ForgotPasswordPage // Import instead of declare for standalone components
   ],
-  declarations: [ForgotPasswordPage]
+  // Remove declarations for standalone components
+  // declarations: [ForgotPasswordPage]
 })
 export class ForgotPasswordPageModule { }

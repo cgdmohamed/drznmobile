@@ -22,8 +22,9 @@ const routes: Routes = [
     IonicModule,
     RouterModule.forChild(routes),
     ComponentsModule,
-    CurrencyIconComponent
-  ],
-  declarations: [OrderDetailPage]
+    CurrencyIconComponent,
+    OrderDetailPage // Import instead of declare for standalone components
+],
+  // declarations: [OrderDetailPage]
 })
 export class OrderDetailPageModule {}

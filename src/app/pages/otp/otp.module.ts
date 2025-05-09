@@ -10,9 +10,11 @@ import { OtpPage } from './otp.page';
     CommonModule,
     FormsModule,
     IonicModule,
-    OtpPageRoutingModule
+    OtpPageRoutingModule,
+    OtpPage // Import instead of declare for standalone components
   ],
-  declarations: [OtpPage],
+  // Remove declarations for standalone components
+  // declarations: [OtpPage],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class OtpPageModule {}
