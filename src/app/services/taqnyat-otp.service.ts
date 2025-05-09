@@ -47,6 +47,7 @@ export class TaqnyatOtpService {
   sendOtp(phoneNumber: string): Observable<WordPressOtpResponse> {
     // Format the phone number (ensure it's in local format for WordPress API)
     const formattedNumber = this.formatPhoneNumber(phoneNumber);
+    console.log('Formatted phone number for OTP:', formattedNumber);
     
     // Prepare WordPress proxy request
     const proxyRequest: WordPressOtpRequest = {
@@ -55,19 +56,42 @@ export class TaqnyatOtpService {
       note: 'DRZN'
     };
     
+    console.log('Sending OTP request to WordPress proxy:', proxyRequest);
+    
     const headers = new HttpHeaders({
       'Content-Type': 'application/json'
     });
     
     // Call the WordPress proxy endpoint
-    return this.http.post<WordPressOtpResponse>(this.wpSendOtpUrl, proxyRequest, { headers }).pipe(
+    return this.http.post<any>(this.wpSendOtpUrl, proxyRequest, { headers }).pipe(
       map(response => {
-        // Store the verification requestId if successful
-        if (response.status === 'success' && response.requestId) {
-          this.storeVerificationData(formattedNumber, response.requestId);
+        console.log('WordPress proxy OTP response:', response);
+        
+        // Format response to match our expected interface
+        let formattedResponse: WordPressOtpResponse;
+        
+        if (response && response.status === 'success') {
+          // Store the verification requestId if successful
+          if (response.requestId) {
+            console.log('Storing requestId for verification:', response.requestId);
+            this.storeVerificationData(formattedNumber, response.requestId);
+          }
+          
+          formattedResponse = {
+            status: 'success',
+            message: response.message || 'تم ارسال رمز التحقق بنجاح',
+            requestId: response.requestId
+          };
+        } else {
+          // Error response
+          formattedResponse = {
+            status: 'error',
+            message: response?.message || 'فشل في إرسال رمز التحقق',
+            code: response?.code || 0
+          };
         }
         
-        return response;
+        return formattedResponse;
       }),
       catchError(error => {
         console.error('Error sending OTP via WordPress proxy:', error);
@@ -114,7 +138,10 @@ export class TaqnyatOtpService {
     return from(this.getStoredRequestId(formattedNumber)).pipe(
       map(requestId => {
         if (requestId) {
+          console.log('Using stored requestId for verification:', requestId);
           proxyRequest.requestId = requestId;
+        } else {
+          console.log('No requestId found for verification, proceeding without it');
         }
         return proxyRequest;
       }),
@@ -123,15 +150,35 @@ export class TaqnyatOtpService {
           'Content-Type': 'application/json'
         });
         
+        console.log('Sending verification request to WordPress proxy:', request);
+        
         // Call the WordPress proxy endpoint
-        return this.http.post<WordPressOtpResponse>(this.wpVerifyOtpUrl, request, { headers }).pipe(
+        return this.http.post<any>(this.wpVerifyOtpUrl, request, { headers }).pipe(
           map(response => {
-            // Clear stored verification data on success
-            if (response.status === 'success') {
+            console.log('WordPress proxy verification response:', response);
+            
+            // New WP plugin response format has different structure
+            // Map to our expected format
+            let formattedResponse: WordPressOtpResponse;
+
+            if (response && response.status === 'success') {
+              formattedResponse = {
+                status: 'success',
+                message: response.message || 'تم التحقق بنجاح'
+              };
+              
+              // Clear stored verification data on success
               this.clearStoredOtpData(formattedNumber);
+            } else {
+              // Error response
+              formattedResponse = {
+                status: 'error',
+                message: response?.message || 'فشل في التحقق من الرمز',
+                code: response?.code || 0
+              };
             }
             
-            return response;
+            return formattedResponse;
           }),
           catchError(error => {
             console.error('Error verifying OTP via WordPress proxy:', error);
@@ -228,7 +275,8 @@ export class TaqnyatOtpService {
     
     // Check if we have the code (demo mode) or just requestId (real API mode)
     if (!otpData.code) {
-      console.error('No code found in OTP data, cannot verify locally');
+      console.log('No code found in OTP data, using WordPress API verification only');
+      // In API mode, we'll just let the API handle verification
       return false;
     }
     
