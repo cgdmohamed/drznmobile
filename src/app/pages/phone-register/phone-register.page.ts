@@ -27,8 +27,8 @@ export class PhoneRegisterPage implements OnInit, OnDestroy {
   resendDisabled: boolean = true;
   errorMessage: string = '';
   
-  // OTP input fields
-  otpDigits: string[] = ['', '', '', '', '', ''];
+  // OTP input fields (4-digit)
+  otpDigits: string[] = ['', '', '', ''];
   returnUrl: string = '/';
   
   private otpSendSubscription: Subscription;
@@ -85,9 +85,9 @@ export class PhoneRegisterPage implements OnInit, OnDestroy {
     this.otpForm = this.formBuilder.group({
       otp: ['', [
         Validators.required,
-        Validators.minLength(6),
-        Validators.maxLength(6),
-        Validators.pattern(/^\d{6}$/)
+        Validators.minLength(4),
+        Validators.maxLength(4),
+        Validators.pattern(/^\d{4}$/)
       ]]
     });
     
@@ -135,7 +135,7 @@ export class PhoneRegisterPage implements OnInit, OnDestroy {
           console.log('OTP sent successfully:', response);
           
           // Reset OTP digits
-          this.otpDigits = ['', '', '', '', '', ''];
+          this.otpDigits = ['', '', '', ''];
           
           // Move to verification step
           this.step = 'verify';
@@ -160,8 +160,8 @@ export class PhoneRegisterPage implements OnInit, OnDestroy {
     // Construct the full OTP from the digits
     const fullOtp = this.otpDigits.join('');
     
-    if (fullOtp.length !== 6 || !/^\d{6}$/.test(fullOtp)) {
-      this.errorMessage = 'يرجى إدخال رمز التحقق المكون من 6 أرقام بشكل صحيح.';
+    if (fullOtp.length !== 4 || !/^\d{4}$/.test(fullOtp)) {
+      this.errorMessage = 'يرجى إدخال رمز التحقق المكون من 4 أرقام بشكل صحيح.';
       return;
     }
     
@@ -195,7 +195,7 @@ export class PhoneRegisterPage implements OnInit, OnDestroy {
         this.errorMessage = 'رمز التحقق غير صحيح أو منتهي الصلاحية.';
         
         // Reset OTP fields
-        this.otpDigits = ['', '', '', '', '', ''];
+        this.otpDigits = ['', '', '', ''];
       }
     } catch (error) {
       console.error('Error verifying OTP:', error);
@@ -342,7 +342,7 @@ export class PhoneRegisterPage implements OnInit, OnDestroy {
           console.log('OTP resent successfully:', response);
           
           // Reset OTP fields
-          this.otpDigits = ['', '', '', '', '', ''];
+          this.otpDigits = ['', '', '', ''];
           
           // Start countdown again
           this.startCountdown(120);
@@ -420,7 +420,7 @@ export class PhoneRegisterPage implements OnInit, OnDestroy {
       this.otpDigits[index] = normalizedInput;
       
       // Auto-focus to next input
-      if (index < 5) {
+      if (index < 3) { // Changed from 5 to 3 for 4-digit OTP
         const nextInput = document.getElementById(`otp-${index + 1}`);
         if (nextInput) {
           nextInput.focus();
@@ -438,7 +438,7 @@ export class PhoneRegisterPage implements OnInit, OnDestroy {
         this.otpDigits[index] = lastDigit;
         
         // Auto-focus to next input
-        if (index < 5) {
+        if (index < 3) { // Changed from 5 to 3 for 4-digit OTP
           const nextInput = document.getElementById(`otp-${index + 1}`);
           if (nextInput) {
             nextInput.focus();

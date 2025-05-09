@@ -75,7 +75,7 @@
     <!-- OTP Verification Step -->
     <div *ngIf="step === 'verify'" class="form-container verify-step">
       <p class="ion-text-center ion-padding-horizontal">
-        تم إرسال رمز التحقق المكون من 6 أرقام إلى رقم الجوال
+        تم إرسال رمز التحقق المكون من 4 أرقام إلى رقم الجوال
         <strong dir="ltr">+{{ phoneNumber }}</strong>
       </p>
       
@@ -109,7 +109,7 @@
       <ion-button
         expand="block"
         (click)="verifyOTP()"
-        [disabled]="otpDigits.join('').length !== 6 || isSubmitting"
+        [disabled]="otpDigits.join('').length !== 4 || isSubmitting"
         class="verify-button"
       >
         <ion-spinner name="crescent" *ngIf="isSubmitting"></ion-spinner>
