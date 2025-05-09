@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { LoadingController, ToastController, ActionSheetController } from '@ionic/angular';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { IonicModule, LoadingController, ToastController, ActionSheetController } from '@ionic/angular';
+import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { Product } from '../../interfaces/product.interface';
 import { ProductService } from '../../services/product.service';
@@ -10,6 +10,7 @@ import { WishlistService } from '../../services/wishlist.service';
 import { ReviewService } from '../../services/review.service';
 import { RecommendationService } from '../../services/recommendation.service';
 import { AuthService } from '../../services/auth.service';
+import { CommonModule } from '@angular/common';
 
 // Define a ProductReview interface
 interface ProductReview {
@@ -26,6 +27,9 @@ interface ProductReview {
   selector: 'app-product-detail',
   templateUrl: './product-detail.page.html',
   styleUrls: ['./product-detail.page.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class ProductDetailPage implements OnInit, OnDestroy {
   product: Product;

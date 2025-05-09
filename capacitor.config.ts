@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.drzn.app',
-  appName: 'DRZN Shopping',
+  appId: 'com.drzn.sa',
+  appName: 'درزن',
   webDir: 'www',
   server: {
     androidScheme: 'https'
