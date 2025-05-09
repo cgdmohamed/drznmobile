@@ -1,15 +1,20 @@
-import { Component, OnInit, OnDestroy, ViewChildren, QueryList, ElementRef } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
-import { AlertController, LoadingController, ToastController } from '@ionic/angular';
+import { Component, OnInit, OnDestroy, ViewChildren, QueryList, ElementRef, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { IonicModule, AlertController, LoadingController, ToastController } from '@ionic/angular';
 import { OtpService } from '../../services/otp.service';
 import { AuthService } from '../../services/auth.service';
 import { finalize } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-otp',
   templateUrl: './otp.page.html',
   styleUrls: ['./otp.page.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule, FormsModule, RouterLink],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class OtpPage implements OnInit, OnDestroy {
   @ViewChildren('otpDigitInput') otpDigits: QueryList<ElementRef>;

@@ -51,7 +51,7 @@
       <div class="ratings-container">
         <div class="stars">
           <ion-icon name="star" *ngFor="let num of [1,2,3,4,5]" 
-            [color]="num <= product.average_rating ? 'warning' : 'medium'"></ion-icon>
+            [color]="num <= (product.average_rating ? parseFloat(product.average_rating) : 0) ? 'warning' : 'medium'"></ion-icon>
         </div>
         <span class="rating-count">
           ({{ product.rating_count }})
@@ -265,7 +265,7 @@
                 
                 <div class="product-rating">
                   <ion-icon name="star" *ngFor="let num of [1,2,3,4,5]" 
-                    [color]="num <= product.average_rating ? 'warning' : 'medium'"></ion-icon>
+                    [color]="num <= (product.average_rating ? parseFloat(product.average_rating) : 0) ? 'warning' : 'medium'"></ion-icon>
                   <span class="rating-count">({{ product.rating_count }})</span>
                 </div>
               </div>

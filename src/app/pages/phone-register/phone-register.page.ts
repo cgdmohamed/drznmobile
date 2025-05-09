@@ -1,17 +1,21 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
-import { LoadingController, AlertController, ToastController, NavController } from '@ionic/angular';
+import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { IonicModule, LoadingController, AlertController, ToastController, NavController } from '@ionic/angular';
 import { OtpService } from '../../services/otp.service';
 import { JwtAuthService } from '../../services/jwt-auth.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-phone-register',
   templateUrl: './phone-register.page.html',
   styleUrls: ['./phone-register.page.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class PhoneRegisterPage implements OnInit, OnDestroy {
   phoneForm: FormGroup;
