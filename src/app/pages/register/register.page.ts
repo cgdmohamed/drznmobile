@@ -1,15 +1,20 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { LoadingController, ToastController } from '@ionic/angular';
+import { FormBuilder, FormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { IonicModule, LoadingController, ToastController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { OtpService } from '../../services/otp.service';
 import { JwtAuthService } from '../../services/jwt-auth.service';
+import { CommonModule } from '@angular/common';
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 
 @Component({
   selector: 'app-register',
   templateUrl: './register.page.html',
   styleUrls: ['./register.page.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class RegisterPage implements OnInit {
   registerForm: FormGroup;

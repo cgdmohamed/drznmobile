@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { IonicModule, ToastController } from '@ionic/angular';
 import { ProductService } from '../../services/product.service';
 import { CartService } from '../../services/cart.service';
@@ -13,7 +13,7 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
   templateUrl: './search-results.page.html',
   styleUrls: ['./search-results.page.scss'],
   standalone: true,
-  imports: [IonicModule, CommonModule],
+  imports: [IonicModule, CommonModule, RouterLink],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class SearchResultsPage implements OnInit {
