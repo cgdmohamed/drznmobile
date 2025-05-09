@@ -1,33 +1,48 @@
-<ion-content>
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/login" text="" (click)="goBack($event)"></ion-back-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
   <div class="otp-container">
-    <div class="back-button" (click)="goBack()">
-      <ion-icon name="arrow-back-outline"></ion-icon>
-      <span>رجوع</span>
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="assets/images/logo.svg" alt="DARZN" />
     </div>
     
     <!-- Phone Input Screen -->
     <div *ngIf="!otpSent" class="phone-container">
-      <div class="phone-icon">
-        <ion-icon name="phone-portrait-outline"></ion-icon>
-      </div>
+      <h1 class="ion-text-center">تسجيل الدخول برقم الهاتف</h1>
+      <p class="ion-text-center">سيتم إرسال رمز التحقق إلى رقم هاتفك</p>
       
-      <h2>تسجيل الدخول برقم الهاتف</h2>
-      <p>سيتم إرسال رمز التحقق إلى رقم هاتفك</p>
+      <!-- Error message -->
+      <ion-text color="danger" *ngIf="errorMessage" class="error-message ion-text-center">
+        <p>{{ errorMessage }}</p>
+      </ion-text>
       
-      <div class="phone-input-container">
-        <div class="country-code">+966</div>
-        <ion-input 
-          type="tel" 
-          placeholder="أدخل رقم الهاتف"
-          [(ngModel)]="phoneNumber"
-          maxlength="10">
-        </ion-input>
+      <div class="phone-input-wrapper">
+        <div class="phone-input-container">
+          <div class="country-code">+966</div>
+          <ion-input 
+            type="tel" 
+            placeholder="5XXXXXXXX"
+            [(ngModel)]="phoneNumber"
+            inputmode="numeric"
+            maxlength="9"
+            (keypress)="onPhoneNumberKeyPress($event)">
+          </ion-input>
+        </div>
+        
+        <p class="phone-hint">أدخل رقم الهاتف بدون 0 في البداية</p>
       </div>
       
       <ion-button 
         expand="block" 
         class="send-otp-button" 
-        [disabled]="isSubmitting || !phoneNumber" 
+        [disabled]="isSubmitting || !isValidPhoneNumber()" 
         (click)="sendOtp()">
         <ion-spinner name="circles" *ngIf="isSubmitting"></ion-spinner>
         <span *ngIf="!isSubmitting">إرسال رمز التحقق</span>
@@ -36,12 +51,13 @@
     
     <!-- OTP Verification Screen -->
     <div *ngIf="otpSent" class="otp-verification-container">
-      <div class="otp-icon">
-        <ion-icon name="key-outline"></ion-icon>
-      </div>
+      <h1 class="ion-text-center">أدخل رمز التحقق</h1>
+      <p class="ion-text-center">تم إرسال رمز التحقق إلى رقم<br><strong dir="ltr">+966{{ phoneNumber }}</strong></p>
       
-      <h2>أدخل رمز التحقق</h2>
-      <p>تم إرسال رمز التحقق إلى رقم {{ phoneNumber }}</p>
+      <!-- Error message -->
+      <ion-text color="danger" *ngIf="errorMessage" class="error-message ion-text-center">
+        <p>{{ errorMessage }}</p>
+      </ion-text>
       
       <!-- Expiration timer -->
       <div class="otp-timer">
@@ -56,17 +72,19 @@
           #otpDigitInput
           *ngFor="let digit of otpCode; let i = index" 
           type="tel" 
+          inputmode="numeric"
           maxlength="1" 
           [(ngModel)]="otpCode[i]"
           (ionInput)="otpDigitInputChanged(i, $event)"
-          (keydown)="onKeyDown(i, $event)">
+          (keydown)="onKeyDown(i, $event)"
+          (paste)="onOtpPaste($event)">
         </ion-input>
       </div>
       
       <ion-button 
         expand="block" 
         class="verify-button" 
-        [disabled]="isSubmitting || otpCode.includes('')" 
+        [disabled]="isSubmitting || !isValidOtpCode()" 
         (click)="verifyOtp()">
         <ion-spinner name="circles" *ngIf="isSubmitting"></ion-spinner>
         <span *ngIf="!isSubmitting">تحقق</span>
@@ -77,6 +95,10 @@
         <a [class.disabled]="!resendEnabled" (click)="resendOtp()">
           {{ resendEnabled ? 'إرسال مرة أخرى' : 'انتظر ' + formatTime(remainingTime) }}
         </a>
+      </div>
+      
+      <div class="change-number">
+        <a (click)="changePhoneNumber()">تغيير رقم الهاتف</a>
       </div>
     </div>
   </div>

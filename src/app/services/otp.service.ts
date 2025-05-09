@@ -1,149 +1,176 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, from, of, throwError, firstValueFrom } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
 import { Storage } from '@ionic/storage-angular';
-import { EnvironmentService } from './environment.service';
+import { TaqnyatOtpService, TaqnyatOtpResponse } from './taqnyat-otp.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class OtpService {
-  private apiUrl = '/taqnyat-api';
-  private sender = 'DARZN';
   private readonly OTP_STORAGE_KEY = 'otp_verification_data';
+  private readonly PENDING_PHONE_KEY = 'pending_phone_verification';
   private readonly OTP_EXPIRATION_MINUTES = 10;
 
   constructor(
-    private http: HttpClient,
     private storage: Storage,
-    private environmentService: EnvironmentService
+    private taqnyatOtpService: TaqnyatOtpService
   ) {}
 
-  // Send OTP to a phone number
-  sendOtp(phoneNumber: string): Observable<any> {
-    // Format the phone number
-    const formattedNumber = this.formatPhoneNumber(phoneNumber);
+  /**
+   * Send OTP to a phone number using Taqnyat service
+   * @param phoneNumber The phone number to send the OTP to
+   * @param requestId Optional request ID for tracking
+   */
+  sendOtp(phoneNumber: string, requestId?: string): Observable<any> {
+    // Format the phone number as needed
+    const formattedPhone = this.formatPhoneNumber(phoneNumber);
     
-    // Generate a random 4-digit OTP
-    const verificationCode = this.generateOtpCode();
+    // Save the phone number as pending verification
+    this.storePendingPhone(formattedPhone);
     
-    // Store the OTP and its expiration time
-    this.storeOtpData(formattedNumber, verificationCode);
-    
-    if (!this.environmentService.isTaqnyatConfigured()) {
-      console.warn('Taqnyat API key not configured, using demo mode');
-      // In demo mode, return a mock response but use a real OTP code that's saved for verification
-      console.log(`Demo Mode: OTP ${verificationCode} would be sent to ${formattedNumber}`);
-      return of({
-        status: 'success',
-        message: 'OTP sent successfully (Demo Mode)',
-        messageId: 'msg_' + Math.random().toString(36).substring(2, 15)
-      });
-    }
-    
-    // Real implementation using Taqnyat.sa API
-    const endpoint = `${this.apiUrl}/v1/messages`;
-    const body = {
-      sender: this.sender,
-      recipients: [formattedNumber],
-      body: `Your DARZN verification code is: ${verificationCode}. Valid for ${this.OTP_EXPIRATION_MINUTES} minutes.`
-    };
-    const headers = {
-      'Authorization': `Bearer ${this.environmentService.taqnyatApiKey}`,
-      'Content-Type': 'application/json'
-    };
-    
-    return this.http.post(endpoint, body, { headers }).pipe(
-      tap(response => console.log('Taqnyat API response:', response)),
-      catchError(error => {
-        console.error('Error sending OTP via Taqnyat API:', error);
-        if (environment.production) {
-          return throwError(() => new Error('Failed to send verification code. Please try again later.'));
-        } else {
-          // In development, fallback to demo mode if API fails
-          console.log(`API Failed, Demo Fallback: OTP ${verificationCode} would be sent to ${formattedNumber}`);
-          return of({
-            status: 'success',
-            message: 'OTP sent successfully (Demo Fallback)',
-            messageId: 'msg_' + Math.random().toString(36).substring(2, 15)
-          });
+    // Use Taqnyat service to send OTP
+    return this.taqnyatOtpService.sendOtp(formattedPhone, requestId).pipe(
+      tap(response => {
+        console.log('OTP send response:', response);
+        if (response.status === 'success') {
+          // Store request ID for verification
+          this.storePendingRequestId(response.requestId);
         }
+      }),
+      // Transform the response to a simpler format for backwards compatibility
+      map(response => {
+        if (response.status === 'success') {
+          return {
+            status: 'success',
+            message: 'OTP sent successfully',
+            messageId: response.requestId || ('msg_' + Math.random().toString(36).substring(2, 15))
+          };
+        } else {
+          return {
+            status: 'error',
+            message: response.message,
+            code: response.code
+          };
+        }
+      }),
+      catchError(error => {
+        console.error('Error in OtpService.sendOtp:', error);
+        return throwError(() => new Error('Failed to send verification code. Please try again later.'));
       })
     );
   }
 
-  // Verify the OTP entered by the user
+  /**
+   * Verify the OTP entered by the user
+   * @param code The OTP code entered by the user
+   */
   async verifyOtp(code: string): Promise<boolean> {
-    // Get the stored OTP data
-    const otpData = await this.storage.get(this.OTP_STORAGE_KEY);
-    
-    if (!otpData) {
-      console.error('No OTP data found');
-      return false;
-    }
-    
-    const now = new Date();
-    const expirationTime = new Date(otpData.expirationTime);
-    
-    // Check if OTP has expired
-    if (now > expirationTime) {
-      console.error('OTP expired');
-      await this.storage.remove(this.OTP_STORAGE_KEY);
-      return false;
-    }
-    
-    // Verify the code
-    const isValid = code === otpData.code;
-    
-    console.log(`Verifying OTP: Entered=${code}, Stored=${otpData.code}, Valid=${isValid}`);
-    
-    // If valid, clear the stored OTP data
-    if (isValid) {
-      await this.storage.remove(this.OTP_STORAGE_KEY);
-    }
-    
-    return isValid;
-  }
-
-  // Generate a random 4-digit OTP code
-  private generateOtpCode(): string {
-    return Math.floor(1000 + Math.random() * 9000).toString();
-  }
-  
-  // Store OTP data with expiration
-  private async storeOtpData(phoneNumber: string, code: string): Promise<void> {
-    // Calculate expiration time (10 minutes from now)
-    const expirationTime = new Date();
-    expirationTime.setMinutes(expirationTime.getMinutes() + this.OTP_EXPIRATION_MINUTES);
-    
-    const otpData = {
-      phoneNumber,
-      code,
-      expirationTime: expirationTime.toISOString(),
-      createdAt: new Date().toISOString()
-    };
-    
-    await this.storage.set(this.OTP_STORAGE_KEY, otpData);
-  }
-
-  // Format phone number to international format for Saudi Arabia
-  private formatPhoneNumber(phoneNumber: string): string {
-    // Remove any non-digit characters
-    let cleaned = phoneNumber.replace(/\D/g, '');
-    
-    // If the number doesn't start with '+', add Saudi Arabia country code
-    if (!phoneNumber.startsWith('+')) {
-      // If it starts with '0', remove it
-      if (cleaned.startsWith('0')) {
-        cleaned = cleaned.substring(1);
+    try {
+      // Get the pending phone number
+      const pendingPhone = await this.getPendingPhone();
+      if (!pendingPhone) {
+        console.error('No pending phone verification found');
+        return false;
       }
       
-      // Add Saudi Arabia country code (+966)
-      cleaned = '966' + cleaned;
+      // Get the stored request ID if available
+      const requestId = await this.getPendingRequestId();
+      
+      // Verify with Taqnyat service using firstValueFrom instead of deprecated toPromise
+      const response = await firstValueFrom(
+        this.taqnyatOtpService.verifyOtp(pendingPhone, code, requestId)
+      );
+      
+      if (response.status === 'success') {
+        console.log('OTP verified successfully');
+        // Clear pending data
+        await this.clearPendingData();
+        return true;
+      } else {
+        console.error('OTP verification failed:', response.message);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Format phone number to E.164 format for Saudi Arabia
+   * @param phone The phone number to format
+   */
+  private formatPhoneNumber(phone: string): string {
+    // Remove any non-digit characters
+    let digits = phone.replace(/\D/g, '');
+    
+    // Remove country code (966) if present
+    if (digits.startsWith('966')) {
+      digits = digits.substring(3);
     }
     
-    return cleaned;
+    // Remove leading zero if present
+    if (digits.startsWith('0')) {
+      digits = digits.substring(1);
+    }
+    
+    // Return with Saudi country code (used internally only)
+    return digits;
+  }
+
+  /**
+   * Store the phone number that is pending verification
+   */
+  private async storePendingPhone(phoneNumber: string): Promise<void> {
+    await this.storage.set(this.PENDING_PHONE_KEY, {
+      phoneNumber,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Get the pending phone number
+   */
+  private async getPendingPhone(): Promise<string | null> {
+    const data = await this.storage.get(this.PENDING_PHONE_KEY);
+    if (!data) return null;
+    
+    // Check if the pending verification is still valid (not expired)
+    const timestamp = new Date(data.timestamp);
+    const now = new Date();
+    const diffMinutes = (now.getTime() - timestamp.getTime()) / (1000 * 60);
+    
+    if (diffMinutes > this.OTP_EXPIRATION_MINUTES) {
+      console.warn('Pending phone verification expired');
+      await this.clearPendingData();
+      return null;
+    }
+    
+    return data.phoneNumber;
+  }
+
+  /**
+   * Store the request ID for verification
+   */
+  private async storePendingRequestId(requestId: string): Promise<void> {
+    const data = await this.storage.get(this.PENDING_PHONE_KEY) || {};
+    data.requestId = requestId;
+    await this.storage.set(this.PENDING_PHONE_KEY, data);
+  }
+
+  /**
+   * Get the stored request ID
+   */
+  private async getPendingRequestId(): Promise<string | null> {
+    const data = await this.storage.get(this.PENDING_PHONE_KEY);
+    return data && data.requestId ? data.requestId : null;
+  }
+
+  /**
+   * Clear all pending verification data
+   */
+  private async clearPendingData(): Promise<void> {
+    await this.storage.remove(this.PENDING_PHONE_KEY);
   }
 }

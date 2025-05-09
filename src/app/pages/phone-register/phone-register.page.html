@@ -76,60 +76,56 @@
     <div *ngIf="step === 'verify'" class="form-container verify-step">
       <p class="ion-text-center ion-padding-horizontal">
         تم إرسال رمز التحقق المكون من 6 أرقام إلى رقم الجوال
-        <strong>{{ phoneNumber }}</strong>
+        <strong dir="ltr">+{{ phoneNumber }}</strong>
       </p>
       
-      <div class="otp-container">
-        <div class="otp-inputs">
-          <ng-container *ngFor="let digit of otpDigits; let i = index">
-            <ion-input
-              type="tel"
-              class="otp-input"
-              maxlength="1"
-              inputmode="numeric"
-              [id]="'otp-' + i"
-              [(ngModel)]="otpDigits[i]"
-              (ionInput)="onOtpDigitInput(i, $event)"
-              (keydown)="onOtpKeyDown(i, $event)"
-            ></ion-input>
-          </ng-container>
-        </div>
-        
-        <div class="timer-container" *ngIf="countdown > 0">
-          <ion-text color="medium">يمكنك إعادة إرسال الرمز بعد:</ion-text>
-          <ion-text color="primary" class="countdown">{{ timeLeft }}</ion-text>
-        </div>
-        
-        <ion-button
-          expand="block"
-          fill="clear"
-          class="resend-button"
-          [disabled]="resendDisabled"
-          (click)="resendOTP()"
-        >
-          إعادة إرسال الرمز
-        </ion-button>
+      <!-- Error message -->
+      <ion-text color="danger" *ngIf="errorMessage" class="error-message ion-text-center">
+        <p>{{ errorMessage }}</p>
+      </ion-text>
+      
+      <!-- Expiration timer -->
+      <div class="otp-timer" *ngIf="countdown > 0">
+        <ion-note>
+          <ion-icon name="time-outline"></ion-icon>
+          <span>ينتهي الرمز في {{ timeLeft }}</span>
+        </ion-note>
+      </div>
+      
+      <div class="otp-input-container">
+        <ion-input 
+          *ngFor="let digit of otpDigits; let i = index" 
+          type="tel" 
+          inputmode="numeric"
+          maxlength="1" 
+          [id]="'otp-' + i"
+          [(ngModel)]="otpDigits[i]"
+          (ionInput)="onOtpDigitInput(i, $event)"
+          (keydown)="onOtpKeyDown(i, $event)"
+          (paste)="onOtpPaste($event)">
+        </ion-input>
       </div>
       
       <ion-button
         expand="block"
         (click)="verifyOTP()"
         [disabled]="otpDigits.join('').length !== 6 || isSubmitting"
-        class="submit-button"
+        class="verify-button"
       >
         <ion-spinner name="crescent" *ngIf="isSubmitting"></ion-spinner>
         <span *ngIf="!isSubmitting">تحقق من الرمز</span>
       </ion-button>
       
-      <ion-button
-        expand="block"
-        fill="outline"
-        (click)="goBack()"
-        [disabled]="isSubmitting"
-        class="ion-margin-top back-button"
-      >
-        تغيير رقم الجوال
-      </ion-button>
+      <div class="resend-code">
+        <span>لم تستلم الرمز؟</span>
+        <a [class.disabled]="resendDisabled" (click)="resendOTP()">
+          {{ resendDisabled ? 'انتظر ' + timeLeft : 'إرسال مرة أخرى' }}
+        </a>
+      </div>
+      
+      <div class="change-number">
+        <a (click)="goBack()">تغيير رقم الهاتف</a>
+      </div>
     </div>
     
     <!-- User Details Step -->

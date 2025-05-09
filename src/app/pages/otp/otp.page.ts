@@ -1,20 +1,21 @@
-import { Component, OnInit, ViewChildren, QueryList, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertController, LoadingController, ToastController } from '@ionic/angular';
 import { OtpService } from '../../services/otp.service';
 import { AuthService } from '../../services/auth.service';
 import { finalize } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-otp',
   templateUrl: './otp.page.html',
   styleUrls: ['./otp.page.scss'],
 })
-export class OtpPage implements OnInit {
+export class OtpPage implements OnInit, OnDestroy {
   @ViewChildren('otpDigitInput') otpDigits: QueryList<ElementRef>;
   
   phoneNumber: string = '';
-  otpCode: string[] = ['', '', '', ''];
+  otpCode: string[] = ['', '', '', '', '', '']; // 6-digit OTP
   isSubmitting: boolean = false;
   returnUrl: string = '/';
   otpSent: boolean = false;
@@ -22,6 +23,9 @@ export class OtpPage implements OnInit {
   remainingTime: number = 0;
   resendEnabled: boolean = false;
   timerInterval: any;
+  errorMessage: string = '';
+  
+  private otpSendSubscription: Subscription;
   
   constructor(
     private router: Router,
@@ -43,22 +47,18 @@ export class OtpPage implements OnInit {
     // Get phone number from query params (coming from login with mobile)
     const phoneFromParams = this.route.snapshot.queryParams['phoneNumber'];
     if (phoneFromParams) {
-      this.phoneNumber = phoneFromParams;
-      // Automatically send OTP if phone number is provided
-      setTimeout(() => {
-        this.sendOtp();
-      }, 500);
+      this.phoneNumber = this.sanitizePhoneNumber(phoneFromParams);
+      // Automatically send OTP if phone number is provided and valid
+      if (this.isValidPhoneNumber()) {
+        setTimeout(() => {
+          this.sendOtp();
+        }, 500);
+      }
     }
     
     // If already authenticated, navigate to returnUrl
     if (this.authService.isLoggedIn) {
       this.router.navigate([this.returnUrl]);
-    }
-    
-    // Set default phone number for testing if none provided
-    // This allows direct access to the OTP page for testing
-    if (!this.phoneNumber) {
-      this.phoneNumber = '0500000000'; // Default testing number
     }
   }
 
@@ -67,16 +67,73 @@ export class OtpPage implements OnInit {
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
     }
+    
+    // Unsubscribe from any active subscriptions
+    if (this.otpSendSubscription) {
+      this.otpSendSubscription.unsubscribe();
+    }
   }
 
+  /**
+   * Handle phone number input key press
+   * Only allow numeric digits
+   */
+  onPhoneNumberKeyPress(event: KeyboardEvent): boolean {
+    const charCode = event.which || event.keyCode;
+    // Allow only numeric digits (0-9)
+    return charCode >= 48 && charCode <= 57;
+  }
+
+  /**
+   * Validate phone number format
+   */
+  isValidPhoneNumber(): boolean {
+    // Saudi mobile number must be 9 digits and start with 5
+    return !!this.phoneNumber && 
+           this.phoneNumber.length === 9 && 
+           this.phoneNumber.startsWith('5');
+  }
+
+  /**
+   * Validate OTP code format
+   */
+  isValidOtpCode(): boolean {
+    // Must be a 6-digit code (all inputs filled)
+    return this.otpCode.every(digit => !!digit);
+  }
+
+  /**
+   * Clean and format phone number
+   */
+  private sanitizePhoneNumber(phone: string): string {
+    // Remove any non-digit characters
+    let cleaned = phone.replace(/\D/g, '');
+    
+    // Remove country code (966) if present
+    if (cleaned.startsWith('966')) {
+      cleaned = cleaned.substring(3);
+    }
+    
+    // Remove leading zero if present
+    if (cleaned.startsWith('0')) {
+      cleaned = cleaned.substring(1);
+    }
+    
+    return cleaned;
+  }
+
+  /**
+   * Send OTP to the provided phone number
+   */
   async sendOtp() {
-    if (!this.phoneNumber || this.phoneNumber.length < 9) {
-      await this.showAlert('خطأ', 'يرجى إدخال رقم هاتف صالح');
+    if (!this.isValidPhoneNumber()) {
+      this.errorMessage = 'يرجى إدخال رقم هاتف صالح يبدأ برقم 5';
       return;
     }
     
     this.isSubmitting = true;
     this.resendEnabled = false;
+    this.errorMessage = '';
     
     const loading = await this.loadingCtrl.create({
       message: 'جاري إرسال رمز التحقق...',
@@ -84,36 +141,46 @@ export class OtpPage implements OnInit {
     });
     await loading.present();
     
-    this.otpService.sendOtp(this.phoneNumber)
+    this.otpSendSubscription = this.otpService.sendOtp(this.phoneNumber)
       .pipe(finalize(() => {
         loading.dismiss();
         this.isSubmitting = false;
       }))
       .subscribe({
         next: (response) => {
-          this.otpSent = true;
-          
-          // Set up cooldown timer for resend (2 minutes)
-          this.remainingTime = 120;
-          this.startResendTimer();
-          
-          // Focus on first input
-          setTimeout(() => {
-            if (this.otpDigits && this.otpDigits.first) {
-              this.otpDigits.first.nativeElement.focus();
-            }
-          }, 300);
-          
-          this.presentToast('تم إرسال رمز التحقق إلى رقم الهاتف المدخل', 'success');
+          if (response.status === 'success') {
+            this.otpSent = true;
+            
+            // Reset OTP code fields
+            this.otpCode = ['', '', '', '', '', ''];
+            
+            // Set up cooldown timer for resend (2 minutes)
+            this.remainingTime = 120;
+            this.startResendTimer();
+            
+            // Focus on first input
+            setTimeout(() => {
+              if (this.otpDigits && this.otpDigits.first) {
+                this.otpDigits.first.nativeElement.focus();
+              }
+            }, 300);
+            
+            this.presentToast('تم إرسال رمز التحقق إلى رقم الهاتف المدخل', 'success');
+          } else {
+            console.error('OTP send error:', response);
+            this.errorMessage = response.message || 'حدث خطأ أثناء إرسال رمز التحقق';
+          }
         },
         error: (error) => {
           console.error('OTP send error:', error);
-          this.showAlert('خطأ', 'حدث خطأ أثناء إرسال رمز التحقق. يرجى المحاولة مرة أخرى لاحقًا.');
+          this.errorMessage = error.message || 'حدث خطأ أثناء إرسال رمز التحقق. يرجى المحاولة مرة أخرى لاحقًا.';
         }
       });
   }
 
-  // Start a timer for OTP resend cooldown
+  /**
+   * Start a timer for OTP resend cooldown
+   */
   startResendTimer() {
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
@@ -129,17 +196,19 @@ export class OtpPage implements OnInit {
     }, 1000);
   }
 
+  /**
+   * Verify the OTP code entered by user
+   */
   async verifyOtp() {
     const otpValue = this.otpCode.join('');
     
-    console.log('Verifying OTP code:', otpValue);
-    
-    if (otpValue.length !== 4) {
-      await this.showAlert('خطأ', 'يرجى إدخال رمز التحقق كاملاً');
+    if (!this.isValidOtpCode()) {
+      this.errorMessage = 'يرجى إدخال رمز التحقق كاملاً';
       return;
     }
     
     this.isSubmitting = true;
+    this.errorMessage = '';
     
     const loading = await this.loadingCtrl.create({
       message: 'جاري التحقق من الرمز...',
@@ -161,17 +230,54 @@ export class OtpPage implements OnInit {
       } else {
         loading.dismiss();
         this.isSubmitting = false;
-        this.showAlert('خطأ', 'رمز التحقق غير صحيح أو منتهي الصلاحية');
+        this.errorMessage = 'رمز التحقق غير صحيح أو منتهي الصلاحية';
       }
     } catch (error) {
       loading.dismiss();
       this.isSubmitting = false;
       console.error('OTP verification error:', error);
-      this.showAlert('خطأ', 'حدث خطأ أثناء التحقق من الرمز');
+      this.errorMessage = 'حدث خطأ أثناء التحقق من الرمز';
     }
   }
 
-  // Handle registration after successful OTP verification
+  /**
+   * Handle OTP paste event
+   */
+  onOtpPaste(event: ClipboardEvent) {
+    event.preventDefault();
+    
+    const clipboardData = event.clipboardData;
+    if (!clipboardData) return;
+    
+    const pastedText = clipboardData.getData('text');
+    if (!pastedText) return;
+    
+    // Extract only digits from pasted text
+    const digits = pastedText.replace(/\D/g, '');
+    
+    // Fill in the OTP inputs with pasted digits
+    for (let i = 0; i < Math.min(digits.length, this.otpCode.length); i++) {
+      this.otpCode[i] = digits[i];
+    }
+    
+    // Focus the next unfilled input, or the last one if all are filled
+    const unfilled = this.otpCode.findIndex(digit => !digit);
+    setTimeout(() => {
+      const index = unfilled >= 0 ? unfilled : this.otpCode.length - 1;
+      if (this.otpDigits && this.otpDigits.toArray()[index]) {
+        this.otpDigits.toArray()[index].nativeElement.focus();
+      }
+      
+      // If all digits are filled, automatically verify
+      if (this.isValidOtpCode()) {
+        setTimeout(() => this.verifyOtp(), 300);
+      }
+    }, 100);
+  }
+
+  /**
+   * Handle registration after successful OTP verification
+   */
   private async handleRegistration(loading: HTMLIonLoadingElement) {
     // Get pending registration data
     const pendingRegistrationJSON = localStorage.getItem('pendingRegistration');
@@ -179,7 +285,7 @@ export class OtpPage implements OnInit {
     if (!pendingRegistrationJSON) {
       loading.dismiss();
       this.isSubmitting = false;
-      this.showAlert('خطأ', 'لم يتم العثور على بيانات التسجيل، يرجى المحاولة مرة أخرى.');
+      this.errorMessage = 'لم يتم العثور على بيانات التسجيل، يرجى المحاولة مرة أخرى.';
       return;
     }
     
@@ -188,10 +294,10 @@ export class OtpPage implements OnInit {
       
       // Create a user account with phone number
       const userData = {
-        first_name: pendingRegistration.first_name,
-        last_name: pendingRegistration.last_name,
-        email: pendingRegistration.email || `${this.phoneNumber}@darzn.com`, // Use provided email or generate one
-        username: this.phoneNumber, // Use phone as username
+        first_name: pendingRegistration.first_name || pendingRegistration.firstName || 'مستخدم',
+        last_name: pendingRegistration.last_name || pendingRegistration.lastName || 'جديد',
+        email: pendingRegistration.email || `${this.phoneNumber}@drzn.com`, // Use provided email or generate one
+        username: `mobile_${this.phoneNumber}`, // Use phone as username with prefix
         password: 'Mobile' + Math.floor(100000 + Math.random() * 900000), // Generate a secure random password
         phone: this.phoneNumber
       };
@@ -220,40 +326,38 @@ export class OtpPage implements OnInit {
           loading.dismiss();
           this.isSubmitting = false;
           console.error('Registration error:', error);
-          this.showAlert('خطأ في التسجيل', 'حدث خطأ أثناء إنشاء الحساب، يرجى المحاولة مرة أخرى.');
+          this.errorMessage = 'حدث خطأ أثناء إنشاء الحساب، يرجى المحاولة مرة أخرى.';
         }
       });
     } catch (error) {
       loading.dismiss();
       this.isSubmitting = false;
       console.error('Pending registration parse error:', error);
-      this.showAlert('خطأ', 'حدث خطأ في بيانات التسجيل، يرجى المحاولة مرة أخرى.');
+      this.errorMessage = 'حدث خطأ في بيانات التسجيل، يرجى المحاولة مرة أخرى.';
     }
   }
   
-  // Handle login after successful OTP verification
+  /**
+   * Handle login after successful OTP verification
+   */
   private async handleLogin(loading: HTMLIonLoadingElement) {
     loading.dismiss();
     this.isSubmitting = false;
     
     // Try to login with phone-based credentials
-    const autoLoginEmail = `${this.phoneNumber}@darzn.com`;
-    const autoLoginPwd = 'temporary_password'; // This is just for demonstration
+    // For most implementations, we'd need to implement a special login flow on the backend
+    // that accepts a verified phone number as authentication
+    // Here we'll just redirect to login page with a success message
     
-    this.authService.login(autoLoginEmail, autoLoginPwd).subscribe({
-      next: (loginResponse) => {
-        this.presentToast('تم تسجيل الدخول بنجاح', 'success');
-        this.router.navigate([this.returnUrl]);
-      },
-      error: (loginError) => {
-        // If login fails, could mean the user needs to register first
-        console.log('Login failed, redirecting to login page:', loginError);
-        this.presentToast('تم التحقق من رقم الهاتف بنجاح، يرجى تسجيل الدخول', 'success');
-        this.router.navigate(['/login']);
-      }
-    });
+    this.presentToast('تم التحقق من رقم الهاتف بنجاح', 'success');
+    
+    // Redirect to home page or requested page
+    this.router.navigate([this.returnUrl || '/home']);
   }
 
+  /**
+   * Handle OTP digit input change
+   */
   otpDigitInputChanged(index: number, event: any) {
     // Get the value from the event target
     let value = event.target.value;
@@ -278,12 +382,12 @@ export class OtpPage implements OnInit {
     }
     
     // If a digit was entered and there is a next input, focus it
-    if (value && index < 3) {
+    if (value && index < this.otpCode.length - 1) {
       this.otpDigits.toArray()[index + 1].nativeElement.focus();
     }
     
     // If all digits are filled, automatically verify
-    if (this.otpCode.every(digit => digit.length > 0)) {
+    if (this.isValidOtpCode()) {
       console.log('All digits entered, verifying:', this.otpCode.join(''));
       setTimeout(() => {
         this.verifyOtp();
@@ -291,7 +395,9 @@ export class OtpPage implements OnInit {
     }
   }
   
-  // Helper function to normalize Arabic/Persian/other numerals to Western numerals
+  /**
+   * Helper function to normalize Arabic/Persian/other numerals to Western numerals
+   */
   private normalizeDigits(value: string): string {
     // Handle Arabic numerals (٠١٢٣٤٥٦٧٨٩)
     const arabicNumeralsMap = {
@@ -303,6 +409,9 @@ export class OtpPage implements OnInit {
     return value.replace(/[٠-٩]/g, match => arabicNumeralsMap[match] || match);
   }
 
+  /**
+   * Handle keyboard key down events in OTP input
+   */
   onKeyDown(index: number, event: KeyboardEvent) {
     // If backspace is pressed and current field is empty, focus previous field
     if (event.key === 'Backspace' && !this.otpCode[index] && index > 0) {
@@ -310,19 +419,31 @@ export class OtpPage implements OnInit {
     }
   }
 
+  /**
+   * Resend OTP code
+   */
   async resendOtp() {
     if (this.resendEnabled) {
       // Reset OTP code fields
-      this.otpCode = ['', '', '', ''];
+      this.otpCode = ['', '', '', '', '', ''];
       // Send OTP again
       await this.sendOtp();
     }
   }
 
-  goBack() {
+  /**
+   * Go back to previous screen or change state
+   */
+  goBack(event?: Event) {
+    // Prevent default behavior of ion-back-button if provided
+    if (event) {
+      event.preventDefault();
+    }
+    
     if (this.otpSent) {
       this.otpSent = false;
-      this.otpCode = ['', '', '', ''];
+      this.otpCode = ['', '', '', '', '', ''];
+      this.errorMessage = '';
       
       // Clear any active timers
       if (this.timerInterval) {
@@ -333,6 +454,23 @@ export class OtpPage implements OnInit {
     }
   }
 
+  /**
+   * Change phone number (go back to phone input screen)
+   */
+  changePhoneNumber() {
+    this.otpSent = false;
+    this.otpCode = ['', '', '', '', '', ''];
+    this.errorMessage = '';
+    
+    // Clear any active timers
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+  }
+
+  /**
+   * Show alert dialog
+   */
   async showAlert(header: string, message: string) {
     const alert = await this.alertCtrl.create({
       header,
@@ -343,6 +481,9 @@ export class OtpPage implements OnInit {
     await alert.present();
   }
   
+  /**
+   * Present toast notification
+   */
   async presentToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
     const toast = await this.toastCtrl.create({
       message: message,
@@ -360,7 +501,9 @@ export class OtpPage implements OnInit {
     await toast.present();
   }
   
-  // Format remaining time as MM:SS
+  /**
+   * Format remaining time as MM:SS
+   */
   formatTime(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
