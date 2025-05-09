@@ -32,6 +32,10 @@ interface ProductReview {
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class ProductDetailPage implements OnInit, OnDestroy {
+  // Add parseFloat method for template use
+  parseFloat(value: string | number): number {
+    return typeof value === 'string' ? Number.parseFloat(value) : value;
+  }
   product: Product;
   relatedProducts: Product[] = [];
   featuredProducts: Product[] = [];

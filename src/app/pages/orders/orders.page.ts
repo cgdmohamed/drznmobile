@@ -1,13 +1,18 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { OrderService } from '../../services/order.service';
 import { AuthService } from '../../services/auth.service';
 import { Order } from '../../interfaces/order.interface';
-import { LoadingController, ToastController } from '@ionic/angular';
+import { IonicModule, LoadingController, ToastController } from '@ionic/angular';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-orders',
   templateUrl: './orders.page.html',
   styleUrls: ['./orders.page.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule, RouterLink],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class OrdersPage implements OnInit {
   orders: Order[] = [];
