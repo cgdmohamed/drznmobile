@@ -1,14 +1,20 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { OrderService } from '../../services/order.service';
 import { Order } from '../../interfaces/order.interface';
-import { LoadingController, ToastController, AlertController } from '@ionic/angular';
+import { IonicModule, LoadingController, ToastController, AlertController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { CurrencyIconComponent } from '../../components/currency-icon/currency-icon.component';
 
 @Component({
   selector: 'app-order-detail',
   templateUrl: './order-detail.page.html',
   styleUrls: ['./order-detail.page.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule, FormsModule, RouterLink, CurrencyIconComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class OrderDetailPage implements OnInit, OnDestroy {
   order: Order | null = null;
