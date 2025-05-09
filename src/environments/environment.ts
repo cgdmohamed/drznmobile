@@ -15,7 +15,7 @@ export const environment = {
   // Payment gateway
   moyasarPublishableKey: 'pk_test_RU3BN2JEMDqyMGS6HcEiKcCw2bGhgR9tQnU6ihmY',
   // Taqnyat SMS service - will be loaded from environment variables in the service
-  taqnyatApiKey: 'TAQNYAT_API_KEY_PLACEHOLDER',
+  taqnyatApiKey: '',  // Will be set from EnvironmentService
   // OneSignal push notifications
   oneSignalAppId: '2a550f67-58af-4101-a500-28a97612f69c',
   // JWT Authentication

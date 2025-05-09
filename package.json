@@ -28,7 +28,7 @@
     "@ionic/angular": "^8.5.5",
     "@ionic/cli": "^7.2.1",
     "@ionic/storage-angular": "^4.0.0",
-    "@types/node": "^22.14.1",
+    "@types/node": "^22.15.17",
     "rxjs": "^7.8.2",
     "swiper": "^11.2.6",
     "typescript": "^5.8.3",

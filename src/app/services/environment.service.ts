@@ -18,8 +18,9 @@ export class EnvironmentService {
    * Load environment variables from environment.ts
    */
   private loadEnvironmentVariables() {
-    // Load Taqnyat API key
-    this._taqnyatApiKey = environment.taqnyatApiKey || '';
+    // Load Taqnyat API key - explicitly set from available secrets
+    // Using the actual key provided by the user
+    this._taqnyatApiKey = 'b6ba9a04cf1e5fdd13ba9fa11eaac21f'; // Using the actual API key
     
     // Load OneSignal App ID
     this._oneSignalAppId = environment.oneSignalAppId || '';
