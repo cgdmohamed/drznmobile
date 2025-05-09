@@ -175,13 +175,13 @@ export class PhoneRegisterPage implements OnInit, OnDestroy {
     await loading.present();
     
     try {
-      // Verify OTP using the OTP service
-      const valid = await this.otpService.verifyOtp(fullOtp);
+      // Verify OTP using the OTP service with phone number and entered code
+      const response = await this.otpService.verifyOtp(this.phoneNumber, fullOtp);
       
       loading.dismiss();
       this.isSubmitting = false;
       
-      if (valid) {
+      if (response && response.status === 'success') {
         this.presentToast('تم التحقق من الرمز بنجاح', 'success');
         
         // Move to user details step
@@ -192,7 +192,8 @@ export class PhoneRegisterPage implements OnInit, OnDestroy {
           clearInterval(this.countdownInterval);
         }
       } else {
-        this.errorMessage = 'رمز التحقق غير صحيح أو منتهي الصلاحية.';
+        // Show error message from API response if verification fails
+        this.errorMessage = response?.message || 'رمز التحقق غير صحيح أو منتهي الصلاحية.';
         
         // Reset OTP fields
         this.otpDigits = ['', '', '', ''];
@@ -202,7 +203,13 @@ export class PhoneRegisterPage implements OnInit, OnDestroy {
       loading.dismiss();
       this.isSubmitting = false;
       
-      this.errorMessage = error.message || 'حدث خطأ أثناء التحقق من الرمز. يرجى المحاولة مرة أخرى.';
+      // Try to extract error message if available
+      let errorMessage = 'حدث خطأ أثناء التحقق من الرمز. يرجى المحاولة مرة أخرى.';
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = error.message;
+      }
+      
+      this.errorMessage = errorMessage;
     }
   }
   

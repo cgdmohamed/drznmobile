@@ -217,10 +217,16 @@ export class OtpPage implements OnInit, OnDestroy {
     await loading.present();
     
     try {
-      // Use the updated OTP service with proper validation
-      const isVerified = await this.otpService.verifyOtp(otpValue);
+      // Get the phone number for verification
+      const phoneNumber = this.phoneNumber;
+      if (!phoneNumber) {
+        throw new Error('رقم الهاتف غير متوفر');
+      }
       
-      if (isVerified) {
+      // Use the updated OTP service with proper validation
+      const response = await this.otpService.verifyOtp(phoneNumber, otpValue);
+      
+      if (response && response.status === 'success') {
         // Handle successful verification
         if (this.isRegistration) {
           await this.handleRegistration(loading);
@@ -230,13 +236,23 @@ export class OtpPage implements OnInit, OnDestroy {
       } else {
         loading.dismiss();
         this.isSubmitting = false;
-        this.errorMessage = 'رمز التحقق غير صحيح أو منتهي الصلاحية';
+        
+        // Use the error message from the response or a default message
+        this.errorMessage = (response && response.message) 
+          ? response.message 
+          : 'رمز التحقق غير صحيح أو منتهي الصلاحية';
       }
     } catch (error) {
       loading.dismiss();
       this.isSubmitting = false;
       console.error('OTP verification error:', error);
-      this.errorMessage = 'حدث خطأ أثناء التحقق من الرمز';
+      
+      // Extract error message if available
+      if (error && typeof error === 'object' && 'message' in error) {
+        this.errorMessage = error.message;
+      } else {
+        this.errorMessage = 'حدث خطأ أثناء التحقق من الرمز';
+      }
     }
   }
 

@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of, throwError, from } from 'rxjs';
-import { map, catchError, switchMap, timeout } from 'rxjs/operators';
-import { TimeoutError } from 'rxjs';
+import { Observable, of, throwError, from, TimeoutError } from 'rxjs';
+import { catchError, map, switchMap, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Storage } from '@ionic/storage-angular';
 import { EnvironmentService } from './environment.service';

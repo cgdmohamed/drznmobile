@@ -39,8 +39,12 @@ export class CheckoutPage implements OnInit, OnDestroy {
   paymentMethod = 'creditCard'; // Default payment method
   
   // New multi-step checkout flow
+  step = 0; // 0: initial, 1: shipping, 2: payment, 3: review, 4: confirmation
   currentStep: CheckoutStep = 'shipping';
   isLoading = true;
+  
+  // Shipping address
+  selectedShippingAddress: any = null;
   
   // Verification and order states
   otpConfirmed = false;
@@ -49,13 +53,14 @@ export class CheckoutPage implements OnInit, OnDestroy {
   placingOrder = false;
   orderId: number | null = null;
   
-  // Payment related properties
-  creditCardFormSubmitted = false;
+  // Payment state
+  showCreditCardModal = false;
   paymentId: string | null = null;
-  phoneNumber: string = '';
-  showCreditCardForm = false;
+  creditCardFormSubmitted = false;
   isApplePayAvailable = false;
   isStcPaySelected = false;
+  phoneNumber: string = '';
+  showCreditCardForm = false;
   creditCardHolderName: string = '';
   creditCardNumber: string = '';
   creditCardExpiry: string = '';
@@ -1298,27 +1303,106 @@ export class CheckoutPage implements OnInit, OnDestroy {
     
     await loading.present();
     
-    // Verify OTP
-    const isValid = this.otpService.verifyOtp(this.verificationCode);
-    
-    if (isValid) {
-      loading.dismiss();
-      this.otpConfirmed = true;
-      this.otpVerificationInProgress = false;
-      
-      // Proceed based on the current context
-      if (this.step === 0) {
-        // Initial verification before checkout
-        this.step = 1; // Start with shipping info
-      } else {
-        // Verification during payment step
-        this.step = 3; // Move to review step
+    try {
+      // Get the phone number for verification
+      const phoneNumber = this.getPhoneNumber();
+      if (!phoneNumber) {
+        throw new Error('رقم الهاتف غير متوفر للتحقق');
       }
       
-      this.presentToast('تم التحقق بنجاح', 'success');
-    } else {
+      // Validate the OTP with updated service that takes phone number and code
+      const response = await this.otpService.verifyOtp(phoneNumber, this.verificationCode);
+      
       loading.dismiss();
-      this.presentToast('رمز التحقق غير صحيح. الرجاء المحاولة مرة أخرى.', 'danger');
+      
+      if (response && response.status === 'success') {
+        this.otpConfirmed = true;
+        this.otpVerificationInProgress = false;
+        
+        // Proceed based on the current context
+        if (this.step === 0) {
+          // Initial verification before checkout
+          this.step = 1; // Start with shipping info
+        } else {
+          // Verification during payment step
+          this.step = 3; // Move to review step
+        }
+        
+        this.presentToast('تم التحقق بنجاح', 'success');
+      } else {
+        // Show error message from API
+        const errorMessage = response?.message || 'رمز التحقق غير صحيح. الرجاء المحاولة مرة أخرى.';
+        this.presentToast(errorMessage, 'danger');
+      }
+    } catch (error) {
+      loading.dismiss();
+      console.error('Error verifying OTP:', error);
+      this.presentToast('حدث خطأ أثناء التحقق، يرجى المحاولة مرة أخرى', 'danger');
+    }
+  }
+  
+  /**
+   * Get the phone number for OTP verification
+   * Try to get it from different sources depending on the context
+   */
+  private getPhoneNumber(): string | null {
+    // Try to get from shipping form if available
+    if (this.shippingForm && this.shippingForm.value.phone) {
+      return this.shippingForm.value.phone;
+    }
+    
+    // Try to get from user data if available
+    if (this.user && this.user.billing && this.user.billing.phone) {
+      return this.user.billing.phone;
+    }
+    
+    // Try to get from selected shipping address if available
+    if (this.selectedShippingAddress && this.selectedShippingAddress.phone) {
+      return this.selectedShippingAddress.phone;
+    }
+    
+    return null;
+  }
+  
+  // Helper method to present toast messages
+  async presentToast(message: string, color: string = 'success') {
+    const toast = await this.toastController.create({
+      message: message,
+      duration: 3000,
+      position: 'bottom',
+      color: color,
+      buttons: [
+        {
+          text: 'إغلاق',
+          role: 'cancel'
+        }
+      ]
+    });
+    await toast.present();
+  }
+  
+  // Helper to mark all controls in a form group as touched (for validation display)
+  markFormGroupTouched(formGroup: FormGroup) {
+    Object.values(formGroup.controls).forEach(control => {
+      control.markAsTouched();
+      
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
+  }
+  
+  // Check if Apple Pay is available
+  detectApplePayAvailability(): boolean {
+    if (typeof window === 'undefined' || !window.ApplePaySession) {
+      return false;
+    }
+    
+    try {
+      return window.ApplePaySession && window.ApplePaySession.canMakePayments();
+    } catch (e) {
+      console.error('Error checking Apple Pay availability:', e);
+      return false;
     }
   }
 
@@ -1544,6 +1628,12 @@ export class CheckoutPage implements OnInit, OnDestroy {
     }, 1000);
   }
   
+  // Generate a temporary order number for display purposes
+  getTempOrderNumber(): string {
+    // Generate a random order number for display in the payment form
+    return 'TMP' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+  }
+  
   // Handle payment callback from Moyasar
   async handlePaymentCallback(paymentId: string) {
     console.log('Payment callback received with ID:', paymentId);
@@ -1605,48 +1695,5 @@ export class CheckoutPage implements OnInit, OnDestroy {
     );
   }
   
-  // Generate a temporary order number for display purposes
-  getTempOrderNumber(): string {
-    // Generate a random order number for display in the payment form
-    return 'TMP' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-  }
-  
-  // Show toast message
-  async presentToast(message: string, color: string = 'success') {
-    const toast = await this.toastController.create({
-      message: message,
-      duration: 2000,
-      position: 'bottom',
-      color: color
-    });
-    
-    await toast.present();
-  }
 
-  // Mark all fields as touched to show validation errors
-  private markFormGroupTouched(formGroup: FormGroup) {
-    Object.values(formGroup.controls).forEach(control => {
-      control.markAsTouched();
-      
-      if (control instanceof FormGroup) {
-        this.markFormGroupTouched(control);
-      }
-    });
-  }
-  
-  // Detect if Apple Pay is available based on Moyasar guidelines
-  private detectApplePayAvailability(): boolean {
-    // Check if we're running in a compatible browser environment
-    if (typeof window === 'undefined' || !window.ApplePaySession) {
-      return false;
-    }
-    
-    try {
-      // Check if Apple Pay is available with the device
-      return window.ApplePaySession && window.ApplePaySession.canMakePayments();
-    } catch (error) {
-      console.error('Error detecting Apple Pay availability:', error);
-      return false;
-    }
-  }
 }

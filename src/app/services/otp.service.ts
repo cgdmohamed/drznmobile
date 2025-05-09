@@ -64,34 +64,43 @@ export class OtpService {
 
   /**
    * Verify the OTP entered by the user
+   * @param phoneNumber The phone number to verify
    * @param code The OTP code entered by the user
    */
-  async verifyOtp(code: string): Promise<boolean> {
+  async verifyOtp(phoneNumber: string, code: string): Promise<WordPressOtpResponse> {
     try {
-      // Get the pending phone number
-      const pendingPhone = await this.getPendingPhone();
-      if (!pendingPhone) {
-        console.error('No pending phone verification found');
-        return false;
+      // If no phone number provided, try to get the pending one
+      const actualPhone = phoneNumber || await this.getPendingPhone();
+      if (!actualPhone) {
+        console.error('No phone number for verification');
+        return {
+          status: 'error',
+          message: 'رقم الهاتف غير متوفر للتحقق من الرمز',
+          code: 400
+        };
       }
       
       // Verify with WordPress proxy using firstValueFrom instead of deprecated toPromise
       const response = await firstValueFrom(
-        this.taqnyatOtpService.verifyOtp(pendingPhone, code)
+        this.taqnyatOtpService.verifyOtp(actualPhone, code)
       );
       
       if (response.status === 'success') {
         console.log('OTP verified successfully');
         // Clear pending data
         await this.clearPendingData();
-        return true;
       } else {
         console.error('OTP verification failed:', response.message);
-        return false;
       }
+      
+      return response;
     } catch (error) {
       console.error('Error verifying OTP:', error);
-      return false;
+      return {
+        status: 'error',
+        message: typeof error === 'string' ? error : 'حدث خطأ أثناء التحقق من الرمز',
+        code: 500
+      };
     }
   }
 
