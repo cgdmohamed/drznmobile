@@ -50,7 +50,7 @@ class Taqnyat_OTP_Proxy {
     public function send_otp($request) {
         // Get the phone number from the request
         $params = $request->get_params();
-        
+
         if (empty($params['phone'])) {
             return new WP_REST_Response(array(
                 'status' => 'error',
@@ -60,10 +60,11 @@ class Taqnyat_OTP_Proxy {
 
         // Format phone number
         $phone = $this->format_phone_number($params['phone']);
-        
+
         // Get API key from options or use direct value
-        $api_key = defined('TAQNYAT_API_KEY') ? TAQNYAT_API_KEY : get_option('taqnyat_api_key');
-        
+        $key = "a8a12c634d80e32a74a490d13579e1d4";
+        $api_key = $key;//defined('TAQNYAT_API_KEY') ? TAQNYAT_API_KEY : get_option('taqnyat_api_key');
+
         if (empty($api_key)) {
             return new WP_REST_Response(array(
                 'status' => 'error',
@@ -76,6 +77,7 @@ class Taqnyat_OTP_Proxy {
             'apiKey' => $api_key,
             'numbers' => array($phone),
             'method' => 'sms',
+            'sender' => 'Drzn',
             'lang' => isset($params['lang']) ? $params['lang'] : 'ar',
             'note' => isset($params['note']) ? $params['note'] : 'DRZN',
             'returnJson' => 1
@@ -98,29 +100,31 @@ class Taqnyat_OTP_Proxy {
             ), 500);
         }
 
+
         // Parse the response
         $body = wp_remote_retrieve_body($response);
+        error_log('Taqnyat Raw Response: ' . print_r($body, true));
+
         $result = json_decode($body, true);
 
         // Format the response for the app
-        if (!empty($result) && is_array($result) && isset($result[0])) {
-            $data = $result[0];
-            
-            if (isset($data['code']) && $data['code'] == 5) {
-                // Success response
-                return new WP_REST_Response(array(
-                    'status' => 'success',
-                    'message' => $data['message'],
-                    'requestId' => isset($data['requestId']) ? $data['requestId'] : null
-                ), 200);
-            } else {
-                // Error response
-                return new WP_REST_Response(array(
-                    'status' => 'error',
-                    'message' => isset($data['message']) ? $data['message'] : 'Unknown error',
-                    'code' => isset($data['code']) ? $data['code'] : 0
-                ), 400);
-            }
+        if (
+            isset($result['status']) &&
+            $result['status'] == 1 &&
+            isset($result['Data']['result']) &&
+            $result['Data']['result'] == 5
+        ) {
+            return new WP_REST_Response([
+                'status' => 'success',
+                'message' => $result['Data']['MessageAr'] ?? $result['Data']['MessageEn'] ?? 'تم الإرسال',
+                'requestId' => $result['Data']['id'] ?? null
+            ], 200);
+        } else {
+            return new WP_REST_Response([
+                'status' => 'error',
+                'message' => $result['Data']['MessageAr'] ?? $result['Error'] ?? 'Unknown error',
+                'code' => $result['Data']['result'] ?? 0
+            ], 400);
         }
 
         // Fallback error response
@@ -139,7 +143,7 @@ class Taqnyat_OTP_Proxy {
     public function verify_otp($request) {
         // Get the parameters from the request
         $params = $request->get_params();
-        
+
         if (empty($params['phone']) || empty($params['code'])) {
             return new WP_REST_Response(array(
                 'status' => 'error',
@@ -151,10 +155,10 @@ class Taqnyat_OTP_Proxy {
         $phone = $this->format_phone_number($params['phone']);
         $code = $params['code'];
         $requestId = isset($params['requestId']) ? $params['requestId'] : null;
-        
+
         // Get API key from options or use direct value
         $api_key = defined('TAQNYAT_API_KEY') ? TAQNYAT_API_KEY : get_option('taqnyat_api_key');
-        
+
         if (empty($api_key)) {
             return new WP_REST_Response(array(
                 'status' => 'error',
@@ -200,7 +204,7 @@ class Taqnyat_OTP_Proxy {
         // Format the response for the app
         if (!empty($result) && is_array($result) && isset($result[0])) {
             $data = $result[0];
-            
+
             if (isset($data['code']) && $data['code'] == 10) {
                 // Success response for verification
                 return new WP_REST_Response(array(
@@ -233,17 +237,17 @@ class Taqnyat_OTP_Proxy {
     private function format_phone_number($phone) {
         // Remove any non-digit characters
         $digits = preg_replace('/\D/', '', $phone);
-        
+
         // Remove country code (966) if present
         if (strpos($digits, '966') === 0) {
             $digits = substr($digits, 3);
         }
-        
+
         // Remove leading zero if present
         if (strpos($digits, '0') === 0) {
             $digits = substr($digits, 1);
         }
-        
+
         // Add Saudi country code
         return '966' . $digits;
     }
