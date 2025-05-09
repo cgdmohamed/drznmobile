@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of, throwError, from } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { Observable, of, throwError, from, TimeoutError } from 'rxjs';
+import { catchError, map, switchMap, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Storage } from '@ionic/storage-angular';
 import { EnvironmentService } from './environment.service';
@@ -59,11 +59,16 @@ export class TaqnyatOtpService {
     console.log('Sending OTP request to WordPress proxy:', proxyRequest);
     
     const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
     });
     
     // Call the WordPress proxy endpoint
-    return this.http.post<any>(this.wpSendOtpUrl, proxyRequest, { headers }).pipe(
+    return this.http.post<any>(this.wpSendOtpUrl, proxyRequest, { 
+      headers,
+      responseType: 'json'
+    }).pipe(
+      timeout(15000), // 15 second timeout for sending OTP
       map(response => {
         console.log('WordPress proxy OTP response:', response);
         
@@ -71,10 +76,14 @@ export class TaqnyatOtpService {
         let formattedResponse: WordPressOtpResponse;
         
         if (response && response.status === 'success') {
-          // Store the verification requestId if successful
-          if (response.requestId) {
+          // Store the verification requestId if successful and not empty
+          if (response.requestId && response.requestId.trim() !== '') {
             console.log('Storing requestId for verification:', response.requestId);
             this.storeVerificationData(formattedNumber, response.requestId);
+          } else {
+            console.log('No requestId received from API, will use phone number for verification');
+            // Store phone number as identifier for verification
+            this.storeVerificationData(formattedNumber, formattedNumber);
           }
           
           formattedResponse = {
@@ -96,6 +105,37 @@ export class TaqnyatOtpService {
       catchError(error => {
         console.error('Error sending OTP via WordPress proxy:', error);
         
+        // Specific handling for timeout errors
+        if (error instanceof TimeoutError) {
+          console.error('OTP sending request timed out');
+          
+          const timeoutResponse: WordPressOtpResponse = {
+            status: 'error',
+            message: 'انتهت مهلة إرسال رمز التحقق. يرجى المحاولة مرة أخرى.',
+            code: 408 // Timeout status code
+          };
+          
+          if (!environment.production) {
+            // In development, provide additional information and fallback
+            console.log('Timeout occurred during OTP sending. Using fallback...');
+            const verificationCode = this.generateOtpCode();
+            this.storeOtpData(formattedNumber, verificationCode);
+            
+            console.log(`Timeout Fallback: OTP ${verificationCode} would be sent to ${formattedNumber}`);
+            
+            const fallbackResponse: WordPressOtpResponse = {
+              status: 'success',
+              message: 'تم إرسال رمز التحقق (وضع التطوير - بعد انتهاء المهلة)',
+              requestId: Math.random().toString(36).substring(2, 15)
+            };
+            
+            return of(fallbackResponse);
+          }
+          
+          return of(timeoutResponse);
+        }
+        
+        // Handle other errors
         if (environment.production) {
           return throwError(() => new Error('فشل في إرسال رمز التحقق. يرجى المحاولة مرة أخرى.'));
         } else {
@@ -138,8 +178,14 @@ export class TaqnyatOtpService {
     return from(this.getStoredRequestId(formattedNumber)).pipe(
       map(requestId => {
         if (requestId) {
-          console.log('Using stored requestId for verification:', requestId);
-          proxyRequest.requestId = requestId;
+          // Only add requestId if it's not the phone number itself
+          // (which we use as a fallback when the API doesn't return a requestId)
+          if (requestId !== formattedNumber) {
+            console.log('Using stored requestId for verification:', requestId);
+            proxyRequest.requestId = requestId;
+          } else {
+            console.log('Using phone number for verification (no requestId was provided by API)');
+          }
         } else {
           console.log('No requestId found for verification, proceeding without it');
         }
@@ -147,15 +193,22 @@ export class TaqnyatOtpService {
       }),
       switchMap(request => {
         const headers = new HttpHeaders({
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         });
         
         console.log('Sending verification request to WordPress proxy:', request);
         
         // Call the WordPress proxy endpoint
-        return this.http.post<any>(this.wpVerifyOtpUrl, request, { headers }).pipe(
+        return this.http.post<any>(this.wpVerifyOtpUrl, request, { 
+          headers, 
+          responseType: 'json'
+        }).pipe(
+          // Add 10 second timeout
+          timeout(10000),
           map(response => {
             console.log('WordPress proxy verification response:', response);
+            console.log('Phone:', formattedNumber, 'Code:', otpCode);
             
             // New WP plugin response format has different structure
             // Map to our expected format
@@ -183,6 +236,39 @@ export class TaqnyatOtpService {
           catchError(error => {
             console.error('Error verifying OTP via WordPress proxy:', error);
             
+            // Specific handling for timeout errors
+            if (error instanceof TimeoutError) {
+              console.error('OTP verification request timed out');
+              
+              // Return a specific error for timeout
+              const timeoutResponse: WordPressOtpResponse = {
+                status: 'error',
+                message: 'انتهت مهلة التحقق من الرمز. يرجى المحاولة مرة أخرى.',
+                code: 408 // Timeout status code
+              };
+              
+              if (!environment.production) {
+                // In development, provide additional information
+                console.log('Timeout occurred during OTP verification. Checking local verification as fallback...');
+                return from(this.verifyLocalOtp(formattedNumber, otpCode)).pipe(
+                  map(isValid => {
+                    if (isValid) {
+                      const successResponse: WordPressOtpResponse = {
+                        status: 'success',
+                        message: 'تم التحقق بنجاح (وضع التطوير - استجابة بعد انتهاء المهلة)'
+                      };
+                      return successResponse;
+                    } else {
+                      return timeoutResponse;
+                    }
+                  })
+                );
+              }
+              
+              return of(timeoutResponse);
+            }
+            
+            // Handle all other types of errors
             if (environment.production) {
               return throwError(() => new Error('فشل في التحقق من الرمز. يرجى المحاولة مرة أخرى.'));
             } else {
