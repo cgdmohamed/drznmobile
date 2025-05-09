@@ -49,14 +49,14 @@ ion-content {
 
 /* Dark theme support */
 .dark-theme {
-  --ion-color-primary: #ff6b78;
+  --ion-color-primary: #ed1c24;
   --ion-color-primary-rgb: 255, 107, 120;
 }
 
 /* Professional loading progress indicator */
 ion-progress-bar {
   --background: transparent;
-  --progress-background: var(--ion-color-primary);
+  --progress-background: #ed1c24;
   height: 3px;
   border-radius: 3px;
   overflow: hidden;
@@ -143,7 +143,7 @@ ion-progress-bar.animate {
 
 /* Primary brand color */
 :root {
-  --ion-color-primary: #E9324A;
+  --ion-color-primary: #ed1c24;
   --ion-color-primary-rgb: 233, 50, 74;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;

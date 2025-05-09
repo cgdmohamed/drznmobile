@@ -28,18 +28,18 @@ import { IonicModule } from '@ionic/angular';
     }
     
     .small {
-      width: 12px;
-      height: 12px;
+      width: 18px;
+      height: 18px;
     }
     
     .medium {
-      width: 16px;
-      height: 16px;
+      width: 20px;
+      height: 20px;
     }
     
     .large {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
     }
   `]
 })

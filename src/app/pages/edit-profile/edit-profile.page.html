@@ -17,17 +17,6 @@
 
     <!-- Profile Form -->
     <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" *ngIf="!isLoading">
-      <!-- Profile Picture Section -->
-      <div class="profile-picture-section">
-        <div class="profile-picture-container">
-          <div class="profile-picture" [style.background-image]="profileImageUrl ? 'url(' + profileImageUrl + ')' : 'url(assets/icons/user-placeholder.png)'">
-            <div class="change-picture-overlay" (click)="selectImage()">
-              <ion-icon name="camera"></ion-icon>
-              <span>تغيير الصورة</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div class="form-section">
         <h3>المعلومات الشخصية</h3>

@@ -6,7 +6,7 @@ ion-tab-bar {
   
   ion-tab-button {
     --color: var(--ion-color-medium);
-    --color-selected: var(--ion-color-danger);
+    --color-selected: #ed1c24;
     
     ion-icon {
       font-size: 24px;
@@ -24,7 +24,7 @@ ion-menu {
   --width: 280px;
   
   ion-toolbar {
-    --background: var(--ion-color-danger);
+    --background: #ed1c24;
     --color: white;
   }
   
@@ -33,10 +33,10 @@ ion-menu {
     
     &.selected {
       --background: rgba(var(--ion-color-danger-rgb), 0.1);
-      --color: var(--ion-color-danger);
+      --color: #ed1c24;
       
       ion-icon {
-        color: var(--ion-color-danger);
+        color: #ed1c24;
       }
     }
   }
