@@ -1,12 +1,17 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { AlertController, ModalController, ToastController } from '@ionic/angular';
+import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { AlertController, ModalController, ToastController, IonicModule } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { NotificationService, NotificationData } from '../../services/notification.service';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-notifications',
   templateUrl: './notifications.page.html',
   styleUrls: ['./notifications.page.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule, RouterLink],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class NotificationsPage implements OnInit, OnDestroy {
   notifications: NotificationData[] = [];

@@ -107,7 +107,7 @@
       <div class="order-summary">
         <div class="summary-row">
           <div class="summary-label">المجموع الفرعي</div>
-          <div class="summary-value">{{ order.subtotal }} <app-currency-icon size="small"></app-currency-icon></div>
+          <div class="summary-value">{{ parseFloat(order.total) - parseFloat(order.shipping_total) - parseFloat(order.total_tax) + parseFloat(order.discount_total) }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
         
         <div class="summary-row" *ngIf="parseFloat(order.discount_total) > 0">
