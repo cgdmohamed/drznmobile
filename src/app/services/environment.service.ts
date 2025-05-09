@@ -18,9 +18,9 @@ export class EnvironmentService {
    * Load environment variables from environment.ts
    */
   private loadEnvironmentVariables() {
-    // Load Taqnyat API key - explicitly set from available secrets
-    // Using the actual key provided by the user
-    this._taqnyatApiKey = 'b6ba9a04cf1e5fdd13ba9fa11eaac21f'; // Using the actual API key
+    // We don't need the Taqnyat API key anymore as the WordPress plugin handles this
+    // The WordPress plugin handles all Taqnyat interactions on the server side
+    this._taqnyatApiKey = 'wordpress-proxy-enabled';
     
     // Load OneSignal App ID
     this._oneSignalAppId = environment.oneSignalAppId || '';

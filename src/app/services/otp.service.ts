@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, from, of, throwError, firstValueFrom } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { Storage } from '@ionic/storage-angular';
-import { TaqnyatOtpService, TaqnyatOtpResponse } from './taqnyat-otp.service';
+import { TaqnyatOtpService, WordPressOtpResponse } from './taqnyat-otp.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,24 +18,25 @@ export class OtpService {
   ) {}
 
   /**
-   * Send OTP to a phone number using Taqnyat service
+   * Send OTP to a phone number using WordPress proxy for Taqnyat service
    * @param phoneNumber The phone number to send the OTP to
-   * @param requestId Optional request ID for tracking
    */
-  sendOtp(phoneNumber: string, requestId?: string): Observable<any> {
+  sendOtp(phoneNumber: string): Observable<any> {
     // Format the phone number as needed
     const formattedPhone = this.formatPhoneNumber(phoneNumber);
     
     // Save the phone number as pending verification
     this.storePendingPhone(formattedPhone);
     
-    // Use Taqnyat service to send OTP
-    return this.taqnyatOtpService.sendOtp(formattedPhone, requestId).pipe(
+    // Use WordPress proxy to send OTP
+    return this.taqnyatOtpService.sendOtp(formattedPhone).pipe(
       tap(response => {
         console.log('OTP send response:', response);
         if (response.status === 'success') {
           // Store request ID for verification
-          this.storePendingRequestId(response.requestId);
+          if (response.requestId) {
+            this.storePendingRequestId(response.requestId);
+          }
         }
       }),
       // Transform the response to a simpler format for backwards compatibility
@@ -74,12 +75,9 @@ export class OtpService {
         return false;
       }
       
-      // Get the stored request ID if available
-      const requestId = await this.getPendingRequestId();
-      
-      // Verify with Taqnyat service using firstValueFrom instead of deprecated toPromise
+      // Verify with WordPress proxy using firstValueFrom instead of deprecated toPromise
       const response = await firstValueFrom(
-        this.taqnyatOtpService.verifyOtp(pendingPhone, code, requestId)
+        this.taqnyatOtpService.verifyOtp(pendingPhone, code)
       );
       
       if (response.status === 'success') {
@@ -98,7 +96,10 @@ export class OtpService {
   }
 
   /**
-   * Format phone number to E.164 format for Saudi Arabia
+   * Format phone number for Saudi Arabia
+   * The WordPress proxy expects local format (0551234567),
+   * so we format it accordingly
+   * 
    * @param phone The phone number to format
    */
   private formatPhoneNumber(phone: string): string {
@@ -110,12 +111,12 @@ export class OtpService {
       digits = digits.substring(3);
     }
     
-    // Remove leading zero if present
-    if (digits.startsWith('0')) {
-      digits = digits.substring(1);
+    // Ensure it starts with 0
+    if (!digits.startsWith('0')) {
+      digits = '0' + digits;
     }
     
-    // Return with Saudi country code (used internally only)
+    // Return in local format (0551234567)
     return digits;
   }
 

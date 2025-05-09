@@ -1,32 +1,24 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of, throwError, from } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Storage } from '@ionic/storage-angular';
 import { EnvironmentService } from './environment.service';
 
-export interface TaqnyatOtpResponse {
-  code: number;
-  message: string;
+export interface WordPressOtpResponse {
   status: 'success' | 'error';
+  message: string;
   requestId?: string;
-  expiresIn?: number;
+  code?: number;
 }
 
-export interface WordPressProxyRequest {
+export interface WordPressOtpRequest {
   phone: string;
   code?: string;
   requestId?: string;
   lang?: string;
   note?: string;
-}
-
-export interface WordPressProxyResponse {
-  status: 'success' | 'error';
-  message: string;
-  requestId?: string;
-  code?: number;
 }
 
 @Injectable({
@@ -39,20 +31,6 @@ export class TaqnyatOtpService {
   
   private readonly OTP_STORAGE_KEY = 'taqnyat_otp_data';
   private readonly OTP_EXPIRATION_MINUTES = 10;
-  private readonly RESULT_CODES = {
-    CONNECTION_FAILED: 0,
-    INVALID_API_KEY: 1,
-    MOBILE_NUMBER_INCORRECT: 3,
-    INSUFFICIENT_BALANCE: 4,
-    ACTIVATION_CODE_SENT: 5,
-    UNKNOWN_ERROR: 6,
-    ALREADY_SENT: 7,
-    EXCEEDED_ATTEMPTS: 8,
-    ACTIVATION_SUCCESSFUL: 10,
-    ACTIVATION_CODE_INCORRECT: 11,
-    ATTEMPTS_EXHAUSTED: 12,
-    NUMBER_ACTIVATED: 13
-  };
 
   constructor(
     private http: HttpClient,
@@ -62,85 +40,40 @@ export class TaqnyatOtpService {
 
   /**
    * Send OTP to the provided phone number 
+   * Uses WordPress proxy API
    * 
-   * Uses WordPress proxy to Taqnyat API
-   * 
-   * @param phoneNumber The phone number to send the OTP to (must start with 966)
-   * @param requestId Optional request ID for tracking purposes
+   * @param phoneNumber The phone number to send the OTP to
    */
-  sendOtp(phoneNumber: string, requestId?: string): Observable<TaqnyatOtpResponse> {
-    // Format the phone number (ensure it starts with 966)
+  sendOtp(phoneNumber: string): Observable<WordPressOtpResponse> {
+    // Format the phone number (ensure it's in local format for WordPress API)
     const formattedNumber = this.formatPhoneNumber(phoneNumber);
     
-    // If in development mode without a Taqnyat API key, use the demo mode
-    if (!this.environmentService.isTaqnyatConfigured()) {
-      console.warn('Taqnyat API key not configured, using demo mode');
-      
-      // In demo mode, generate a random 6-digit code and store it
-      const verificationCode = this.generateOtpCode();
-      this.storeOtpData(formattedNumber, verificationCode);
-      
-      console.log(`Demo Mode: OTP ${verificationCode} would be sent to ${formattedNumber}`);
-      
-      const response: TaqnyatOtpResponse = {
-        code: this.RESULT_CODES.ACTIVATION_CODE_SENT,
-        message: 'Activation code sent successfully (Demo Mode)',
-        status: 'success',
-        requestId: requestId || Math.random().toString(36).substring(2, 15),
-        expiresIn: this.OTP_EXPIRATION_MINUTES * 60
-      };
-      
-      return of(response);
-    }
-    
     // Prepare WordPress proxy request
-    const proxyRequest: WordPressProxyRequest = {
+    const proxyRequest: WordPressOtpRequest = {
       phone: formattedNumber,
       lang: 'ar',
       note: 'DRZN'
     };
-    
-    // Add request ID if provided
-    if (requestId) {
-      proxyRequest.requestId = requestId;
-    }
     
     const headers = new HttpHeaders({
       'Content-Type': 'application/json'
     });
     
     // Call the WordPress proxy endpoint
-    return this.http.post<WordPressProxyResponse>(this.wpSendOtpUrl, proxyRequest, { headers }).pipe(
+    return this.http.post<WordPressOtpResponse>(this.wpSendOtpUrl, proxyRequest, { headers }).pipe(
       map(response => {
-        // Map WordPress proxy response to our standard response format
-        if (response.status === 'success') {
-          // Store the verification data
-          this.storeVerificationData(formattedNumber, response.requestId || '');
-          
-          const successResponse: TaqnyatOtpResponse = {
-            code: this.RESULT_CODES.ACTIVATION_CODE_SENT,
-            message: response.message,
-            status: 'success',
-            requestId: response.requestId,
-            expiresIn: this.OTP_EXPIRATION_MINUTES * 60
-          };
-          
-          return successResponse;
-        } else {
-          const errorResponse: TaqnyatOtpResponse = {
-            code: response.code || this.RESULT_CODES.UNKNOWN_ERROR,
-            message: response.message || this.getErrorMessageForCode(response.code || this.RESULT_CODES.UNKNOWN_ERROR),
-            status: 'error'
-          };
-          
-          return errorResponse;
+        // Store the verification requestId if successful
+        if (response.status === 'success' && response.requestId) {
+          this.storeVerificationData(formattedNumber, response.requestId);
         }
+        
+        return response;
       }),
       catchError(error => {
         console.error('Error sending OTP via WordPress proxy:', error);
         
         if (environment.production) {
-          return throwError(() => new Error('Failed to send verification code. Please try again later.'));
+          return throwError(() => new Error('فشل في إرسال رمز التحقق. يرجى المحاولة مرة أخرى.'));
         } else {
           // In development, fall back to demo mode if API fails
           const verificationCode = this.generateOtpCode();
@@ -148,12 +81,10 @@ export class TaqnyatOtpService {
           
           console.log(`API Failed, Demo Fallback: OTP ${verificationCode} would be sent to ${formattedNumber}`);
           
-          const fallbackResponse: TaqnyatOtpResponse = {
-            code: this.RESULT_CODES.ACTIVATION_CODE_SENT,
-            message: 'Activation code sent successfully (Demo Fallback)',
+          const fallbackResponse: WordPressOtpResponse = {
             status: 'success',
-            requestId: requestId || Math.random().toString(36).substring(2, 15),
-            expiresIn: this.OTP_EXPIRATION_MINUTES * 60
+            message: 'تم إرسال رمز التحقق (وضع التطوير)',
+            requestId: Math.random().toString(36).substring(2, 15)
           };
           
           return of(fallbackResponse);
@@ -164,114 +95,72 @@ export class TaqnyatOtpService {
 
   /**
    * Verify the OTP entered by the user
-   * 
-   * Uses WordPress proxy to Taqnyat API
+   * Uses WordPress proxy API
    * 
    * @param phoneNumber The phone number the OTP was sent to
    * @param otpCode The OTP code entered by the user
-   * @param requestId Optional request ID used when sending the OTP
    */
-  verifyOtp(phoneNumber: string, otpCode: string, requestId?: string): Observable<TaqnyatOtpResponse> {
+  verifyOtp(phoneNumber: string, otpCode: string): Observable<WordPressOtpResponse> {
     // Format the phone number
     const formattedNumber = this.formatPhoneNumber(phoneNumber);
     
-    // For demo or development mode, verify against locally stored OTP
-    if (!this.environmentService.isTaqnyatConfigured() || !environment.production) {
-      return from(this.verifyLocalOtp(formattedNumber, otpCode)).pipe(
-        map(isValid => {
-          if (isValid) {
-            const successResponse: TaqnyatOtpResponse = {
-              code: this.RESULT_CODES.ACTIVATION_SUCCESSFUL,
-              message: 'Activation process completed successfully.',
-              status: 'success'
-            };
-            return successResponse;
-          } else {
-            const errorResponse: TaqnyatOtpResponse = {
-              code: this.RESULT_CODES.ACTIVATION_CODE_INCORRECT,
-              message: 'Activation code is incorrect.',
-              status: 'error'
-            };
-            return errorResponse;
-          }
-        })
-      );
-    }
-    
     // Prepare WordPress proxy request for verification
-    const proxyRequest: WordPressProxyRequest = {
+    const proxyRequest: WordPressOtpRequest = {
       phone: formattedNumber,
       code: otpCode
     };
     
-    // Add request ID if provided
-    if (requestId) {
-      proxyRequest.requestId = requestId;
-    } else {
-      // Try to get request ID from stored data to add it to the request
-      this.getStoredRequestId(formattedNumber).then(storedRequestId => {
-        if (storedRequestId) {
-          proxyRequest.requestId = storedRequestId;
+    // Try to get request ID from stored data to add it to the request
+    return from(this.getStoredRequestId(formattedNumber)).pipe(
+      map(requestId => {
+        if (requestId) {
+          proxyRequest.requestId = requestId;
         }
-      });
-    }
-    
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
-    
-    // Call the WordPress proxy endpoint
-    return this.http.post<WordPressProxyResponse>(this.wpVerifyOtpUrl, proxyRequest, { headers }).pipe(
-      map(response => {
-        // Map WordPress proxy response to our standard response format
-        if (response.status === 'success') {
-          // Clear stored verification data on success
-          this.clearStoredOtpData(formattedNumber);
-          
-          const successResponse: TaqnyatOtpResponse = {
-            code: this.RESULT_CODES.ACTIVATION_SUCCESSFUL,
-            message: response.message,
-            status: 'success'
-          };
-          
-          return successResponse;
-        } else {
-          const errorResponse: TaqnyatOtpResponse = {
-            code: response.code || this.RESULT_CODES.UNKNOWN_ERROR,
-            message: response.message || this.getErrorMessageForCode(response.code || this.RESULT_CODES.UNKNOWN_ERROR),
-            status: 'error'
-          };
-          
-          return errorResponse;
-        }
+        return proxyRequest;
       }),
-      catchError(error => {
-        console.error('Error verifying OTP via WordPress proxy:', error);
+      switchMap(request => {
+        const headers = new HttpHeaders({
+          'Content-Type': 'application/json'
+        });
         
-        if (environment.production) {
-          return throwError(() => new Error('Failed to verify code. Please try again later.'));
-        } else {
-          // In development, fall back to local verification if API fails
-          return from(this.verifyLocalOtp(formattedNumber, otpCode)).pipe(
-            map(isValid => {
-              if (isValid) {
-                const successResponse: TaqnyatOtpResponse = {
-                  code: this.RESULT_CODES.ACTIVATION_SUCCESSFUL,
-                  message: 'Activation process completed successfully (Demo Fallback).',
-                  status: 'success'
-                };
-                return successResponse;
-              } else {
-                const errorResponse: TaqnyatOtpResponse = {
-                  code: this.RESULT_CODES.ACTIVATION_CODE_INCORRECT,
-                  message: 'Activation code is incorrect (Demo Fallback).',
-                  status: 'error'
-                };
-                return errorResponse;
-              }
-            })
-          );
-        }
+        // Call the WordPress proxy endpoint
+        return this.http.post<WordPressOtpResponse>(this.wpVerifyOtpUrl, request, { headers }).pipe(
+          map(response => {
+            // Clear stored verification data on success
+            if (response.status === 'success') {
+              this.clearStoredOtpData(formattedNumber);
+            }
+            
+            return response;
+          }),
+          catchError(error => {
+            console.error('Error verifying OTP via WordPress proxy:', error);
+            
+            if (environment.production) {
+              return throwError(() => new Error('فشل في التحقق من الرمز. يرجى المحاولة مرة أخرى.'));
+            } else {
+              // In development, fall back to local verification if API fails
+              return from(this.verifyLocalOtp(formattedNumber, otpCode)).pipe(
+                map(isValid => {
+                  if (isValid) {
+                    const successResponse: WordPressOtpResponse = {
+                      status: 'success',
+                      message: 'تم التحقق بنجاح (وضع التطوير)'
+                    };
+                    return successResponse;
+                  } else {
+                    const errorResponse: WordPressOtpResponse = {
+                      status: 'error',
+                      message: 'رمز التحقق غير صحيح (وضع التطوير)',
+                      code: 0
+                    };
+                    return errorResponse;
+                  }
+                })
+              );
+            }
+          })
+        );
       })
     );
   }
@@ -308,7 +197,7 @@ export class TaqnyatOtpService {
   }
   
   /**
-   * Store verification data for Taqnyat API (requestId, etc.)
+   * Store verification data for WordPress API (requestId, etc.)
    */
   private async storeVerificationData(phoneNumber: string, requestId: string): Promise<void> {
     // Get existing data
@@ -389,7 +278,8 @@ export class TaqnyatOtpService {
   }
 
   /**
-   * Format phone number to E.164 format for Saudi Arabia
+   * Format phone number for WordPress API
+   * The API accepts local format (e.g., 0551234567) and will handle conversion
    * @param phone The phone number to format
    */
   private formatPhoneNumber(phone: string): string {
@@ -401,46 +291,11 @@ export class TaqnyatOtpService {
       digits = digits.substring(3);
     }
     
-    // Remove leading zero if present
-    if (digits.startsWith('0')) {
-      digits = digits.substring(1);
+    // Ensure it starts with 0
+    if (!digits.startsWith('0')) {
+      digits = '0' + digits;
     }
     
-    // Return with Saudi country code
-    return '966' + digits;
-  }
-  
-  /**
-   * Get a user-friendly error message for a Taqnyat result code
-   */
-  private getErrorMessageForCode(code: number): string {
-    switch (code) {
-      case this.RESULT_CODES.CONNECTION_FAILED:
-        return 'Connection failed to Taqnyat server';
-      case this.RESULT_CODES.INVALID_API_KEY:
-        return 'Invalid API key';
-      case this.RESULT_CODES.MOBILE_NUMBER_INCORRECT:
-        return 'Mobile number is not specified or incorrect';
-      case this.RESULT_CODES.INSUFFICIENT_BALANCE:
-        return 'Your balance is not enough';
-      case this.RESULT_CODES.ACTIVATION_CODE_SENT:
-        return 'Activation code sent successfully';
-      case this.RESULT_CODES.UNKNOWN_ERROR:
-        return 'Unknown error, please contact technical support';
-      case this.RESULT_CODES.ALREADY_SENT:
-        return 'The activation code has already been sent, you can re-send it shortly';
-      case this.RESULT_CODES.EXCEEDED_ATTEMPTS:
-        return 'You have exceeded the allowed number of attempts';
-      case this.RESULT_CODES.ACTIVATION_SUCCESSFUL:
-        return 'Activation process completed successfully';
-      case this.RESULT_CODES.ACTIVATION_CODE_INCORRECT:
-        return 'Activation code is incorrect';
-      case this.RESULT_CODES.ATTEMPTS_EXHAUSTED:
-        return 'Attempts to enter activation code have been exhausted';
-      case this.RESULT_CODES.NUMBER_ACTIVATED:
-        return 'This number is already activated';
-      default:
-        return `Unknown error code: ${code}`;
-    }
+    return digits;
   }
 }
