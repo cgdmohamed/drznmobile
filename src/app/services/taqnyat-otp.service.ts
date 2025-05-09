@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of, throwError, from } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Storage } from '@ionic/storage-angular';
 import { EnvironmentService } from './environment.service';
@@ -12,17 +12,6 @@ export interface TaqnyatOtpResponse {
   status: 'success' | 'error';
   requestId?: string;
   expiresIn?: number;
-}
-
-export interface TaqnyatVerifyRequest {
-  apiKey: string;
-  numbers: string[];
-  method?: string;
-  lang?: string;
-  requestId?: string;
-  note?: string;
-  activeKey?: string;
-  returnJson?: number;
 }
 
 export interface WordPressProxyRequest {
@@ -44,10 +33,7 @@ export interface WordPressProxyResponse {
   providedIn: 'root'
 })
 export class TaqnyatOtpService {
-  // Direct Taqnyat API (will be used as fallback)
-  private taqnyatApiUrl = 'https://api.taqnyat.sa/verify.php';
-  
-  // WordPress proxy endpoints (primary method)
+  // WordPress proxy endpoints
   private wpSendOtpUrl = environment.wordpressUrl + '/wp-json/taqnyat/v1/send-otp';
   private wpVerifyOtpUrl = environment.wordpressUrl + '/wp-json/taqnyat/v1/verify-otp';
   
@@ -77,7 +63,7 @@ export class TaqnyatOtpService {
   /**
    * Send OTP to the provided phone number 
    * 
-   * Uses WordPress proxy to Taqnyat API or falls back to direct API access
+   * Uses WordPress proxy to Taqnyat API
    * 
    * @param phoneNumber The phone number to send the OTP to (must start with 966)
    * @param requestId Optional request ID for tracking purposes
@@ -86,6 +72,7 @@ export class TaqnyatOtpService {
     // Format the phone number (ensure it starts with 966)
     const formattedNumber = this.formatPhoneNumber(phoneNumber);
     
+    // If in development mode without a Taqnyat API key, use the demo mode
     if (!this.environmentService.isTaqnyatConfigured()) {
       console.warn('Taqnyat API key not configured, using demo mode');
       
@@ -122,7 +109,7 @@ export class TaqnyatOtpService {
       'Content-Type': 'application/json'
     });
     
-    // Try WordPress proxy first (to bypass IP restrictions)
+    // Call the WordPress proxy endpoint
     return this.http.post<WordPressProxyResponse>(this.wpSendOtpUrl, proxyRequest, { headers }).pipe(
       map(response => {
         // Map WordPress proxy response to our standard response format
@@ -152,34 +139,25 @@ export class TaqnyatOtpService {
       catchError(error => {
         console.error('Error sending OTP via WordPress proxy:', error);
         
-        // If WordPress proxy fails, try direct Taqnyat API as fallback
-        console.log('Falling back to direct Taqnyat API (may fail due to IP restrictions)');
-        
-        return this.sendOtpDirectToTaqnyat(formattedNumber, requestId).pipe(
-          catchError(directApiError => {
-            console.error('Direct Taqnyat API also failed:', directApiError);
-            
-            if (environment.production) {
-              return throwError(() => new Error('Failed to send verification code. Please try again later.'));
-            } else {
-              // In development, fall back to demo mode if both APIs fail
-              const verificationCode = this.generateOtpCode();
-              this.storeOtpData(formattedNumber, verificationCode);
-              
-              console.log(`Both APIs Failed, Demo Fallback: OTP ${verificationCode} would be sent to ${formattedNumber}`);
-              
-              const fallbackResponse: TaqnyatOtpResponse = {
-                code: this.RESULT_CODES.ACTIVATION_CODE_SENT,
-                message: 'Activation code sent successfully (Demo Fallback)',
-                status: 'success',
-                requestId: requestId || Math.random().toString(36).substring(2, 15),
-                expiresIn: this.OTP_EXPIRATION_MINUTES * 60
-              };
-              
-              return of(fallbackResponse);
-            }
-          })
-        );
+        if (environment.production) {
+          return throwError(() => new Error('Failed to send verification code. Please try again later.'));
+        } else {
+          // In development, fall back to demo mode if API fails
+          const verificationCode = this.generateOtpCode();
+          this.storeOtpData(formattedNumber, verificationCode);
+          
+          console.log(`API Failed, Demo Fallback: OTP ${verificationCode} would be sent to ${formattedNumber}`);
+          
+          const fallbackResponse: TaqnyatOtpResponse = {
+            code: this.RESULT_CODES.ACTIVATION_CODE_SENT,
+            message: 'Activation code sent successfully (Demo Fallback)',
+            status: 'success',
+            requestId: requestId || Math.random().toString(36).substring(2, 15),
+            expiresIn: this.OTP_EXPIRATION_MINUTES * 60
+          };
+          
+          return of(fallbackResponse);
+        }
       })
     );
   }
@@ -187,7 +165,7 @@ export class TaqnyatOtpService {
   /**
    * Verify the OTP entered by the user
    * 
-   * Uses WordPress proxy to Taqnyat API or falls back to direct API access
+   * Uses WordPress proxy to Taqnyat API
    * 
    * @param phoneNumber The phone number the OTP was sent to
    * @param otpCode The OTP code entered by the user
@@ -242,7 +220,7 @@ export class TaqnyatOtpService {
       'Content-Type': 'application/json'
     });
     
-    // Try WordPress proxy first (to bypass IP restrictions)
+    // Call the WordPress proxy endpoint
     return this.http.post<WordPressProxyResponse>(this.wpVerifyOtpUrl, proxyRequest, { headers }).pipe(
       map(response => {
         // Map WordPress proxy response to our standard response format
@@ -270,180 +248,29 @@ export class TaqnyatOtpService {
       catchError(error => {
         console.error('Error verifying OTP via WordPress proxy:', error);
         
-        // If WordPress proxy fails, try direct Taqnyat API as fallback
-        console.log('Falling back to direct Taqnyat API (may fail due to IP restrictions)');
-        
-        return this.verifyOtpDirectWithTaqnyat(formattedNumber, otpCode, requestId).pipe(
-          catchError(directApiError => {
-            console.error('Direct Taqnyat API also failed:', directApiError);
-            
-            if (environment.production) {
-              return throwError(() => new Error('Failed to verify code. Please try again later.'));
-            } else {
-              // In development, fall back to local verification if both APIs fail
-              return from(this.verifyLocalOtp(formattedNumber, otpCode)).pipe(
-                map(isValid => {
-                  if (isValid) {
-                    const successResponse: TaqnyatOtpResponse = {
-                      code: this.RESULT_CODES.ACTIVATION_SUCCESSFUL,
-                      message: 'Activation process completed successfully (Demo Fallback).',
-                      status: 'success'
-                    };
-                    return successResponse;
-                  } else {
-                    const errorResponse: TaqnyatOtpResponse = {
-                      code: this.RESULT_CODES.ACTIVATION_CODE_INCORRECT,
-                      message: 'Activation code is incorrect (Demo Fallback).',
-                      status: 'error'
-                    };
-                    return errorResponse;
-                  }
-                })
-              );
-            }
-          })
-        );
-      })
-    );
-  }
-
-  /**
-   * Send OTP directly to Taqnyat API (used as fallback)
-   * @param phoneNumber The phone number to send the OTP to
-   * @param requestId Optional request ID for tracking
-   */
-  private sendOtpDirectToTaqnyat(phoneNumber: string, requestId?: string): Observable<TaqnyatOtpResponse> {
-    // Prepare the request payload according to Taqnyat's API documentation
-    const payload: TaqnyatVerifyRequest = {
-      apiKey: this.environmentService.taqnyatApiKey,
-      numbers: [phoneNumber],
-      method: 'sms',
-      lang: 'ar',
-      returnJson: 1
-    };
-    
-    // Add request ID if provided
-    if (requestId) {
-      payload.requestId = requestId;
-    }
-    
-    // Set the custom verification message note
-    payload.note = `DRZN`;
-    
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
-    
-    // Make the API call to Taqnyat directly
-    return this.http.post<any>(this.taqnyatApiUrl, [payload], { headers }).pipe(
-      map(response => {
-        if (Array.isArray(response) && response.length > 0) {
-          // Extract the first result from the array
-          const result = response[0];
-          
-          if (result.code === this.RESULT_CODES.ACTIVATION_CODE_SENT) {
-            // Store the verification data (requestId)
-            this.storeVerificationData(phoneNumber, result.requestId);
-            
-            const successResponse: TaqnyatOtpResponse = {
-              code: result.code,
-              message: result.message,
-              status: 'success',
-              requestId: result.requestId,
-              expiresIn: this.OTP_EXPIRATION_MINUTES * 60
-            };
-            
-            return successResponse;
-          } else {
-            const errorResponse: TaqnyatOtpResponse = {
-              code: result.code,
-              message: this.getErrorMessageForCode(result.code),
-              status: 'error'
-            };
-            
-            return errorResponse;
-          }
+        if (environment.production) {
+          return throwError(() => new Error('Failed to verify code. Please try again later.'));
         } else {
-          const unknownResponse: TaqnyatOtpResponse = {
-            code: this.RESULT_CODES.UNKNOWN_ERROR,
-            message: 'Unexpected API response format',
-            status: 'error'
-          };
-          
-          return unknownResponse;
-        }
-      })
-    );
-  }
-
-  /**
-   * Verify OTP directly with Taqnyat API (used as fallback)
-   * @param phoneNumber The phone number to verify
-   * @param otpCode The verification code
-   * @param requestId Optional request ID
-   */
-  private verifyOtpDirectWithTaqnyat(phoneNumber: string, otpCode: string, requestId?: string): Observable<TaqnyatOtpResponse> {
-    // Prepare the request payload for verification
-    const payload: TaqnyatVerifyRequest = {
-      apiKey: this.environmentService.taqnyatApiKey,
-      numbers: [phoneNumber],
-      activeKey: otpCode,
-      method: 'sms',
-      lang: 'ar',
-      returnJson: 1
-    };
-    
-    // Add request ID if provided or if we have it stored
-    if (requestId) {
-      payload.requestId = requestId;
-    } else {
-      // Try to get stored request ID
-      this.getStoredRequestId(phoneNumber).then(storedRequestId => {
-        if (storedRequestId) {
-          payload.requestId = storedRequestId;
-        }
-      });
-    }
-    
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
-    
-    // Make the API call to Taqnyat for verification
-    return this.http.post<any>(this.taqnyatApiUrl, [payload], { headers }).pipe(
-      map(response => {
-        if (Array.isArray(response) && response.length > 0) {
-          // Extract the first result from the array
-          const result = response[0];
-          
-          if (result.code === this.RESULT_CODES.ACTIVATION_SUCCESSFUL) {
-            // Clear the stored verification data
-            this.clearStoredOtpData(phoneNumber);
-            
-            const successResponse: TaqnyatOtpResponse = {
-              code: result.code,
-              message: 'Activation process completed successfully.',
-              status: 'success'
-            };
-            
-            return successResponse;
-          } else {
-            const errorResponse: TaqnyatOtpResponse = {
-              code: result.code,
-              message: this.getErrorMessageForCode(result.code),
-              status: 'error'
-            };
-            
-            return errorResponse;
-          }
-        } else {
-          const unknownResponse: TaqnyatOtpResponse = {
-            code: this.RESULT_CODES.UNKNOWN_ERROR,
-            message: 'Unexpected API response format',
-            status: 'error'
-          };
-          
-          return unknownResponse;
+          // In development, fall back to local verification if API fails
+          return from(this.verifyLocalOtp(formattedNumber, otpCode)).pipe(
+            map(isValid => {
+              if (isValid) {
+                const successResponse: TaqnyatOtpResponse = {
+                  code: this.RESULT_CODES.ACTIVATION_SUCCESSFUL,
+                  message: 'Activation process completed successfully (Demo Fallback).',
+                  status: 'success'
+                };
+                return successResponse;
+              } else {
+                const errorResponse: TaqnyatOtpResponse = {
+                  code: this.RESULT_CODES.ACTIVATION_CODE_INCORRECT,
+                  message: 'Activation code is incorrect (Demo Fallback).',
+                  status: 'error'
+                };
+                return errorResponse;
+              }
+            })
+          );
         }
       })
     );
