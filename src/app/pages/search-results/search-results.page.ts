@@ -1,15 +1,20 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ToastController } from '@ionic/angular';
+import { IonicModule, ToastController } from '@ionic/angular';
 import { ProductService } from '../../services/product.service';
 import { CartService } from '../../services/cart.service';
 import { WishlistService } from '../../services/wishlist.service';
 import { Product } from '../../interfaces/product.interface';
+import { CommonModule } from '@angular/common';
+import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 
 @Component({
   selector: 'app-search-results',
   templateUrl: './search-results.page.html',
   styleUrls: ['./search-results.page.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class SearchResultsPage implements OnInit {
   searchTerm: string = '';
