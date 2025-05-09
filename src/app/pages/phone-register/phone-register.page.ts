@@ -67,7 +67,7 @@ export class PhoneRegisterPage implements OnInit {
     this.phoneForm = this.formBuilder.group({
       phone: ['', [
         Validators.required,
-        Validators.pattern(/^(05\d{8}|\+9665\d{8}|5\d{8})$/)
+        Validators.pattern(/^(5\d{8})$/) // Without the leading 0
       ]]
     });
     

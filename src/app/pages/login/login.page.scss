@@ -68,13 +68,20 @@ p {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 0;
+    margin-bottom: 10px;
+  }
+  
+  .register-options {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
     
     ion-button {
-      --padding-start: 4px;
-      --padding-end: 4px;
-      --color: var(--ion-color-primary);
+      --padding-start: 8px;
+      --padding-end: 8px;
+      --color: #ec1c24;
       font-weight: 600;
+      margin: 0 5px;
     }
   }
 }

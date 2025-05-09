@@ -96,7 +96,11 @@
     
     
     <div class="register-link ion-text-center">
-      <p>ليس لديك حساب؟ <ion-button fill="clear" size="small" (click)="goToRegister()">إنشاء حساب</ion-button></p>
+      <p>ليس لديك حساب؟</p>
+      <div class="register-options">
+        <ion-button fill="clear" size="small" (click)="goToRegister()">إنشاء حساب بالبريد</ion-button>
+        <ion-button fill="clear" size="small" routerLink="/phone-register">إنشاء حساب بالجوال</ion-button>
+      </div>
     </div>
   </div>
 </ion-content>

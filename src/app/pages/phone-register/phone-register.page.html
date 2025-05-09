@@ -24,24 +24,34 @@
       </p>
       
       <form [formGroup]="phoneForm" (ngSubmit)="sendOTP()" novalidate>
-        <ion-item class="phone-input">
-          <ion-label position="floating">رقم الجوال</ion-label>
-          <ion-input
-            type="tel"
-            formControlName="phone"
-            placeholder="05XXXXXXXX"
-            dir="ltr"
-            inputmode="tel"
-          ></ion-input>
-          <ion-text class="sa-code" slot="end">+966</ion-text>
-        </ion-item>
+        <div class="phone-input-container">
+          <ion-item class="country-code">
+            <ion-input
+              value="+966"
+              readonly
+              disabled
+              dir="ltr"
+            ></ion-input>
+          </ion-item>
+
+          <ion-item class="phone-input">
+            <ion-label position="floating">رقم الجوال</ion-label>
+            <ion-input
+              type="tel"
+              formControlName="phone"
+              placeholder="5XXXXXXXX"
+              dir="ltr"
+              inputmode="tel"
+            ></ion-input>
+          </ion-item>
+        </div>
         
         <div class="validation-errors" *ngIf="phoneForm.controls.phone.touched && phoneForm.controls.phone.errors">
           <ion-text color="danger" *ngIf="phoneForm.controls.phone.errors?.required">
             يرجى إدخال رقم الجوال
           </ion-text>
           <ion-text color="danger" *ngIf="phoneForm.controls.phone.errors?.pattern">
-            يرجى إدخال رقم جوال سعودي صحيح (05XXXXXXXX)
+            يرجى إدخال رقم جوال سعودي صحيح بدون الصفر في البداية
           </ion-text>
         </div>
         

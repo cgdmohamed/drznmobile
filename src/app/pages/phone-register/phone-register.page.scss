@@ -50,23 +50,39 @@ h1 {
     }
   }
   
-  .phone-input {
-    position: relative;
+  .phone-input-container {
+    display: flex;
+    margin-bottom: 16px;
     
-    .sa-code {
-      position: absolute;
-      top: 50%;
-      left: 16px;
-      transform: translateY(-50%);
-      font-size: 14px;
-      color: #666;
-      z-index: 10;
+    .country-code {
+      flex: 0 0 80px;
+      margin-left: 8px;
+      margin-bottom: 0;
+      
+      ion-input {
+        --background: #f0f0f0;
+        --padding-start: 8px;
+        --padding-end: 8px;
+        --padding-top: 14px;
+        --padding-bottom: 14px;
+        --border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        text-align: center;
+        --placeholder-color: #333;
+        --color: #333;
+        --opacity: 1;
+      }
     }
     
-    ion-input {
-      --padding-end: 65px;
-      text-align: right;
-      direction: ltr;
+    .phone-input {
+      flex: 1;
+      margin-bottom: 0;
+      
+      ion-input {
+        text-align: left;
+        direction: ltr;
+      }
     }
   }
 }
