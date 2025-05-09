@@ -65,20 +65,22 @@ export class OrdersPage implements OnInit {
     });
   }
 
-  filterOrders(status: string) {
-    this.activeFilter = status;
+  filterOrders(status: any) {
+    // Ensure status is always a string
+    const statusStr = String(status);
+    this.activeFilter = statusStr;
     
-    if (status === 'all') {
+    if (statusStr === 'all') {
       this.filteredOrders = [...this.orders];
       return;
     }
     
     this.filteredOrders = this.orders.filter(order => {
-      if (status === 'processing') {
+      if (statusStr === 'processing') {
         return ['pending', 'processing', 'on-hold'].includes(order.status);
-      } else if (status === 'completed') {
+      } else if (statusStr === 'completed') {
         return order.status === 'completed';
-      } else if (status === 'cancelled') {
+      } else if (statusStr === 'cancelled') {
         return ['cancelled', 'refunded', 'failed'].includes(order.status);
       }
       return true;

@@ -17,6 +17,11 @@ import { CurrencyIconComponent } from '../../components/currency-icon/currency-i
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class OrderDetailPage implements OnInit, OnDestroy {
+  // Add parseFloat method for template use
+  parseFloat(value: string | number): number {
+    return typeof value === 'string' ? Number.parseFloat(value) : value;
+  }
+  
   order: Order | null = null;
   isLoading = true;
   orderId: number;
