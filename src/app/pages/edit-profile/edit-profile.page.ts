@@ -1,16 +1,21 @@
-import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { NavController, LoadingController, ToastController, AlertController, ActionSheetController, Platform } from '@ionic/angular';
+import { Component, OnInit, ElementRef, ViewChild, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { NavController, LoadingController, ToastController, AlertController, ActionSheetController, Platform, IonicModule } from '@ionic/angular';
 import { Storage } from '@ionic/storage-angular';
 import { AuthService } from '../../services/auth.service';
 import { JwtAuthService } from '../../services/jwt-auth.service';
 import { User } from '../../interfaces/user.interface';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-edit-profile',
   templateUrl: './edit-profile.page.html',
   styleUrls: ['./edit-profile.page.scss'],
+  standalone: true,
+  imports: [IonicModule, CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class EditProfilePage implements OnInit {
   @ViewChild('fileInput', { static: false }) fileInput: ElementRef;
