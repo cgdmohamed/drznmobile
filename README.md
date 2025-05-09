@@ -60,6 +60,36 @@ ionic serve
 ionic build --prod
 ```
 
+### Android Publishing
+
+To build and publish the app for Android:
+
+1. Build the app:
+```bash
+ng build --configuration production
+npx cap sync android
+```
+
+2. Open the Android project in Android Studio:
+```bash
+npx cap open android
+```
+
+3. Configure signing in Android Studio:
+   - Generate a signing key using Android Studio's Build > Generate Signed Bundle/APK
+   - Configure the key in the app's build.gradle
+   - Update the versionCode and versionName in build.gradle
+
+4. Build the release version:
+   - In Android Studio, select Build > Build Bundle(s) / APK(s) > Build Bundle(s)
+   - Or use Gradle: `./gradlew bundleRelease`
+
+5. Submit to Google Play Store:
+   - Log in to the Google Play Console
+   - Create a new app or update an existing one
+   - Upload the AAB (Android App Bundle) file
+   - Fill in store listing details and submit for review
+
 ## API Configuration
 
 The application requires the following API keys:
@@ -75,9 +105,9 @@ The application requires the following API keys:
 - [x] Category navigation
 - [x] Cart management
 - [x] User authentication (login/registration)
-- [x] OTP verification
+- [x] OTP verification with Taqnyat
 - [x] Checkout process
-- [x] Payment methods integration
+- [x] Payment methods integration (Moyasar, STCPay)
 - [x] Order tracking
 - [x] User profile management
 - [x] Multiple address management
@@ -85,6 +115,32 @@ The application requires the following API keys:
 - [x] User reviews
 - [x] Brand filtering
 - [x] Product attributes and variations
+- [x] RTL support for Arabic language
+- [x] Demo/fallback products when API is unavailable
+
+## OTP Verification System
+
+The app uses Taqnyat SMS service for OTP (One-Time Password) verification. The implementation includes:
+
+- Phone number registration and validation
+- OTP sending via SMS using Taqnyat API
+- Four-digit OTP verification with visual feedback
+- Resend OTP functionality with timing controls
+- Error handling for various API response formats
+- OTP verification during checkout for guest users
+
+## Pending Tasks
+
+- [ ] Fix component declaration issues in Angular modules
+- [ ] Resolve TypeScript errors in templates
+- [ ] Complete Android build and publishing process
+- [ ] Implement OneSignal push notifications
+- [ ] Add Apple Pay support for iOS
+- [ ] Optimize performance for product loading
+- [ ] Implement proper error handling for WooCommerce API
+- [ ] Update styling for better RTL support
+- [ ] Improve offline experience
+- [ ] Add unit and integration tests
 
 ## Contributing
 
