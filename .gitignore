@@ -55,7 +55,7 @@ android/app/src/main/assets/public
 android/app/capacitor.build.gradle
 
 # Production build files
-/www
+# /www
 /plugins
 /platforms
 
