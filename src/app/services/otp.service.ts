@@ -97,8 +97,7 @@ export class OtpService {
 
   /**
    * Format phone number for Saudi Arabia
-   * The WordPress proxy expects local format (0551234567),
-   * so we format it accordingly
+   * The WordPress proxy expects format with country code (966551234567)
    * 
    * @param phone The phone number to format
    */
@@ -106,18 +105,18 @@ export class OtpService {
     // Remove any non-digit characters
     let digits = phone.replace(/\D/g, '');
     
-    // Remove country code (966) if present
+    // If already has country code, leave it
     if (digits.startsWith('966')) {
-      digits = digits.substring(3);
+      return digits;
     }
     
-    // Ensure it starts with 0
-    if (!digits.startsWith('0')) {
-      digits = '0' + digits;
+    // Remove leading zero if present
+    if (digits.startsWith('0')) {
+      digits = digits.substring(1);
     }
     
-    // Return in local format (0551234567)
-    return digits;
+    // Add Saudi country code
+    return '966' + digits;
   }
 
   /**

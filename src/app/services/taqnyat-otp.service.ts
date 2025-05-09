@@ -279,23 +279,24 @@ export class TaqnyatOtpService {
 
   /**
    * Format phone number for WordPress API
-   * The API accepts local format (e.g., 0551234567) and will handle conversion
+   * The API expects format with country code (e.g., 966551234567)
    * @param phone The phone number to format
    */
   private formatPhoneNumber(phone: string): string {
     // Remove any non-digit characters
     let digits = phone.replace(/\D/g, '');
     
-    // Remove country code (966) if present
+    // If already has country code, leave it
     if (digits.startsWith('966')) {
-      digits = digits.substring(3);
+      return digits;
     }
     
-    // Ensure it starts with 0
-    if (!digits.startsWith('0')) {
-      digits = '0' + digits;
+    // Remove leading zero if present
+    if (digits.startsWith('0')) {
+      digits = digits.substring(1);
     }
     
-    return digits;
+    // Add Saudi country code
+    return '966' + digits;
   }
 }
