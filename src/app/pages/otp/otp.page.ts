@@ -15,7 +15,7 @@ export class OtpPage implements OnInit, OnDestroy {
   @ViewChildren('otpDigitInput') otpDigits: QueryList<ElementRef>;
   
   phoneNumber: string = '';
-  otpCode: string[] = ['', '', '', '', '', '']; // 6-digit OTP
+  otpCode: string[] = ['', '', '', '']; // 4-digit OTP
   isSubmitting: boolean = false;
   returnUrl: string = '/';
   otpSent: boolean = false;
@@ -98,7 +98,7 @@ export class OtpPage implements OnInit, OnDestroy {
    * Validate OTP code format
    */
   isValidOtpCode(): boolean {
-    // Must be a 6-digit code (all inputs filled)
+    // Must be a 4-digit code (all inputs filled)
     return this.otpCode.every(digit => !!digit);
   }
 
@@ -152,7 +152,7 @@ export class OtpPage implements OnInit, OnDestroy {
             this.otpSent = true;
             
             // Reset OTP code fields
-            this.otpCode = ['', '', '', '', '', ''];
+            this.otpCode = ['', '', '', ''];
             
             // Set up cooldown timer for resend (2 minutes)
             this.remainingTime = 120;
@@ -425,7 +425,7 @@ export class OtpPage implements OnInit, OnDestroy {
   async resendOtp() {
     if (this.resendEnabled) {
       // Reset OTP code fields
-      this.otpCode = ['', '', '', '', '', ''];
+      this.otpCode = ['', '', '', ''];
       // Send OTP again
       await this.sendOtp();
     }
@@ -442,7 +442,7 @@ export class OtpPage implements OnInit, OnDestroy {
     
     if (this.otpSent) {
       this.otpSent = false;
-      this.otpCode = ['', '', '', '', '', ''];
+      this.otpCode = ['', '', '', ''];
       this.errorMessage = '';
       
       // Clear any active timers
@@ -459,7 +459,7 @@ export class OtpPage implements OnInit, OnDestroy {
    */
   changePhoneNumber() {
     this.otpSent = false;
-    this.otpCode = ['', '', '', '', '', ''];
+    this.otpCode = ['', '', '', ''];
     this.errorMessage = '';
     
     // Clear any active timers
