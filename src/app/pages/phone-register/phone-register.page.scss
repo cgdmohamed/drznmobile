@@ -1,0 +1,179 @@
+.register-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.logo-container {
+  text-align: center;
+  margin: 20px auto;
+  
+  img {
+    max-width: 140px;
+    margin-bottom: 10px;
+  }
+}
+
+h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.form-container {
+  margin-top: 16px;
+  
+  ion-item {
+    --padding-start: 0;
+    --inner-padding-end: 0;
+    --background: transparent;
+    margin-bottom: 16px;
+    
+    ion-label {
+      --color: #666;
+      margin-bottom: 8px;
+    }
+    
+    ion-input {
+      --background: #f8f8f8;
+      --padding-start: 16px;
+      --padding-end: 16px;
+      --padding-top: 14px;
+      --padding-bottom: 14px;
+      --border-radius: 8px;
+      margin-top: 8px;
+      font-size: 16px;
+    }
+  }
+  
+  .phone-input {
+    position: relative;
+    
+    .sa-code {
+      position: absolute;
+      top: 50%;
+      left: 16px;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: #666;
+      z-index: 10;
+    }
+    
+    ion-input {
+      --padding-end: 65px;
+      text-align: right;
+      direction: ltr;
+    }
+  }
+}
+
+.validation-errors {
+  margin: -8px 0 16px;
+  font-size: 12px;
+  padding-right: 16px;
+}
+
+.submit-button {
+  --background: #ec1c24;
+  --background-activated: #d41920;
+  --border-radius: 8px;
+  height: 48px;
+  font-weight: 600;
+  margin-top: 24px;
+}
+
+.back-button {
+  --border-color: #ec1c24;
+  --color: #ec1c24;
+  --border-radius: 8px;
+  height: 48px;
+  font-weight: 500;
+}
+
+.alternative-login {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #666;
+  
+  a {
+    color: #ec1c24;
+    text-decoration: none;
+    font-weight: 500;
+  }
+}
+
+// OTP Verification Styles
+.otp-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 24px 0;
+  
+  .otp-inputs {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 360px;
+    margin-bottom: 20px;
+    
+    .otp-input {
+      width: 48px;
+      height: 54px;
+      --background: #f8f8f8;
+      --border-radius: 8px;
+      --padding-start: 0;
+      --padding-end: 0;
+      font-size: 22px;
+      font-weight: 600;
+      text-align: center;
+      --text-align: center;
+      margin: 0 4px;
+      
+      &:focus {
+        --background: #f0f0f0;
+        box-shadow: 0 0 0 2px rgba(236, 28, 36, 0.3);
+      }
+    }
+  }
+  
+  .timer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 16px;
+    
+    .countdown {
+      font-size: 22px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+  }
+  
+  .resend-button {
+    --color: #ec1c24;
+    font-size: 14px;
+    
+    &.button-disabled {
+      --color: #999;
+      opacity: 0.7;
+    }
+  }
+}
+
+// User Details Form Styles
+.details-step {
+  .name-row {
+    display: flex;
+    gap: 12px;
+    
+    .first-name,
+    .last-name {
+      flex: 1;
+    }
+  }
+}

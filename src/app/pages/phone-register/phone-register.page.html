@@ -1,0 +1,220 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/login" text=""></ion-back-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="register-container">
+    <!-- Logo -->
+    <div class="logo-container">
+      <img src="assets/images/logo.svg" alt="DARZN" />
+    </div>
+    
+    <h1 class="ion-text-center" *ngIf="step === 'phone'">إنشاء حساب برقم الجوال</h1>
+    <h1 class="ion-text-center" *ngIf="step === 'verify'">التحقق من رقم الجوال</h1>
+    <h1 class="ion-text-center" *ngIf="step === 'details'">إكمال بيانات التسجيل</h1>
+    
+    <!-- Phone Number Step -->
+    <div *ngIf="step === 'phone'" class="form-container phone-step">
+      <p class="ion-text-center ion-padding-horizontal">
+        أدخل رقم جوالك للتسجيل في التطبيق وسنرسل لك رمز التحقق
+      </p>
+      
+      <form [formGroup]="phoneForm" (ngSubmit)="sendOTP()" novalidate>
+        <ion-item class="phone-input">
+          <ion-label position="floating">رقم الجوال</ion-label>
+          <ion-input
+            type="tel"
+            formControlName="phone"
+            placeholder="05XXXXXXXX"
+            dir="ltr"
+            inputmode="tel"
+          ></ion-input>
+          <ion-text class="sa-code" slot="end">+966</ion-text>
+        </ion-item>
+        
+        <div class="validation-errors" *ngIf="phoneForm.controls.phone.touched && phoneForm.controls.phone.errors">
+          <ion-text color="danger" *ngIf="phoneForm.controls.phone.errors?.required">
+            يرجى إدخال رقم الجوال
+          </ion-text>
+          <ion-text color="danger" *ngIf="phoneForm.controls.phone.errors?.pattern">
+            يرجى إدخال رقم جوال سعودي صحيح (05XXXXXXXX)
+          </ion-text>
+        </div>
+        
+        <ion-button
+          expand="block"
+          type="submit"
+          [disabled]="phoneForm.invalid || isSubmitting"
+          class="ion-margin-top submit-button"
+        >
+          <ion-spinner name="crescent" *ngIf="isSubmitting"></ion-spinner>
+          <span *ngIf="!isSubmitting">إرسال رمز التحقق</span>
+        </ion-button>
+      </form>
+      
+      <p class="alternative-login">
+        لديك حساب بالفعل؟
+        <a [routerLink]="['/login']">تسجيل الدخول</a>
+      </p>
+    </div>
+    
+    <!-- OTP Verification Step -->
+    <div *ngIf="step === 'verify'" class="form-container verify-step">
+      <p class="ion-text-center ion-padding-horizontal">
+        تم إرسال رمز التحقق المكون من 6 أرقام إلى رقم الجوال
+        <strong>{{ phoneNumber }}</strong>
+      </p>
+      
+      <div class="otp-container">
+        <div class="otp-inputs">
+          <ng-container *ngFor="let digit of otpDigits; let i = index">
+            <ion-input
+              type="tel"
+              class="otp-input"
+              maxlength="1"
+              inputmode="numeric"
+              [id]="'otp-' + i"
+              [(ngModel)]="otpDigits[i]"
+              (ionInput)="onOtpDigitInput(i, $event)"
+              (keydown)="onOtpKeyDown(i, $event)"
+            ></ion-input>
+          </ng-container>
+        </div>
+        
+        <div class="timer-container" *ngIf="countdown > 0">
+          <ion-text color="medium">يمكنك إعادة إرسال الرمز بعد:</ion-text>
+          <ion-text color="primary" class="countdown">{{ timeLeft }}</ion-text>
+        </div>
+        
+        <ion-button
+          expand="block"
+          fill="clear"
+          class="resend-button"
+          [disabled]="resendDisabled"
+          (click)="resendOTP()"
+        >
+          إعادة إرسال الرمز
+        </ion-button>
+      </div>
+      
+      <ion-button
+        expand="block"
+        (click)="verifyOTP()"
+        [disabled]="otpDigits.join('').length !== 6 || isSubmitting"
+        class="submit-button"
+      >
+        <ion-spinner name="crescent" *ngIf="isSubmitting"></ion-spinner>
+        <span *ngIf="!isSubmitting">تحقق من الرمز</span>
+      </ion-button>
+      
+      <ion-button
+        expand="block"
+        fill="outline"
+        (click)="goBack()"
+        [disabled]="isSubmitting"
+        class="ion-margin-top back-button"
+      >
+        تغيير رقم الجوال
+      </ion-button>
+    </div>
+    
+    <!-- User Details Step -->
+    <div *ngIf="step === 'details'" class="form-container details-step">
+      <p class="ion-text-center ion-padding-horizontal">
+        تم التحقق من رقم الجوال بنجاح، يرجى إكمال بيانات التسجيل
+      </p>
+      
+      <form [formGroup]="userDetailsForm" (ngSubmit)="completeRegistration()" novalidate>
+        <div class="name-row">
+          <ion-item class="first-name">
+            <ion-label position="floating">الاسم الأول</ion-label>
+            <ion-input type="text" formControlName="firstName"></ion-input>
+          </ion-item>
+          
+          <ion-item class="last-name">
+            <ion-label position="floating">الاسم الأخير</ion-label>
+            <ion-input type="text" formControlName="lastName"></ion-input>
+          </ion-item>
+        </div>
+        
+        <div class="validation-errors" *ngIf="userDetailsForm.controls.firstName.touched && userDetailsForm.controls.firstName.errors">
+          <ion-text color="danger" *ngIf="userDetailsForm.controls.firstName.errors?.required">
+            يرجى إدخال الاسم الأول
+          </ion-text>
+        </div>
+        
+        <div class="validation-errors" *ngIf="userDetailsForm.controls.lastName.touched && userDetailsForm.controls.lastName.errors">
+          <ion-text color="danger" *ngIf="userDetailsForm.controls.lastName.errors?.required">
+            يرجى إدخال الاسم الأخير
+          </ion-text>
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">البريد الإلكتروني</ion-label>
+          <ion-input type="email" formControlName="email" inputmode="email"></ion-input>
+        </ion-item>
+        
+        <div class="validation-errors" *ngIf="userDetailsForm.controls.email.touched && userDetailsForm.controls.email.errors">
+          <ion-text color="danger" *ngIf="userDetailsForm.controls.email.errors?.required">
+            يرجى إدخال البريد الإلكتروني
+          </ion-text>
+          <ion-text color="danger" *ngIf="userDetailsForm.controls.email.errors?.email">
+            يرجى إدخال بريد إلكتروني صحيح
+          </ion-text>
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">كلمة المرور</ion-label>
+          <ion-input type="password" formControlName="password"></ion-input>
+        </ion-item>
+        
+        <div class="validation-errors" *ngIf="userDetailsForm.controls.password.touched && userDetailsForm.controls.password.errors">
+          <ion-text color="danger" *ngIf="userDetailsForm.controls.password.errors?.required">
+            يرجى إدخال كلمة المرور
+          </ion-text>
+          <ion-text color="danger" *ngIf="userDetailsForm.controls.password.errors?.minlength">
+            كلمة المرور يجب أن تكون 6 أحرف على الأقل
+          </ion-text>
+        </div>
+        
+        <ion-item>
+          <ion-label position="floating">تأكيد كلمة المرور</ion-label>
+          <ion-input type="password" formControlName="confirmPassword"></ion-input>
+        </ion-item>
+        
+        <div class="validation-errors" *ngIf="userDetailsForm.controls.confirmPassword.touched && userDetailsForm.controls.confirmPassword.errors">
+          <ion-text color="danger" *ngIf="userDetailsForm.controls.confirmPassword.errors?.required">
+            يرجى تأكيد كلمة المرور
+          </ion-text>
+          <ion-text color="danger" *ngIf="userDetailsForm.controls.confirmPassword.errors?.passwordMismatch">
+            كلمة المرور غير متطابقة
+          </ion-text>
+        </div>
+        
+        <ion-button
+          expand="block"
+          type="submit"
+          [disabled]="userDetailsForm.invalid || isSubmitting"
+          class="ion-margin-top submit-button"
+        >
+          <ion-spinner name="crescent" *ngIf="isSubmitting"></ion-spinner>
+          <span *ngIf="!isSubmitting">إنشاء الحساب</span>
+        </ion-button>
+      </form>
+      
+      <ion-button
+        expand="block"
+        fill="outline"
+        (click)="goBack()"
+        [disabled]="isSubmitting"
+        class="ion-margin-top back-button"
+      >
+        رجوع
+      </ion-button>
+    </div>
+  </div>
+</ion-content>
