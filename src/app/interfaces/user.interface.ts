@@ -7,6 +7,7 @@ export interface User {
   last_name: string;
   role: string;
   username: string;
+  phone?: string; // Optional phone field for direct access
   billing: {
     first_name: string;
     last_name: string;

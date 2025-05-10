@@ -179,6 +179,17 @@ export class OrderService {
     
     const userId = this.authService.userValue?.id;
     
+    // Use demo data if environment is configured to use it
+    if (environment.useDemoData) {
+      console.log('Using demo orders data');
+      return this.getDemoOrders().pipe(
+        tap(orders => {
+          this._orders.next(orders);
+          this.saveOrders(orders);
+        })
+      );
+    }
+    
     return this.http.get<Order[]>(`${this.apiUrl}/orders`, {
       params: {
         consumer_key: this.consumerKey,
@@ -193,6 +204,13 @@ export class OrderService {
       }),
       catchError(error => {
         console.error('Error fetching orders:', error);
+        
+        // If API call fails and demo mode is enabled, return demo orders
+        if (environment.useDemoData) {
+          console.log('Falling back to demo orders after API error');
+          return this.getDemoOrders();
+        }
+        
         return of(this.ordersValue);
       })
     );
@@ -203,6 +221,12 @@ export class OrderService {
    * @param customerId The ID of the customer
    */
   getCustomerOrders(customerId: number): Observable<Order[]> {
+    // Use demo data if environment is configured to use it
+    if (environment.useDemoData) {
+      console.log('Using demo orders data for customer', customerId);
+      return this.getDemoOrders();
+    }
+    
     return this.http.get<Order[]>(`${this.apiUrl}/orders`, {
       params: {
         consumer_key: this.consumerKey,
@@ -213,9 +237,160 @@ export class OrderService {
     }).pipe(
       catchError(error => {
         console.error(`Error fetching orders for customer ${customerId}:`, error);
+        
+        // If API call fails and demo mode is enabled, return demo orders
+        if (environment.useDemoData) {
+          console.log('Falling back to demo orders after API error');
+          return this.getDemoOrders();
+        }
+        
         return of([]);
       })
     );
+  }
+  
+  /**
+   * Generate demo orders for testing
+   */
+  private getDemoOrders(): Observable<Order[]> {
+    // Generate 5 demo orders with different statuses
+    const statuses: OrderStatus[] = ['pending', 'processing', 'on-hold', 'completed', 'cancelled'];
+    const demoOrders: Order[] = [];
+    
+    // Create order dates starting from 30 days ago to today
+    const today = new Date();
+    
+    for (let i = 0; i < 5; i++) {
+      const orderDate = new Date(today);
+      orderDate.setDate(today.getDate() - (i * 6)); // Orders every 6 days
+      
+      // Select a few random products
+      const productCount = Math.floor(Math.random() * 3) + 1; // 1-3 products
+      const lineItems = [];
+      let subtotal = 0;
+      
+      for (let j = 0; j < productCount; j++) {
+        const randomProductIndex = Math.floor(Math.random() * demoProducts.length);
+        const product = demoProducts[randomProductIndex];
+        const quantity = Math.floor(Math.random() * 2) + 1; // 1-2 items
+        const price = parseFloat(product.price);
+        const total = price * quantity;
+        subtotal += total;
+        
+        lineItems.push({
+          id: j + 1,
+          name: product.name,
+          product_id: product.id,
+          variation_id: 0,
+          quantity: quantity,
+          tax_class: '',
+          subtotal: total.toFixed(2),
+          subtotal_tax: '0.00',
+          total: total.toFixed(2),
+          total_tax: '0.00',
+          taxes: [],
+          meta_data: [],
+          sku: product.sku || '',
+          price: price,
+          image: {
+            id: product.images[0]?.id || '',
+            src: product.images[0]?.src || './assets/placeholder.png'
+          }
+        });
+      }
+      
+      // Calculate tax (15% VAT)
+      const tax = subtotal * 0.15;
+      const total = subtotal + tax;
+      
+      demoOrders.push({
+        id: 10000 + i,
+        parent_id: 0,
+        number: `ORDER-${10000 + i}`,
+        order_key: `wc_order_${Date.now()}_${i}`,
+        created_via: 'checkout',
+        version: '1.0',
+        status: statuses[i],
+        currency: 'SAR',
+        date_created: orderDate.toISOString(),
+        date_modified: orderDate.toISOString(),
+        discount_total: '0.00',
+        discount_tax: '0.00',
+        shipping_total: '0.00',
+        shipping_tax: '0.00',
+        cart_tax: tax.toFixed(2),
+        total: total.toFixed(2),
+        total_tax: tax.toFixed(2),
+        prices_include_tax: false,
+        customer_id: this.authService.userValue?.id || 1,
+        customer_ip_address: '',
+        customer_user_agent: '',
+        customer_note: '',
+        billing: {
+          first_name: this.authService.userValue?.first_name || 'محمد',
+          last_name: this.authService.userValue?.last_name || 'أحمد',
+          company: '',
+          address_1: 'شارع الملك فهد',
+          address_2: '',
+          city: 'الرياض',
+          state: 'الرياض',
+          postcode: '12345',
+          country: 'SA',
+          email: this.authService.userValue?.email || 'customer@example.com',
+          phone: this.authService.userValue?.billing?.phone || '05xxxxxxxx'
+        },
+        shipping: {
+          first_name: this.authService.userValue?.first_name || 'محمد',
+          last_name: this.authService.userValue?.last_name || 'أحمد',
+          company: '',
+          address_1: 'شارع الملك فهد',
+          address_2: '',
+          city: 'الرياض',
+          state: 'الرياض',
+          postcode: '12345',
+          country: 'SA'
+        },
+        payment_method: 'cod',
+        payment_method_title: 'الدفع عند الاستلام',
+        transaction_id: '',
+        date_paid: statuses[i] === 'completed' ? orderDate.toISOString() : '',
+        date_completed: statuses[i] === 'completed' ? orderDate.toISOString() : '',
+        cart_hash: '',
+        line_items: lineItems,
+        tax_lines: [
+          {
+            id: 1,
+            rate_code: 'VAT-1',
+            rate_id: 1,
+            label: 'ضريبة القيمة المضافة (15%)',
+            compound: false,
+            tax_total: tax.toFixed(2),
+            shipping_tax_total: '0.00',
+            rate_percent: 15,
+            meta_data: []
+          }
+        ],
+        shipping_lines: [],
+        fee_lines: [],
+        coupon_lines: [],
+        refunds: [],
+        meta_data: [],
+        _links: {
+          self: [{href: ''}],
+          collection: [{href: ''}]
+        }
+      });
+    }
+    
+    // Sort by date (newest first)
+    demoOrders.sort((a, b) => 
+      new Date(b.date_created).getTime() - new Date(a.date_created).getTime()
+    );
+    
+    // Save to storage
+    this.saveOrders(demoOrders);
+    
+    return of(demoOrders);
   }
   
   /**
