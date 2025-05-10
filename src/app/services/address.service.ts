@@ -18,7 +18,6 @@ export type CustomAddress = Address;
 export class AddressService {
   // Dynamically determine the correct API URL based on platform
   private apiUrl: string;
-  private apiPrefix = '/wp-json/wc/v3';
   
   // Platform detection
   private isMobile: boolean;
@@ -41,6 +40,7 @@ export class AddressService {
       this.apiUrl = `https://${environment.storeUrl}/wp-json/wc/v3`;
       console.log('AddressService: Using full API URL for mobile/production:', this.apiUrl);
     } else {
+      // For web development, ensure we're not duplicating the wp-json/wc/v3 path
       this.apiUrl = environment.apiUrl;
       console.log('AddressService: Using relative API URL for web development:', this.apiUrl);
     }
@@ -131,7 +131,7 @@ export class AddressService {
           console.log('AddressService: Using absolute URL for mobile/production:', url);
         } else {
           // Use relative URL for web development
-          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses`;
+          url = `${this.apiUrl}/customers/${user.id}/addresses`;
           console.log('AddressService: Using relative URL for web development:', url);
         }
         console.log('Fetching addresses from URL:', url);
@@ -179,7 +179,7 @@ export class AddressService {
           console.log('AddressService: Using absolute URL for mobile/production custom addresses:', url);
         } else {
           // Use relative URL for web development
-          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses`;
+          url = `${this.apiUrl}/customers/${user.id}/addresses`;
           console.log('AddressService: Using relative URL for web development custom addresses:', url);
         }
         console.log('Fetching custom addresses from URL:', url);
@@ -257,7 +257,7 @@ export class AddressService {
           console.log(`AddressService: Using absolute URL for mobile/production ${type} address:`, url);
         } else {
           // Use relative URL for web development
-          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${type}`;
+          url = `${this.apiUrl}/customers/${user.id}/addresses/${type}`;
           console.log(`AddressService: Using relative URL for web development ${type} address:`, url);
         }
         console.log(`Fetching ${type} address from URL:`, url);
@@ -301,7 +301,7 @@ export class AddressService {
           console.log(`AddressService: Using absolute URL for mobile/production ${type} address update:`, url);
         } else {
           // Use relative URL for web development
-          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${type}`;
+          url = `${this.apiUrl}/customers/${user.id}/addresses/${type}`;
           console.log(`AddressService: Using relative URL for web development ${type} address update:`, url);
         }
         console.log(`Updating ${type} address at URL:`, url);
@@ -345,7 +345,7 @@ export class AddressService {
           console.log('AddressService: Using absolute URL for mobile/production custom address update:', url);
         } else {
           // Use relative URL for web development
-          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${addressId}`;
+          url = `${this.apiUrl}/customers/${user.id}/addresses/${addressId}`;
           console.log('AddressService: Using relative URL for web development custom address update:', url);
         }
         console.log(`Updating custom address at URL:`, url);
@@ -393,7 +393,7 @@ export class AddressService {
           console.log(`AddressService: Using absolute URL for mobile/production adding ${type} address:`, url);
         } else {
           // Use relative URL for web development
-          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${type}`;
+          url = `${this.apiUrl}/customers/${user.id}/addresses/${type}`;
           console.log(`AddressService: Using relative URL for web development adding ${type} address:`, url);
         }
         console.log(`Adding ${type} address at URL:`, url);
@@ -438,7 +438,7 @@ export class AddressService {
           console.log('AddressService: Using absolute URL for mobile/production custom address creation:', url);
         } else {
           // Use relative URL for web development
-          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses`;
+          url = `${this.apiUrl}/customers/${user.id}/addresses`;
           console.log('AddressService: Using relative URL for web development custom address creation:', url);
         }
         console.log(`Adding custom address at URL:`, url);
@@ -480,7 +480,7 @@ export class AddressService {
           console.log('AddressService: Using absolute URL for mobile/production deleting custom address:', url);
         } else {
           // Use relative URL for web development
-          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${addressId}`;
+          url = `${this.apiUrl}/customers/${user.id}/addresses/${addressId}`;
           console.log('AddressService: Using relative URL for web development deleting custom address:', url);
         }
         console.log(`Deleting custom address at URL:`, url);
