@@ -24,10 +24,7 @@ public class MainActivity extends BridgeActivity {
         // Allow mixed content (http resources on https pages)
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         
-        // Support for application caching
-        settings.setAppCacheEnabled(true);
-        
-        // Set cache mode
+        // Set cache mode (replaces deprecated setAppCacheEnabled)
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         
         // Enable database storage
