@@ -1,10 +1,12 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { OrderService } from '../../services/order.service';
 import { AuthService } from '../../services/auth.service';
+import { JwtAuthService } from '../../services/jwt-auth.service';
 import { Order } from '../../interfaces/order.interface';
 import { IonicModule, LoadingController, ToastController } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-orders',
@@ -23,9 +25,18 @@ export class OrdersPage implements OnInit {
   constructor(
     private orderService: OrderService,
     private authService: AuthService,
+    private jwtAuthService: JwtAuthService,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController
-  ) { }
+  ) { 
+    console.log('Orders page constructor - checking authentication');
+    // Check if we're authenticated via JWT
+    if (this.jwtAuthService.isAuthenticated) {
+      console.log('JWT authentication confirmed in orders constructor');
+    } else {
+      console.log('Not authenticated via JWT in orders constructor');
+    }
+  }
 
   ngOnInit() {
     this.loadOrders();
@@ -40,21 +51,34 @@ export class OrdersPage implements OnInit {
     });
     await loading.present();
     
-    const userId = this.authService.userValue?.id;
+    // Use JWTAuthService to check if user is authenticated
+    const jwtUser = this.jwtAuthService.currentUserValue;
+    console.log('Orders page - JWT authenticated user:', jwtUser);
     
-    if (!userId) {
+    if (!jwtUser || !jwtUser.id) {
+      console.error('JWT user validation failed in orders page:', jwtUser);
       loading.dismiss();
       this.isLoading = false;
       this.presentToast('يرجى تسجيل الدخول أولاً');
       return;
     }
     
+    const userId = jwtUser.id;
+    console.log('Fetching orders for user ID:', userId);
+    
+    // Load orders with a fallback to demo orders when needed
     this.orderService.getCustomerOrders(userId).subscribe({
       next: (orders) => {
+        console.log('Orders loaded successfully, count:', orders.length);
         this.orders = orders;
         this.filterOrders(this.activeFilter);
         loading.dismiss();
         this.isLoading = false;
+        
+        // Show toast if no orders found
+        if (orders.length === 0) {
+          this.presentToast('لا توجد طلبات سابقة');
+        }
       },
       error: (error) => {
         console.error('Error fetching orders:', error);

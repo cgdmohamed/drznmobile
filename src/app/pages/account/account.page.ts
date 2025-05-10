@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { JwtAuthService } from '../../services/jwt-auth.service';
 import { OrderService } from '../../services/order.service';
 import { User } from '../../interfaces/user.interface';
 import { Order } from '../../interfaces/order.interface';
@@ -25,24 +26,48 @@ export class AccountPage implements OnInit, OnDestroy {
 
   constructor(
     private authService: AuthService,
+    private jwtAuthService: JwtAuthService,
     private orderService: OrderService,
     private router: Router,
     private toastController: ToastController,
     private alertController: AlertController,
     private themeService: ThemeService
-  ) { }
+  ) {
+    console.log('Account page constructor - checking JWT authentication');
+    // Check if we're authenticated via JWT
+    if (this.jwtAuthService.isAuthenticated) {
+      console.log('JWT authentication confirmed in account constructor');
+    } else {
+      console.log('Not authenticated via JWT in account constructor');
+    }
+  }
 
   ngOnInit() {
     this.isLoading = true;
     
-    this.userSubscription = this.authService.user.subscribe(user => {
-      this.user = user;
+    // Subscribe to both authentication services to handle transition from old to new
+    this.userSubscription = this.jwtAuthService.currentUser$.subscribe(jwtUser => {
+      console.log('Account page - JWT user update received:', jwtUser);
       
-      if (user) {
-        this.loadUserOrders(user.id);
+      // If we have a JWT user, prioritize it
+      if (jwtUser) {
+        this.user = jwtUser;
+        console.log('Account page - Using JWT user:', jwtUser.id);
+        this.loadUserOrders(jwtUser.id);
       } else {
-        this.recentOrders = [];
-        this.isLoading = false;
+        // Fallback to regular auth service if no JWT user
+        console.log('Account page - No JWT user, checking regular auth');
+        const regularUser = this.authService.userValue;
+        
+        if (regularUser) {
+          this.user = regularUser;
+          console.log('Account page - Using regular auth user:', regularUser.id);
+          this.loadUserOrders(regularUser.id);
+        } else {
+          console.log('Account page - No authenticated user found');
+          this.recentOrders = [];
+          this.isLoading = false;
+        }
       }
     });
     
@@ -64,15 +89,23 @@ export class AccountPage implements OnInit, OnDestroy {
   }
 
   loadUserOrders(userId: number) {
-    if (!userId) return;
+    if (!userId) {
+      console.error('Cannot load orders: No user ID provided');
+      this.isLoading = false;
+      return;
+    }
+    
+    console.log('Account page - Loading orders for user ID:', userId);
     
     this.orderService.getCustomerOrders(userId).subscribe({
       next: (orders) => {
+        console.log('Account page - Orders loaded successfully, total:', orders.length);
         this.recentOrders = orders.slice(0, 3); // Show only the 3 most recent orders
+        console.log('Account page - Recent orders:', this.recentOrders.length);
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error fetching orders:', error);
+        console.error('Error fetching orders in account page:', error);
         this.isLoading = false;
       }
     });

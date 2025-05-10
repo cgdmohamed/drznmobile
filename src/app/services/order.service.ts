@@ -8,6 +8,7 @@ import { Order } from '../interfaces/order.interface';
 import { Cart } from '../interfaces/cart.interface';
 import { ToastController, AlertController } from '@ionic/angular';
 import { AuthService } from './auth.service';
+import { JwtAuthService } from './jwt-auth.service';
 import { NotificationService, NotificationData } from './notification.service';
 import { demoProducts } from '../demo/demo-products';
 
@@ -121,11 +122,19 @@ export class OrderService {
     private http: HttpClient,
     private storage: Storage,
     private authService: AuthService,
+    private jwtAuthService: JwtAuthService,
     private toastController: ToastController,
     private alertController: AlertController,
     private notificationService: NotificationService
   ) {
     this.initialize();
+    
+    // Log authentication state for debugging
+    if (this.jwtAuthService.isAuthenticated) {
+      console.log('OrderService: JWT authentication confirmed');
+    } else {
+      console.log('OrderService: Not authenticated via JWT');
+    }
   }
   
   /**
@@ -322,13 +331,13 @@ export class OrderService {
         total: total.toFixed(2),
         total_tax: tax.toFixed(2),
         prices_include_tax: false,
-        customer_id: this.authService.userValue?.id || 1,
+        customer_id: this.jwtAuthService.currentUserValue?.id || 1,
         customer_ip_address: '',
         customer_user_agent: '',
         customer_note: '',
         billing: {
-          first_name: this.authService.userValue?.first_name || 'محمد',
-          last_name: this.authService.userValue?.last_name || 'أحمد',
+          first_name: this.jwtAuthService.currentUserValue?.first_name || 'محمد',
+          last_name: this.jwtAuthService.currentUserValue?.last_name || 'أحمد',
           company: '',
           address_1: 'شارع الملك فهد',
           address_2: '',
@@ -336,12 +345,12 @@ export class OrderService {
           state: 'الرياض',
           postcode: '12345',
           country: 'SA',
-          email: this.authService.userValue?.email || 'customer@example.com',
-          phone: this.authService.userValue?.billing?.phone || '05xxxxxxxx'
+          email: this.jwtAuthService.currentUserValue?.email || 'customer@example.com',
+          phone: this.jwtAuthService.currentUserValue?.billing?.phone || '05xxxxxxxx'
         },
         shipping: {
-          first_name: this.authService.userValue?.first_name || 'محمد',
-          last_name: this.authService.userValue?.last_name || 'أحمد',
+          first_name: this.jwtAuthService.currentUserValue?.first_name || 'محمد',
+          last_name: this.jwtAuthService.currentUserValue?.last_name || 'أحمد',
           company: '',
           address_1: 'شارع الملك فهد',
           address_2: '',
