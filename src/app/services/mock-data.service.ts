@@ -2,54 +2,81 @@ import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { Product } from '../interfaces/product.interface';
 import { Category } from '../interfaces/category.interface';
+import { environment } from '../../environments/environment';
 
 /**
  * This service provides mock data for development and testing
  * It's used when the WooCommerce API is not available
  * 
- * NOTE: In production, this service should be replaced with actual API calls
+ * NOTE: In production, this service should always return empty arrays
  */
 @Injectable({
   providedIn: 'root'
 })
 export class MockDataService {
   
-  constructor() { }
+  constructor() {
+    // Log warning if this service is instantiated in production
+    if (environment.production) {
+      console.warn('MockDataService should not be used in production. All methods will return empty arrays.');
+    }
+  }
   
   /**
-   * Get mock featured products
+   * Get mock featured products (empty array in production)
    */
   getFeaturedProducts(): Observable<Product[]> {
+    if (environment.production) {
+      console.log('MockDataService: getFeaturedProducts called in production - returning empty array');
+      return of([]);
+    }
     return of(this.generateMockProducts(8, true));
   }
   
   /**
-   * Get mock new products
+   * Get mock new products (empty array in production)
    */
   getNewProducts(): Observable<Product[]> {
+    if (environment.production) {
+      console.log('MockDataService: getNewProducts called in production - returning empty array');
+      return of([]);
+    }
     return of(this.generateMockProducts(6));
   }
   
   /**
-   * Get mock on-sale products
+   * Get mock on-sale products (empty array in production)
    */
   getOnSaleProducts(): Observable<Product[]> {
+    if (environment.production) {
+      console.log('MockDataService: getOnSaleProducts called in production - returning empty array');
+      return of([]);
+    }
     return of(this.generateMockProducts(6, false, true));
   }
   
   /**
-   * Get mock categories
+   * Get mock categories (empty array in production)
    */
   getCategories(): Observable<Category[]> {
+    if (environment.production) {
+      console.log('MockDataService: getCategories called in production - returning empty array');
+      return of([]);
+    }
     return of(this.generateMockCategories());
   }
   
   /**
-   * Search demo products by search term
+   * Search demo products by search term (empty array in production)
    * @param query Search query
    * @param limit Maximum number of products to return
    */
   searchDemoProducts(query: string, limit: number = 10): Product[] {
+    if (environment.production) {
+      console.log('MockDataService: searchDemoProducts called in production - returning empty array');
+      return [];
+    }
+    
     // Generate a larger set of products to search through
     const allProducts = this.generateMockProducts(30);
     

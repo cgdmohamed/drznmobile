@@ -12,6 +12,7 @@ import { ThemeService } from "./services/theme.service";
 import { SplashScreenService } from "./services/splash-screen.service";
 import { WishlistService } from "./services/wishlist.service";
 import { StatusBar, Style } from '@capacitor/status-bar';
+import { environment } from "../environments/environment";
 
 @Component({
   selector: "app-root",
@@ -67,6 +68,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
+    // Log environment information
+    console.log(`App running in ${environment.production ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
+    console.log(`Environment settings: API URL=${environment.apiUrl}, useDemoData=${environment.useDemoData}`);
+    
     // Storage is already initialized in constructor
 
     // Initialize services that depend on storage
@@ -122,6 +127,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   initializeApp() {
+    // Log environment details again to ensure it's captured
+    console.log(`[initializeApp] App running in ${environment.production ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
+    console.log(`[initializeApp] Demo data usage setting: ${environment.useDemoData}`);
+    
     this.platform.ready().then(async () => {
       try {
         // Configure status bar (for mobile devices only)

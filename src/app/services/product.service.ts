@@ -19,11 +19,21 @@ export class ProductService {
   // Track product IDs that failed to load to avoid repeated API calls
   private failedProductIds = new Set<number>();
   private randomProductCache: Product[] = [];
+  
+  // Flag to indicate if we're in production mode
+  private isProduction = environment.production;
 
   constructor(
     private http: HttpClient,
     private mockDataService: MockDataService
-  ) {}
+  ) {
+    console.log(`ProductService initialized in ${this.isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
+    console.log(`ProductService useDemoData setting: ${environment.useDemoData}`);
+    
+    if (this.isProduction && environment.useDemoData) {
+      console.warn('WARNING: useDemoData is set to true in production environment. This should be false in production.');
+    }
+  }
 
   // Get products with optional filtering
   getProducts(options: any = {}): Observable<Product[]> {
@@ -56,7 +66,17 @@ export class ProductService {
       console.log(`Getting random product for previously failed product ID: ${id}`);
       // Get a random API product instead of demo
       return this.getRandomProducts(1).pipe(
-        map(products => products.length > 0 ? products[0] : this.generateProductFromScratch(id))
+        map(products => {
+          if (products.length > 0) {
+            return products[0];
+          } else if (!environment.production) {
+            // Only generate placeholder in development mode
+            return this.generateProductFromScratch(id);
+          } else {
+            // In production, throw an error to be caught by caller
+            throw new Error(`Product ID ${id} not found and no fallback available in production mode`);
+          }
+        })
       );
     }
     
@@ -217,7 +237,14 @@ export class ProductService {
           catchError(secondError => {
             console.error(`Error fetching any products from API:`, secondError);
             
-            // As an absolute last resort, create minimal placeholder products
+            // Check if we're in production mode
+            if (environment.production) {
+              // In production, return empty array instead of placeholder products
+              console.log(`In production mode - not creating placeholder products`);
+              return of([]);
+            } 
+            
+            // In development mode, create minimal placeholder products
             console.log(`Creating ${count} minimal placeholder products as last resort`);
             const placeholders: Product[] = [];
             for (let i = 0; i < count; i++) {
@@ -257,7 +284,13 @@ export class ProductService {
             console.warn('Server connection error detected. API server may be unavailable.');
           }
           
-          // Create minimum viable categories when API fails
+          if (environment.production) {
+            // In production, don't create fallback categories
+            console.log('In production mode - not creating fallback categories');
+            return of([]);
+          }
+          
+          // Create minimum viable categories when API fails (development mode only)
           console.log('Creating minimal viable categories as API fallback');
           // Create default categories that most stores would have
           const fallbackCategories: Category[] = [
@@ -382,7 +415,17 @@ export class ProductService {
         catchError(error => {
           console.error(`Error searching products with query "${query}" from API:`, error);
           
-          // Return random products as search results
+          // Check if we're in production mode
+          if (this.isProduction) {
+            console.log(`Production mode: Not providing fallback data for search query "${query}"`);
+            return of({
+              products: [],
+              totalPages: 0,
+              currentPage: page
+            });
+          }
+          
+          // In development, return random products as search results
           return this.getRandomProducts(per_page).pipe(
             map(products => ({
               products,
@@ -475,8 +518,14 @@ export class ProductService {
           console.warn('Server connection error detected for featured products. API server may be unavailable.');
         }
         
-        // Fall back to random real products instead of demo
-        console.log('Falling back to random real products for featured section');
+        // Check if we're in production mode
+        if (this.isProduction) {
+          console.log('Production mode: Not providing fallback data for featured products');
+          return of([]);
+        }
+        
+        // In development, fall back to random real products
+        console.log('Falling back to random real products for featured section (development mode)');
         return this.getRandomProducts(limit);
       })
     );
@@ -497,8 +546,15 @@ export class ProductService {
     ).pipe(
       catchError(error => {
         console.error(`Error fetching products for categories ${categoryParam} from API:`, error);
-        // Fall back to random real products instead of demo
-        console.log('Falling back to random real products for products by categories');
+        
+        // Check if we're in production mode
+        if (this.isProduction) {
+          console.log('Production mode: Not providing fallback data for category products');
+          return of([]);
+        }
+        
+        // In development, fall back to random real products
+        console.log('Falling back to random real products for category products (development mode)');
         return this.getRandomProducts(limit);
       })
     );
@@ -518,8 +574,14 @@ export class ProductService {
           console.warn('Server connection error detected for new products. API server may be unavailable.');
         }
         
-        // Fall back to random real products instead of demo
-        console.log('Falling back to random real products for new products section');
+        // Check if we're in production mode
+        if (this.isProduction) {
+          console.log('Production mode: Not providing fallback data for new products');
+          return of([]);
+        }
+        
+        // In development, fall back to random real products
+        console.log('Falling back to random real products for new products section (development mode)');
         return this.getRandomProducts(10);
       })
     );
@@ -533,8 +595,15 @@ export class ProductService {
     ).pipe(
       catchError(error => {
         console.error('Error fetching bestseller products from API:', error);
-        // Fall back to random real products instead of demo
-        console.log('Falling back to random real products for bestsellers section');
+        
+        // Check if we're in production mode
+        if (this.isProduction) {
+          console.log('Production mode: Not providing fallback data for bestseller products');
+          return of([]);
+        }
+        
+        // In development, fall back to random real products
+        console.log('Falling back to random real products for bestsellers section (development mode)');
         return this.getRandomProducts(10);
       })
     );
@@ -554,8 +623,14 @@ export class ProductService {
           console.warn('Server connection error detected for on-sale products. API server may be unavailable.');
         }
         
-        // Fall back to random real products instead of demo
-        console.log('Falling back to random real products for on-sale products section');
+        // Check if we're in production mode
+        if (this.isProduction) {
+          console.log('Production mode: Not providing fallback data for on-sale products');
+          return of([]);
+        }
+        
+        // In development, fall back to random real products
+        console.log('Falling back to random real products for on-sale products section (development mode)');
         return this.getRandomProducts(10);
       })
     );

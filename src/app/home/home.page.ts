@@ -8,6 +8,7 @@ import { ProductService } from '../services/product.service';
 import { CartService } from '../services/cart.service';
 import { WishlistService } from '../services/wishlist.service';
 import { NotificationService } from '../services/notification.service';
+import { environment } from '../../environments/environment';
 
 // Required for Swiper
 import { register } from 'swiper/element/bundle';
@@ -171,11 +172,16 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   loadData() {
     this.isLoading = true;
     
+    // Log the current environment to help with debugging
+    console.log(`Home page loadData: Running in ${environment.production ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
+    console.log(`Environment settings: useDemoData=${environment.useDemoData}, apiUrl=${environment.apiUrl}`);
+    
     // No delay - load data immediately
     // Get categories
     this.productService.getCategories().subscribe(
       (categories) => {
         this.categories = categories;
+        console.log(`Loaded ${categories.length} categories from API`);
       },
       (error) => {
         console.error('Error loading categories', error);
@@ -202,10 +208,22 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
       (error) => {
         console.error('Error loading random product pool:', error);
         
-        // Even if the random pool fails, try individual sections with their own random calls
-        this.loadFeaturedWithRandomProducts([]);
-        this.loadNewWithRandomProducts([]);
-        this.loadSaleWithRandomProducts([]);
+        if (!environment.production) {
+          // Only in development mode - try individual sections with their own random calls
+          this.loadFeaturedWithRandomProducts([]);
+          this.loadNewWithRandomProducts([]);
+          this.loadSaleWithRandomProducts([]);
+        } else {
+          // In production, don't try to get random products if the main call fails
+          console.log('In production mode - not using random products as fallback');
+          this.loadFeaturedWithRandomProducts([]);
+          this.loadNewWithRandomProducts([]);
+          this.loadSaleWithRandomProducts([]);
+          // Set timeout to hide loading indicator even if no products
+          setTimeout(() => {
+            this.isLoading = false;
+          }, 1000);
+        }
       }
     );
     
@@ -222,8 +240,8 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
         // Start with the featured products from API
         this.featuredProducts = products;
         
-        // If we don't have at least 5 products, add from random pool or get more random products
-        if (this.featuredProducts.length < 5) {
+        // If we don't have at least 5 products AND we're not in production, add from random pool
+        if (this.featuredProducts.length < 5 && !environment.production) {
           if (randomPool.length > 0) {
             // If we have random products in our pool, use them
             const neededCount = 5 - this.featuredProducts.length;
@@ -231,7 +249,7 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
             this.featuredProducts = [...this.featuredProducts, ...randomToAdd];
             console.log(`Added ${randomToAdd.length} random products from pool to featured products`);
           } else {
-            // Otherwise get more random products specifically for this section
+            // Otherwise get more random products specifically for this section (dev mode only)
             this.getRandomProductsForSection('featured', 5 - this.featuredProducts.length);
           }
         }
@@ -239,13 +257,19 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
       (error) => {
         console.error('Error loading featured products:', error);
         
-        if (randomPool.length > 0) {
-          // If featured fetch fails but we have random products, use them
-          this.featuredProducts = randomPool.splice(0, 5);
-          console.log(`Used ${this.featuredProducts.length} random products from pool as featured products`);
+        if (!environment.production) {
+          // Only in development mode - add random products if API call fails
+          if (randomPool.length > 0) {
+            // If featured fetch fails but we have random products, use them
+            this.featuredProducts = randomPool.splice(0, 5);
+            console.log(`Used ${this.featuredProducts.length} random products from pool as featured products`);
+          } else {
+            // Otherwise get random products specifically for this section
+            this.getRandomProductsForSection('featured', 5);
+          }
         } else {
-          // Otherwise get random products specifically for this section
-          this.getRandomProductsForSection('featured', 5);
+          console.log('In production mode - not using random products for featured section');
+          this.featuredProducts = [];
         }
       }
     );
@@ -258,8 +282,8 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
         // Start with the new products from API
         this.newProducts = products;
         
-        // If we don't have at least 5 products, add from random pool or get more random products
-        if (this.newProducts.length < 5) {
+        // If we don't have at least 5 products AND we're not in production, add from random pool
+        if (this.newProducts.length < 5 && !environment.production) {
           if (randomPool.length > 0) {
             // If we have random products in our pool, use them
             const neededCount = 5 - this.newProducts.length;
@@ -267,7 +291,7 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
             this.newProducts = [...this.newProducts, ...randomToAdd];
             console.log(`Added ${randomToAdd.length} random products from pool to new products`);
           } else {
-            // Otherwise get more random products specifically for this section
+            // Otherwise get more random products specifically for this section (dev mode only)
             this.getRandomProductsForSection('new', 5 - this.newProducts.length);
           }
         }
@@ -275,13 +299,19 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
       (error) => {
         console.error('Error loading new products:', error);
         
-        if (randomPool.length > 0) {
-          // If new fetch fails but we have random products, use them
-          this.newProducts = randomPool.splice(0, 5);
-          console.log(`Used ${this.newProducts.length} random products from pool as new products`);
+        if (!environment.production) {
+          // Only in development mode - add random products if API call fails
+          if (randomPool.length > 0) {
+            // If new fetch fails but we have random products, use them
+            this.newProducts = randomPool.splice(0, 5);
+            console.log(`Used ${this.newProducts.length} random products from pool as new products`);
+          } else {
+            // Otherwise get random products specifically for this section
+            this.getRandomProductsForSection('new', 5);
+          }
         } else {
-          // Otherwise get random products specifically for this section
-          this.getRandomProductsForSection('new', 5);
+          console.log('In production mode - not using random products for new section');
+          this.newProducts = [];
         }
       }
     );
@@ -294,8 +324,8 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
         // Start with the sale products from API
         this.onSaleProducts = products;
         
-        // If we don't have at least 5 products, add from random pool or get more random products
-        if (this.onSaleProducts.length < 5) {
+        // If we don't have at least 5 products AND we're not in production, add from random pool
+        if (this.onSaleProducts.length < 5 && !environment.production) {
           if (randomPool.length > 0) {
             // If we have random products in our pool, use them
             const neededCount = 5 - this.onSaleProducts.length;
@@ -303,7 +333,7 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
             this.onSaleProducts = [...this.onSaleProducts, ...randomToAdd];
             console.log(`Added ${randomToAdd.length} random products from pool to sale products`);
           } else {
-            // Otherwise get more random products specifically for this section
+            // Otherwise get more random products specifically for this section (dev mode only)
             this.getRandomProductsForSection('sale', 5 - this.onSaleProducts.length);
           }
         }
@@ -311,13 +341,19 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
       (error) => {
         console.error('Error loading sale products:', error);
         
-        if (randomPool.length > 0) {
-          // If sale fetch fails but we have random products, use them
-          this.onSaleProducts = randomPool.splice(0, 5);
-          console.log(`Used ${this.onSaleProducts.length} random products from pool as sale products`);
+        if (!environment.production) {
+          // Only in development mode - add random products if API call fails
+          if (randomPool.length > 0) {
+            // If sale fetch fails but we have random products, use them
+            this.onSaleProducts = randomPool.splice(0, 5);
+            console.log(`Used ${this.onSaleProducts.length} random products from pool as sale products`);
+          } else {
+            // Otherwise get random products specifically for this section
+            this.getRandomProductsForSection('sale', 5);
+          }
         } else {
-          // Otherwise get random products specifically for this section
-          this.getRandomProductsForSection('sale', 5);
+          console.log('In production mode - not using random products for sale section');
+          this.onSaleProducts = [];
         }
       }
     );
@@ -325,7 +361,13 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   
   // Get additional random products for a specific section
   private getRandomProductsForSection(section: 'featured' | 'new' | 'sale', count: number) {
-    // Make a new API call to get random products
+    // Do not make API calls for random products in production
+    if (environment.production) {
+      console.log(`In production mode - not making additional API calls for ${section} section`);
+      return;
+    }
+    
+    // Make a new API call to get random products (development mode only)
     this.productService.getRandomProducts(count * 2).subscribe(
       (randomProducts) => {
         // Take only what we need
@@ -354,6 +396,12 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   
   // Last resort - get products from other sections that already have products
   private getProductsFromOtherSections(section: 'featured' | 'new' | 'sale', count: number) {
+    // Don't borrow products in production mode
+    if (environment.production) {
+      console.log(`In production mode - not borrowing products from other sections for ${section} section`);
+      return;
+    }
+    
     // Find products from other sections we can use
     let borrowFromSections: Product[] = [];
     
@@ -581,6 +629,12 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   
   // Helper method to add demo products when API calls fail
   private addDemoProductsToList(productList: Product[], type: 'featured' | 'new' | 'sale', existingIds: Set<number>): void {
+    // Never use demo products in production mode
+    if (environment.production) {
+      console.log(`In production mode - not adding demo products to ${type} products`);
+      return;
+    }
+
     const mockDataService = this.productService['mockDataService'];
     
     if (type === 'featured') {
@@ -722,6 +776,19 @@ export class HomePage implements OnInit, OnDestroy, AfterViewInit {
   
   // Fallback to demo products when API doesn't provide enough products
   private finalFallbackToDemoProducts(type: 'featured' | 'new' | 'sale', existingProducts: Product[]): void {
+    // Never use demo products in production mode
+    if (environment.production) {
+      console.log(`In production mode - not using demo products for ${type} section`);
+      if (type === 'featured') {
+        this.featuredProducts = existingProducts;
+      } else if (type === 'new') {
+        this.newProducts = existingProducts;
+      } else if (type === 'sale') {
+        this.onSaleProducts = existingProducts;
+      }
+      return;
+    }
+
     const mockDataService = this.productService['mockDataService'];
     
     if (type === 'featured') {
