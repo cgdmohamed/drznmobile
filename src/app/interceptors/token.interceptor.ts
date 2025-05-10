@@ -6,7 +6,7 @@ import {
   HttpInterceptor,
   HttpErrorResponse
 } from '@angular/common/http';
-import { Observable, throwError, BehaviorSubject, from } from 'rxjs';
+import { Observable, throwError, BehaviorSubject, from, of } from 'rxjs';
 import { catchError, filter, take, switchMap } from 'rxjs/operators';
 import { JwtAuthService } from '../services/jwt-auth.service';
 import { Platform } from '@ionic/angular';
@@ -83,7 +83,15 @@ export class TokenInterceptor implements HttpInterceptor {
           
           return next.handle(request).pipe(
             catchError(error => {
+              // Skip handling 200 OK responses as errors
               if (error instanceof HttpErrorResponse) {
+                // Check if it's a 200 OK incorrectly treated as error
+                if (error.status === 200) {
+                  console.warn(`TokenInterceptor: HTTP error ${error.status} for ${request.url} with OK status - treating as success`, error);
+                  // Return the response body as an observable
+                  return of(error.error);
+                }
+                
                 console.error(`TokenInterceptor: HTTP error ${error.status} for ${request.url}`, error);
                 
                 if (error.status === 401) {

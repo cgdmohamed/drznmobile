@@ -69,7 +69,7 @@ const config: CapacitorConfig = {
     useLegacyBridge: true,
     // Improved network configuration for API connectivity
     initialFocus: true,
-    hideLogs: false,
+    // Custom configurations (moved to custom field below)
     overrideUserAgent: "DRZN-App Android/1.0.0"
   },
   cordova: {},

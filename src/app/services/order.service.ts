@@ -582,7 +582,42 @@ export class OrderService {
         consumer_secret: this.consumerSecret
       }
     }).pipe(
-      tap(order => {
+      map(response => {
+        console.log('Order creation response:', response);
+        
+        // Handle both normal and error-like success responses
+        let order: Order;
+        
+        // Check if response is already an Order object
+        if (response && typeof response === 'object' && 'id' in response) {
+          order = response as Order;
+        }
+        // Check if it might be an error object with data
+        else if (response && typeof response === 'object') {
+          // Create a type guard to check if response has an error property
+          const responseObj = response as Record<string, any>;
+          const hasError = 'error' in responseObj && responseObj.error !== null && responseObj.error !== undefined;
+          
+          if (hasError) {
+            const responseError = responseObj.error as any;
+            // If there's a data property with the actual order
+            if (responseError && typeof responseError === 'object' && 'data' in responseError) {
+              const responseData = responseError.data;
+              if (responseData && typeof responseData === 'object') {
+                order = responseData as Order;
+              } else {
+                throw new Error('Invalid order response data format');
+              }
+            } else {
+              throw new Error('Invalid order response error format');
+            }
+          } else {
+            throw new Error('Response object missing expected properties');
+          }
+        } else {
+          throw new Error('Invalid order response format');
+        }
+        
         // Add to local orders list
         const currentOrders = this.ordersValue;
         const updatedOrders = [order, ...currentOrders];
@@ -590,8 +625,35 @@ export class OrderService {
         this.saveOrders(updatedOrders);
         
         this.presentToast('Order placed successfully!');
+        return order;
       }),
       catchError(error => {
+        // Check if the error actually contains a successful response
+        if (error && typeof error === 'object') {
+          const errorObj = error as Record<string, any>;
+          
+          if ('error' in errorObj && errorObj.error && typeof errorObj.error === 'object') {
+            // Check if this is actually a successful order (has ID)
+            const errorData = errorObj.error as Record<string, any>;
+            
+            if ('id' in errorData) {
+              console.log('Detected successful order creation within error response', errorData);
+              
+              // Extract order from error
+              const order = errorData as unknown as Order;
+              
+              // Add to local orders list
+              const currentOrders = this.ordersValue;
+              const updatedOrders = [order, ...currentOrders];
+              this._orders.next(updatedOrders);
+              this.saveOrders(updatedOrders);
+              
+              this.presentToast('Order placed successfully!');
+              return of(order);
+            }
+          }
+        }
+        
         console.error('Error creating order:', error);
         this.presentToast('Failed to create order. Please try again.');
         return throwError(() => new Error('Failed to create order'));

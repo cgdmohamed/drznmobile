@@ -184,10 +184,44 @@ export class AddressService {
         }
         console.log('Fetching custom addresses from URL:', url);
         
-        return this.http.get<CustomAddress[]>(url).pipe(
+        return this.http.get(url).pipe(
           map(response => {
             console.log('Custom address response from API:', response);
-            return response;
+            // Handle different response formats
+            if (response === null || response === undefined) {
+              console.log('Null or undefined response, returning empty array');
+              return [] as CustomAddress[];
+            }
+            
+            // Check if response is array
+            if (Array.isArray(response)) {
+              console.log('Response is array, returning directly');
+              return response as CustomAddress[];
+            }
+            
+            // Check if response is object with addresses property
+            if (typeof response === 'object' && response !== null) {
+              if ('addresses' in response && Array.isArray(response.addresses)) {
+                console.log('Response has addresses array property, returning that');
+                return response.addresses as CustomAddress[];
+              }
+              
+              // Try to convert object to array if needed
+              if (Object.keys(response).length > 0) {
+                try {
+                  const addressArray = Object.values(response);
+                  if (Array.isArray(addressArray)) {
+                    console.log('Converted response object to array');
+                    return addressArray as CustomAddress[];
+                  }
+                } catch (e) {
+                  console.error('Error converting response to array:', e);
+                }
+              }
+            }
+            
+            console.log('Unable to parse response, returning empty array');
+            return [] as CustomAddress[];
           }),
           catchError(error => {
             console.error('Error fetching custom addresses:', error);
