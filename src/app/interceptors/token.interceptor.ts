@@ -49,7 +49,12 @@ export class TokenInterceptor implements HttpInterceptor {
     }
 
     // Skip JWT token for WooCommerce endpoints that use consumer key/secret auth
-    if (request.url.includes('consumer_key=') && request.url.includes('consumer_secret=')) {
+    // Check both URL and params for consumer credentials
+    const hasConsumerKeyInUrl = request.url.includes('consumer_key=') && request.url.includes('consumer_secret=');
+    const hasConsumerKeyInParams = request.params && 
+                                (request.params.has('consumer_key') || request.params.has('consumer_secret'));
+    
+    if (hasConsumerKeyInUrl || hasConsumerKeyInParams) {
       console.log('TokenInterceptor: Skipping JWT for WooCommerce request with consumer credentials', request.url);
       return next.handle(request);
     }
@@ -69,7 +74,8 @@ export class TokenInterceptor implements HttpInterceptor {
                      request.url.includes('wp-json');
     }
     
-    if (isApiRequest && !request.url.includes('consumer_key=')) {
+    // Only add JWT token if this is an API request and doesn't have consumer credentials
+    if (isApiRequest && !hasConsumerKeyInUrl && !hasConsumerKeyInParams) {
       console.log('TokenInterceptor: Adding JWT token to API request', request.url);
       return from(this.jwtAuthService.getToken()).pipe(
         switchMap(token => {

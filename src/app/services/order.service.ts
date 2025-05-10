@@ -576,23 +576,26 @@ export class OrderService {
       return throwError(() => new Error('Invalid parameters for creating order'));
     }
     
-    // Determine if we're in production
-    const isProduction = environment.production;
+    // Determine if we're on a mobile device
+    const isMobile = this.authService.isMobilePlatform();
     
     let url: string;
-    let requestOptions: any = {};
+    let requestOptions: any = {
+      // Always include consumer key/secret in params to ensure TokenInterceptor knows this is a WooCommerce API request
+      params: {
+        consumer_key: this.consumerKey,
+        consumer_secret: this.consumerSecret
+      }
+    };
     
-    if (isProduction) {
-      // For production, use absolute URL with consumer keys in URL
+    if (isMobile) {
+      // For mobile devices, use absolute URL with consumer keys in URL (avoid CORS issues)
       url = `https://${environment.storeUrl}/wp-json/wc/v3/orders?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}`;
-      // Don't add params since they're already in URL
+      // On mobile, we include consumer keys in both URL and params to ensure tokenInterceptor ignores this request 
     } else {
       // For web development, use relative URL with consumer keys in params
       url = `${this.apiUrl}/orders`;
-      requestOptions.params = {
-        consumer_key: this.consumerKey,
-        consumer_secret: this.consumerSecret
-      };
+      // Params already set above
     }
     
     console.log('Creating order with URL:', url);
