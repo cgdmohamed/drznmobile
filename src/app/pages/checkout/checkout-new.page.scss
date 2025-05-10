@@ -526,6 +526,120 @@
   border: 1px solid #f0f0f0;
 }
 
+// Order summary styling
+.order-summary {
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 24px 0;
+  border: 1px solid #eee;
+  
+  .summary-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    color: #333;
+  }
+  
+  .summary-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 15px;
+    
+    .label {
+      color: #555;
+    }
+    
+    .value {
+      font-weight: 500;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    &.discount .value {
+      color: #4caf50;
+    }
+    
+    &.tax-line {
+      position: relative;
+      
+      .tax-info {
+        position: relative;
+        margin-right: 8px;
+        cursor: pointer;
+        
+        ion-icon {
+          color: #777;
+          font-size: 18px;
+        }
+        
+        .tax-tooltip {
+          position: absolute;
+          bottom: 30px;
+          right: -40px;
+          width: 280px;
+          background: white;
+          border-radius: 6px;
+          padding: 12px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+          border: 1px solid #ddd;
+          font-size: 13px;
+          color: #555;
+          line-height: 1.5;
+          text-align: right;
+          z-index: 10;
+          opacity: 0;
+          visibility: hidden;
+          transition: all 0.2s ease;
+          transform: translateY(5px);
+          
+          &:before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            right: 45px;
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-right: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            transform: rotate(45deg);
+          }
+        }
+        
+        &:hover .tax-tooltip {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+        }
+      }
+    }
+    
+    &.total {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+      font-size: 18px;
+      
+      .label {
+        font-weight: 600;
+        color: #333;
+      }
+      
+      .value {
+        font-weight: 700;
+        color: var(--ion-color-primary);
+      }
+    }
+  }
+}
+
 // STC Pay styles
 .stc-pay-container {
   margin: 24px 0;

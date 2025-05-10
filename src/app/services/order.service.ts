@@ -554,7 +554,11 @@ export class OrderService {
         fee_lines: [
           {
             name: 'VAT (15%)',
-            total: cart.vat.toString()
+            total: cart.vat.toString(),
+            tax_class: '',
+            tax_status: 'none', // Don't apply additional tax to this fee
+            amount: cart.vat.toString(),
+            total_tax: '0'
           }
         ],
         meta_data: [
@@ -695,18 +699,26 @@ export class OrderService {
    * Get payment method title
    * @param method The payment method
    */
+  /**
+   * Get the appropriate payment method title in Arabic and English
+   * @param method The payment method code
+   * @returns Localized payment method title
+   */
   private getPaymentMethodTitle(method: string): string {
     switch (method) {
+      case 'creditCard':
       case 'creditcard':
-        return 'Credit Card';
+        return 'بطاقة ائتمانية / Credit Card';
+      case 'applePay':
       case 'applepay':
-        return 'Apple Pay';
+        return 'آبل باي / Apple Pay';
+      case 'stcPay':
       case 'stcpay':
-        return 'STC Pay';
+        return 'إس تي سي باي / STC Pay';
       case 'cod':
-        return 'Cash on Delivery';
+        return 'الدفع عند الاستلام / Cash on Delivery';
       default:
-        return 'Unknown Payment Method';
+        return 'طريقة دفع أخرى / Other Payment Method';
     }
   }
   

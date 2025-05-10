@@ -212,12 +212,14 @@ export class CartService {
     
     // Apply VAT (15% in Saudi Arabia)
     const vatRate = 0.15;
+    // Make sure VAT calculation matches what we send to WooCommerce API
+    // VAT is calculated on the subtotal minus any discounts
     const vat = (subtotal - cart.discount) * vatRate;
     
     // Calculate shipping (this could be more complex in a real app)
     const shipping = cart.items.length > 0 ? 10 : 0;
     
-    // Calculate total
+    // Calculate total - make sure we match what WooCommerce API expects
     const total = subtotal - cart.discount + shipping + vat;
     
     const updatedCart: Cart = {

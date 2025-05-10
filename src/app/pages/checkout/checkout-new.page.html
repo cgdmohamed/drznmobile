@@ -422,6 +422,42 @@
         </div>
       </div>
       
+      <!-- Order summary -->
+      <div class="order-summary">
+        <h3 class="summary-title">ملخص الطلب</h3>
+        
+        <div class="summary-line">
+          <span class="label">المجموع الفرعي</span>
+          <span class="value">{{ cart?.subtotal.toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
+        </div>
+        
+        <div class="summary-line" *ngIf="cart?.discount > 0">
+          <span class="label">الخصم</span>
+          <span class="value discount">- {{ cart?.discount.toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
+        </div>
+        
+        <div class="summary-line">
+          <span class="label">الشحن</span>
+          <span class="value">{{ cart?.shipping.toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
+        </div>
+        
+        <div class="summary-line tax-line">
+          <span class="label">ضريبة القيمة المضافة (15%)</span>
+          <span class="value">{{ cart?.vat.toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
+          <div class="tax-info">
+            <ion-icon name="information-circle-outline"></ion-icon>
+            <div class="tax-tooltip">
+              تُطبق ضريبة القيمة المضافة بنسبة 15% على جميع المنتجات وفقًا لأنظمة الهيئة العامة للزكاة والدخل في المملكة العربية السعودية
+            </div>
+          </div>
+        </div>
+        
+        <div class="summary-line total">
+          <span class="label">الإجمالي</span>
+          <span class="value">{{ cart?.total.toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
+        </div>
+      </div>
+
       <div class="nav-buttons">
         <ng-container *ngIf="paymentMethod === 'creditCard'">
           <ion-button expand="block" (click)="processPayment()">
@@ -437,7 +473,7 @@
         
         <ng-container *ngIf="paymentMethod === 'cod'">
           <ion-button expand="block" (click)="processCashOnDelivery()">
-            دفع
+            دفع عند الاستلام
           </ion-button>
         </ng-container>
         
