@@ -32,11 +32,16 @@ export class WoocommerceService {
   ) {
     console.log('WooCommerce service initialized');
     console.log('API URL:', this.apiUrl);
-    console.log('Using demo mode:', this.useDemo);
     
-    // Force demo mode to be refreshed from environment settings
-    this.useDemo = environment.useDemoData;
-    console.log('Demo mode updated from environment:', this.useDemo);
+    // In production builds, always use real data unless explicitly enabled
+    if (environment.production) {
+      this.useDemo = false;
+      console.log('Production mode detected, forcing real API data (useDemo = false)');
+    } else {
+      // Force demo mode to be refreshed from environment settings
+      this.useDemo = environment.useDemoData;
+      console.log('Demo mode updated from environment:', this.useDemo);
+    }
   }
 
   /**
@@ -81,7 +86,10 @@ export class WoocommerceService {
         retry(2),
         catchError(error => {
           console.error('Error fetching products from API:', error);
-          this.useDemo = true;
+          // Only use demo data in non-production mode
+          if (!environment.production) {
+            this.useDemo = true;
+          }
           return this.handleError('Failed to fetch products', error);
         })
       );
@@ -108,7 +116,10 @@ export class WoocommerceService {
       retry(2),
       catchError(error => {
         console.error(`Error fetching product ID ${productId} from API:`, error);
-        this.useDemo = true;
+        // Only use demo data in non-production mode
+        if (!environment.production) {
+          this.useDemo = true;
+        }
         return this.handleError('Failed to fetch product details', error);
       })
     );
@@ -132,7 +143,10 @@ export class WoocommerceService {
         retry(2),
         catchError(error => {
           console.error('Error fetching categories from API:', error);
-          this.useDemo = true;
+          // Only use demo data in non-production mode
+          if (!environment.production) {
+            this.useDemo = true;
+          }
           return this.handleError('Failed to fetch categories', error);
         })
       );
@@ -173,7 +187,10 @@ export class WoocommerceService {
         retry(2),
         catchError(error => {
           console.error(`Error fetching products for category ${categoryId} from API:`, error);
-          this.useDemo = true;
+          // Only use demo data in non-production mode
+          if (!environment.production) {
+            this.useDemo = true;
+          }
           return this.handleError('Failed to fetch category products', error);
         })
       );
@@ -297,7 +314,10 @@ export class WoocommerceService {
         retry(2),
         catchError(error => {
           console.error(`Error searching for products with query "${searchQuery}":`, error);
-          this.useDemo = true;
+          // Only use demo data in non-production mode
+          if (!environment.production) {
+            this.useDemo = true;
+          }
           return this.handleError('Failed to search products', error);
         })
       );
@@ -332,7 +352,10 @@ export class WoocommerceService {
         retry(2),
         catchError(error => {
           console.error('Error fetching products by IDs:', error);
-          this.useDemo = true;
+          // Only use demo data in non-production mode
+          if (!environment.production) {
+            this.useDemo = true;
+          }
           return this.handleError('Failed to fetch products', error);
         })
       );
@@ -383,10 +406,14 @@ export class WoocommerceService {
       }
     }
     
-    console.log('API Error:', errorMessage, 'Using demo data instead');
+    if (!environment.production) {
+      console.log('API Error:', errorMessage, 'Using demo data instead');
+    } else {
+      console.log('API Error in production:', errorMessage, 'Will NOT use demo data');
+    }
     
-    // If API connection fails, return demo data for better UX
-    if (this.useDemo) {
+    // Only use demo data in non-production mode for better UX
+    if (this.useDemo && !environment.production) {
       // Return appropriate demo data based on the request
       if (message.includes('products')) {
         if (message.includes('categories')) {
