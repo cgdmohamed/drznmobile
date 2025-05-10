@@ -3,7 +3,10 @@
     "target": "https://app.drzn.sa",
     "secure": true,
     "changeOrigin": true,
-    "logLevel": "debug"
+    "logLevel": "debug",
+    "headers": {
+      "Connection": "keep-alive"
+    }
   },
   "/taqnyat-api": {
     "target": "https://api.taqnyat.sa",
