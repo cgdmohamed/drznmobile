@@ -576,13 +576,29 @@ export class OrderService {
       return throwError(() => new Error('Invalid parameters for creating order'));
     }
     
-    return this.http.post<Order>(`${this.apiUrl}/orders`, orderData, {
-      params: {
+    // Determine if we're in production
+    const isProduction = environment.production;
+    
+    let url: string;
+    let requestOptions: any = {};
+    
+    if (isProduction) {
+      // For production, use absolute URL with consumer keys in URL
+      url = `https://${environment.storeUrl}/wp-json/wc/v3/orders?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}`;
+      // Don't add params since they're already in URL
+    } else {
+      // For web development, use relative URL with consumer keys in params
+      url = `${this.apiUrl}/orders`;
+      requestOptions.params = {
         consumer_key: this.consumerKey,
         consumer_secret: this.consumerSecret
-      }
-    }).pipe(
-      map(response => {
+      };
+    }
+    
+    console.log('Creating order with URL:', url);
+    
+    return this.http.post<Order>(url, orderData, requestOptions).pipe(
+      map((response: any) => {
         console.log('Order creation response:', response);
         
         // Handle both normal and error-like success responses
@@ -590,7 +606,8 @@ export class OrderService {
         
         // Check if response is already an Order object
         if (response && typeof response === 'object' && 'id' in response) {
-          order = response as Order;
+          // Use unknown as intermediate type for safe casting
+          order = response as unknown as Order;
         }
         // Check if it might be an error object with data
         else if (response && typeof response === 'object') {

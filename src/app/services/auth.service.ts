@@ -6,6 +6,7 @@ import { User } from '../interfaces/user.interface';
 import { environment } from '../../environments/environment';
 import { Storage } from '@ionic/storage-angular';
 import { Router } from '@angular/router';
+import { Platform } from '@ionic/angular';
 
 @Injectable({
   providedIn: 'root'
@@ -18,9 +19,17 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private storage: Storage,
-    private router: Router
+    private router: Router,
+    private platform: Platform
   ) {
     this.init();
+  }
+  
+  /**
+   * Check if the current platform is mobile (iOS or Android)
+   */
+  isMobilePlatform(): boolean {
+    return this.platform.is('ios') || this.platform.is('android');
   }
 
   // Initialize storage
