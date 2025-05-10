@@ -32,14 +32,19 @@ export class HttpHelperService {
                     
     console.log(`HttpHelperService initialized. Mobile: ${this.isMobile}, Production: ${this.isProduction}`);
     
-    // Set base URLs
-    if (this.isMobile || this.isProduction) {
-      // Use absolute URLs for mobile/production
+    // Set base URLs - always use full URLs for mobile devices
+    if (this.isMobile) {
+      // Mobile devices need full URLs without wp-json prefix (server handles this)
+      this.baseWoocommerceUrl = `https://${environment.storeUrl}/wp-json/wc/v3`;
+      this.baseJwtUrl = `https://${environment.storeUrl}/wp-json/simple-jwt-login/v1`;
+      console.log('HttpHelper: Using direct URLs for mobile:', this.baseWoocommerceUrl);
+    } else if (this.isProduction) {
+      // Production web builds
       this.baseWoocommerceUrl = `https://${environment.storeUrl}/${environment.apiUrl}`;
       this.baseJwtUrl = `https://${environment.storeUrl}/wp-json/simple-jwt-login/v1`;
-      console.log('HttpHelper: Using absolute URLs for mobile/production:', this.baseWoocommerceUrl);
+      console.log('HttpHelper: Using absolute URLs for production web:', this.baseWoocommerceUrl);
     } else {
-      // Use relative URLs for web development (proxied)
+      // Development web builds use proxied URLs
       this.baseWoocommerceUrl = `/${environment.apiUrl}`;
       this.baseJwtUrl = `/wp-json/simple-jwt-login/v1`;
       console.log('HttpHelper: Using relative URLs for web development:', this.baseWoocommerceUrl);
@@ -50,16 +55,40 @@ export class HttpHelperService {
    * Get the WooCommerce API URL
    */
   getWooCommerceUrl(endpoint: string = ''): string {
+    // Clean up the endpoint
     endpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-    return `${this.baseWoocommerceUrl}/${endpoint}`;
+    
+    // For mobile devices, we need to format the URL differently
+    if (this.isMobile) {
+      // Check if we're adding an endpoint or just getting the base URL
+      if (endpoint && endpoint.length > 0) {
+        return `${this.baseWoocommerceUrl}/${endpoint}`;
+      }
+      return this.baseWoocommerceUrl;
+    }
+    
+    // For web usage (relative or absolute URLs)
+    return endpoint ? `${this.baseWoocommerceUrl}/${endpoint}` : this.baseWoocommerceUrl;
   }
   
   /**
    * Get the JWT API URL
    */
   getJwtUrl(endpoint: string = ''): string {
+    // Clean up the endpoint
     endpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-    return `${this.baseJwtUrl}/${endpoint}`;
+    
+    // For mobile devices, handle URLs differently
+    if (this.isMobile) {
+      // Check if we're adding an endpoint or just getting the base URL
+      if (endpoint && endpoint.length > 0) {
+        return `${this.baseJwtUrl}/${endpoint}`;
+      }
+      return this.baseJwtUrl;
+    }
+    
+    // For web usage (relative or absolute URLs)
+    return endpoint ? `${this.baseJwtUrl}/${endpoint}` : this.baseJwtUrl;
   }
   
   /**

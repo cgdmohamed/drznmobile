@@ -27,11 +27,12 @@ export class TokenInterceptor implements HttpInterceptor {
   }
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    // Skip adding custom headers for WooCommerce requests to avoid CORS issues
+    // Skip adding custom headers for WooCommerce requests on mobile devices to avoid CORS issues
     const isWooCommerceRequest = request.url.includes('wp-json/wc/');
     
     // Only add these headers for non-WooCommerce requests to avoid CORS issues
-    if (!isWooCommerceRequest) {
+    // Mobile devices will omit these headers entirely to avoid triggering CORS preflight
+    if (!isWooCommerceRequest && !this.isMobile) {
       request = request.clone({
         setHeaders: {
           'X-App-Platform': this.isMobile ? 'mobile' : 'web',
@@ -53,11 +54,20 @@ export class TokenInterceptor implements HttpInterceptor {
       return next.handle(request);
     }
     
-    // Check if the request is to our API (handle both relative and absolute URLs)
-    const isApiRequest = request.url.includes('/wp-json/') || 
-                         request.url.includes(`${environment.storeUrl}/wp-json/`) ||
-                         request.url.includes(`https://${environment.storeUrl}/wp-json/`) ||
-                         request.url.includes('wp-json');
+    // Determine if this is an API request
+    let isApiRequest = false;
+    
+    // On mobile devices, assume all absolute URLs to our domain are API requests
+    if (this.isMobile && request.url.includes(environment.storeUrl)) {
+      isApiRequest = true;
+      console.log('TokenInterceptor: Mobile device API request detected', request.url);
+    } else {
+      // For web, check if the request is to our API (handle both relative and absolute URLs)
+      isApiRequest = request.url.includes('/wp-json/') || 
+                     request.url.includes(`${environment.storeUrl}/wp-json/`) ||
+                     request.url.includes(`https://${environment.storeUrl}/wp-json/`) ||
+                     request.url.includes('wp-json');
+    }
     
     if (isApiRequest && !request.url.includes('consumer_key=')) {
       console.log('TokenInterceptor: Adding JWT token to API request', request.url);

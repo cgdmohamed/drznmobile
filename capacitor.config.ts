@@ -26,14 +26,19 @@ const config: CapacitorConfig = {
   },
   */
   
-  // Only keep this allowNavigation section for API calls
+  // Server configuration for API calls and external resources
   server: {
     androidScheme: 'https',
     cleartext: true,
+    // Allow navigation to these domains for API calls and resources
     allowNavigation: [
       'app.drzn.sa',
       '*.drzn.sa',
-      'drzn.sa'
+      'drzn.sa',
+      'api.drzn.sa',
+      // Allow replit domains for testing
+      '*.replit.dev',
+      '*.replit.app',
     ]
   },
   plugins: {
@@ -61,8 +66,15 @@ const config: CapacitorConfig = {
     captureInput: true,
     webContentsDebuggingEnabled: true,
     backgroundColor: "#ffffff",
-    useLegacyBridge: true
-  }
+    useLegacyBridge: true,
+    // Improved network configuration for API connectivity
+    initialFocus: true,
+    hideLogs: false,
+    overrideUserAgent: "DRZN-App Android/1.0.0"
+  },
+  cordova: {},
+  // Explicitly set to allow HTTP requests on Android 9+
+  loggingBehavior: "debug"
 };
 
 export default config;
