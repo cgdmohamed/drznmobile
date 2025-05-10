@@ -11,6 +11,7 @@ import { NotificationService } from "./services/notification.service";
 import { ThemeService } from "./services/theme.service";
 import { SplashScreenService } from "./services/splash-screen.service";
 import { WishlistService } from "./services/wishlist.service";
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 @Component({
   selector: "app-root",
@@ -123,6 +124,17 @@ export class AppComponent implements OnInit, OnDestroy {
   initializeApp() {
     this.platform.ready().then(async () => {
       try {
+        // Configure status bar (for mobile devices only)
+        if (this.platform.is('capacitor') || this.platform.is('cordova')) {
+          try {
+            await StatusBar.setBackgroundColor({ color: '#ec1c24' }); // Set red color matching the theme
+            await StatusBar.setStyle({ style: Style.Light }); // Light text for dark background
+            await StatusBar.setOverlaysWebView({ overlay: false }); // Don't overlay the webview
+          } catch (err) {
+            console.error('Error configuring status bar:', err);
+          }
+        }
+      
         // Try to get token and user from JWT auth
         const token = await this.jwtAuthService.getToken();
         const user = await this.jwtAuthService.getUser();

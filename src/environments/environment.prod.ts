@@ -17,10 +17,10 @@ export const environment = {
   jwtAuthUrl: "https://app.drzn.sa/wp-json/jwt-auth/v1/token",
   authCode: "Wt9-Y+a5WPDJ7f+Uz{iKlOCs)S.J6oqMP/4M*KzJFr!NpIto5@3)hBZ9=*7#X.J", // Used for Simple JWT Login plugin
   
-  // Demo mode settings (should be false in production)
-  useDemoData: false,
-  useDemoPayments: false,
-  allowDemoCheckout: false
+  // Demo mode settings (temporarily set to true for testing purposes)
+  useDemoData: true,
+  useDemoPayments: true,
+  allowDemoCheckout: true
 };
 
 // IMPORTANT: Replace the placeholder values above with your actual API keys before building for production

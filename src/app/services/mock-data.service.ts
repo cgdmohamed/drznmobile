@@ -154,7 +154,7 @@ export class MockDataService {
             id: id,
             date_created: new Date().toISOString(),
             date_modified: new Date().toISOString(),
-            src: `https://picsum.photos/id/${Math.floor(Math.random() * 100) + 1}/500/500`,
+            src: `assets/images/product-placeholder.svg`,
             name: `Product image ${i}`,
             alt: `Product image for product ${i}`
           }
@@ -195,7 +195,7 @@ export class MockDataService {
           id: i + 100,
           date_created: new Date().toISOString(),
           date_modified: new Date().toISOString(),
-          src: `https://picsum.photos/id/${i + 20}/300/300`,
+          src: `assets/images/category-placeholder.svg`,
           name: `${categoryNames[i]} image`,
           alt: `Image for ${categoryNames[i]}`
         },
