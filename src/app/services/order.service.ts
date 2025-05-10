@@ -554,9 +554,7 @@ export class OrderService {
         fee_lines: [
           {
             name: 'VAT (15%)',
-            total: cart.vat.toString(),
-            tax_class: 'standard',
-            tax_status: 'taxable'
+            total: cart.vat.toString()
           }
         ],
         meta_data: [
