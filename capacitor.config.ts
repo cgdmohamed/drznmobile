@@ -5,7 +5,9 @@ const config: CapacitorConfig = {
   appName: 'درزن',
   webDir: 'www',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    cleartext: true,
+    hostname: 'app.drzn.sa'
   },
   plugins: {
     SplashScreen: {
@@ -28,7 +30,11 @@ const config: CapacitorConfig = {
     }
   },
   android: {
-    allowMixedContent: true
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: true,
+    backgroundColor: "#ffffff",
+    useLegacyBridge: true
   }
 };
 
