@@ -1,0 +1,48 @@
+<IfModule mod_headers.c>
+    # Enable CORS for all domains during development
+    Header always set Access-Control-Allow-Origin "*"
+    
+    # Allow credentials (cookies, authorization headers, etc)
+    Header always set Access-Control-Allow-Credentials "true"
+    
+    # Allow common HTTP methods
+    Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE, PATCH"
+    
+    # Allow standard and custom headers, including the ones our app uses
+    Header always set Access-Control-Allow-Headers "Origin, Content-Type, Accept, Authorization, X-Requested-With, X-WP-Nonce, lang, X-App-Platform, X-App-Mode, X-App-Version, X-Connectivity-Test"
+    
+    # Handle OPTIONS preflight requests
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=200,L]
+    
+    # Add proper handling for Authorization header
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]
+</IfModule>
+
+# Cache-Control settings for better performance
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Set default expires to 1 day
+    ExpiresDefault "access plus 1 day"
+    
+    # CSS, JavaScript, and JSON files - 1 week
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType application/json "access plus 1 day"
+    
+    # Images and media - 1 month
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    
+    # Fonts - 1 year
+    ExpiresByType application/font-woff "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+</IfModule>

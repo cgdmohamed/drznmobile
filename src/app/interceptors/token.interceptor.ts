@@ -27,14 +27,19 @@ export class TokenInterceptor implements HttpInterceptor {
   }
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    // Add helpful debug headers to all requests
-    request = request.clone({
-      setHeaders: {
-        'X-App-Platform': this.isMobile ? 'mobile' : 'web',
-        'X-App-Mode': environment.production ? 'production' : 'development',
-        'X-App-Version': '1.0.0'
-      }
-    });
+    // Skip adding custom headers for WooCommerce requests to avoid CORS issues
+    const isWooCommerceRequest = request.url.includes('wp-json/wc/');
+    
+    // Only add these headers for non-WooCommerce requests to avoid CORS issues
+    if (!isWooCommerceRequest) {
+      request = request.clone({
+        setHeaders: {
+          'X-App-Platform': this.isMobile ? 'mobile' : 'web',
+          'X-App-Mode': environment.production ? 'production' : 'development',
+          'X-App-Version': '1.0.0'
+        }
+      });
+    }
 
     // Skip JWT token for OPTIONS requests (CORS preflight)
     if (request.method === 'OPTIONS') {

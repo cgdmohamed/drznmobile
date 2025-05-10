@@ -28,11 +28,8 @@ export class ConnectivityTesterService {
    * Test connectivity to the WooCommerce API
    */
   testWooCommerceConnectivity(): Observable<any> {
+    // Use minimal headers to avoid CORS issues
     const headers = new HttpHeaders({
-      'User-Agent': 'DRZN-App/1.0 Ionic-Angular',
-      'X-App-Platform': this.isMobile ? 'mobile' : 'web',
-      'X-App-Mode': this.isProduction ? 'production' : 'development',
-      'X-Connectivity-Test': 'true',
       'Cache-Control': 'no-cache',
       'Pragma': 'no-cache'
     });
@@ -92,17 +89,16 @@ export class ConnectivityTesterService {
    * Test general network connectivity
    */
   testGeneralConnectivity(): Observable<any> {
-    // Use our own domain to avoid CORS issues
-    const domain = environment.storeUrl;
-    const url = `https://${domain}/favicon.ico`;
+    // Use a simple external domain with no CORS restrictions
+    const url = 'https://www.google.com/generate_204';
     
-    console.log(`Testing general connectivity to our own domain: ${url}`);
+    console.log(`Testing general connectivity using: ${url}`);
     
     return this.http.get(url, { 
-      responseType: 'blob',
+      responseType: 'text',
+      // Minimal headers to avoid CORS issues
       headers: new HttpHeaders({
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+        'Cache-Control': 'no-cache'
       })
     })
     .pipe(
@@ -130,18 +126,15 @@ export class ConnectivityTesterService {
    */
   testDomainResolution(): Observable<any> {
     const domain = environment.storeUrl;
-    // Use a HEAD request to the root to check if domain is accessible
-    const url = `https://${domain}`;
+    // Try to access the WooCommerce API directly with minimal headers
+    const url = `https://${domain}/wp-json/wc/v3/system_status?consumer_key=${environment.consumerKey}&consumer_secret=${environment.consumerSecret}`;
     
     console.log(`Testing domain resolution for: ${url}`);
     
-    // Use a HEAD request to avoid CORS issues with content
-    return this.http.head(url, { 
+    return this.http.get(url, { 
       headers: new HttpHeaders({
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }),
-      observe: 'response'
+        'Cache-Control': 'no-cache'
+      })
     })
     .pipe(
       timeout(5000),
