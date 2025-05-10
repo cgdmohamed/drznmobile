@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, retry } from 'rxjs/operators';
 import { mergeMap } from 'rxjs/operators';
 import { Product } from '../interfaces/product.interface';
 import { Category } from '../interfaces/category.interface';
 import { environment } from '../../environments/environment';
 import { MockDataService } from './mock-data.service';
 import { Platform } from '@ionic/angular';
+import { HttpHelperService } from './http-helper.service';
 
 @Injectable({
   providedIn: 'root'
@@ -29,19 +30,14 @@ export class ProductService {
   constructor(
     private http: HttpClient,
     private mockDataService: MockDataService,
-    private platform: Platform
+    private platform: Platform,
+    private httpHelper: HttpHelperService
   ) {
     // Detect if we're on a mobile device (Capacitor/Cordova)
     this.isMobile = this.platform.is('hybrid') || this.platform.is('capacitor') || this.platform.is('cordova');
     
-    // Use absolute URL for mobile apps, otherwise use the relative URL for web development
-    if (this.isMobile || this.isProduction) {
-      this.apiUrl = `https://${environment.storeUrl}/wp-json/wc/v3`;
-      console.log('Using full API URL for mobile/production:', this.apiUrl);
-    } else {
-      this.apiUrl = environment.apiUrl;
-      console.log('Using relative API URL for web development:', this.apiUrl);
-    }
+    // Let the HttpHelperService handle URL construction
+    this.apiUrl = this.httpHelper.getWooCommerceUrl();
     
     console.log(`ProductService initialized in ${this.isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
     console.log(`Running on ${this.isMobile ? 'MOBILE device' : 'WEB browser'}`);
@@ -54,26 +50,23 @@ export class ProductService {
 
   // Get products with optional filtering
   getProducts(options: any = {}): Observable<Product[]> {
-    // Connect to WooCommerce API using environment variables
-    const params = {
-      consumer_key: this.consumerKey,
-      consumer_secret: this.consumerSecret,
+    // Try to fetch from actual API, fall back to random API products if needed
+    return this.httpHelper.getFromWooCommerce<Product[]>('products', {
       per_page: options.per_page || 20,
       page: options.page || 1,
       ...options
-    };
-    const queryString = Object.keys(params)
-      .map(key => `${key}=${params[key]}`)
-      .join('&');
-    
-    // Try to fetch from actual API, fall back to random API products if needed
-    return this.http.get<Product[]>(`${this.apiUrl}/products?${queryString}`)
-      .pipe(
-        catchError(error => {
-          console.error('Error fetching products from API:', error);
+    }).pipe(
+      retry(3), // Retry up to 3 times before giving up
+      catchError(error => {
+        console.error('Error fetching products from API:', error);
+        if (!environment.production) {
           return this.getRandomProducts(options.per_page || 20);
-        })
-      );
+        } else {
+          // In production, we prefer to show an error rather than showing fake data
+          return throwError(() => new Error('Failed to load products. Please check your connection and try again.'));
+        }
+      })
+    );
   }
 
   // Get a single product by ID

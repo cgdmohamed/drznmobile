@@ -34,7 +34,8 @@ export class TokenInterceptor implements HttpInterceptor {
     
     // Check if the request is to our API (handle both relative and absolute URLs)
     const isApiRequest = request.url.includes('/wp-json/') || 
-                         request.url.includes(`${environment.storeUrl}/wp-json/`);
+                         request.url.includes(`${environment.storeUrl}/wp-json/`) ||
+                         request.url.includes(`https://${environment.storeUrl}/wp-json/`);
     
     if (isApiRequest && !request.url.includes('consumer_key=')) {
       return from(this.jwtAuthService.getToken()).pipe(
