@@ -209,16 +209,23 @@ export class CheckoutNewPage implements OnInit, OnDestroy {
     // Use AddressHelper to get all addresses
     this.addressHelper.getAllAddresses().subscribe(
       (addresses) => {
-        this.savedAddresses = addresses;
+        // Filter out any undefined, null or invalid addresses
+        this.savedAddresses = addresses.filter(addr => 
+          addr && typeof addr === 'object' && 'id' in addr && addr.id !== null && addr.id !== undefined
+        );
+        
+        console.log('Filtered saved addresses for checkout:', this.savedAddresses);
         
         // Select default address if available
-        if (addresses && addresses.length > 0) {
-          const defaultAddress = addresses.find(addr => addr.is_default);
-          if (defaultAddress) {
+        if (this.savedAddresses && this.savedAddresses.length > 0) {
+          const defaultAddress = this.savedAddresses.find(addr => addr && addr.is_default);
+          if (defaultAddress && defaultAddress.id) {
             this.selectedAddressId = defaultAddress.id;
           } else {
-            // No default, select first address
-            this.selectedAddressId = addresses[0].id;
+            // No default, select first address if it has an id
+            if (this.savedAddresses[0] && this.savedAddresses[0].id) {
+              this.selectedAddressId = this.savedAddresses[0].id;
+            }
           }
         }
         
@@ -233,12 +240,22 @@ export class CheckoutNewPage implements OnInit, OnDestroy {
   
   // Select an address from the saved addresses
   selectAddress(addressId: string | number) {
+    if (!addressId) {
+      console.warn('Attempted to select an address with null/undefined ID');
+      return;
+    }
+    
     this.selectedAddressId = addressId;
     
-    // Find the selected address
-    const selectedAddress = this.savedAddresses.find(addr => addr.id === addressId);
+    // Find the selected address with additional safety checks
+    const selectedAddress = this.savedAddresses.find(addr => 
+      addr && typeof addr === 'object' && 'id' in addr && addr.id === addressId
+    );
+    
     if (selectedAddress) {
-      // Update form with selected address data
+      console.log('Selected address for checkout:', selectedAddress);
+      
+      // Update form with selected address data with null safety
       this.shippingForm.patchValue({
         firstName: selectedAddress.first_name || '',
         lastName: selectedAddress.last_name || '',
@@ -251,6 +268,8 @@ export class CheckoutNewPage implements OnInit, OnDestroy {
         postalCode: selectedAddress.postcode || '',
         country: selectedAddress.country || 'SA'
       });
+    } else {
+      console.warn(`Address with ID ${addressId} not found in saved addresses`);
     }
   }
   

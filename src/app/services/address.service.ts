@@ -163,12 +163,20 @@ export class AddressService {
    */
   private fetchCustomAddresses(): Observable<CustomAddress[]> {
     console.log('Attempting to fetch custom addresses');
+    
+    // If we're in demo mode or having connectivity issues, use demo addresses
+    if (environment.useDemoData) {
+      console.log('Using demo addresses due to environment setting');
+      return of(this.getDemoAddresses());
+    }
+    
     return from(this.jwtAuthService.getUser()).pipe(
       switchMap(user => {
         console.log('User from JWT service for custom addresses:', user);
         if (!user || !user.id) {
           console.error('User not authenticated or missing ID');
-          return throwError(() => new Error('User not authenticated'));
+          // Return empty array instead of throwing an error
+          return of([]);
         }
         
         // Construct URL based on platform (mobile or web)
@@ -206,12 +214,53 @@ export class AddressService {
                 return response.addresses as CustomAddress[];
               }
               
+              // If the response contains billing and shipping keys
+              if ('billing' in response && typeof response.billing === 'object') {
+                try {
+                  // Extract billing addresses
+                  const billingAddresses = this.extractNestedAddresses(response.billing, 'billing');
+                  
+                  // Extract shipping addresses if available
+                  let shippingAddresses: CustomAddress[] = [];
+                  if ('shipping' in response && typeof response.shipping === 'object') {
+                    shippingAddresses = this.extractNestedAddresses(response.shipping, 'shipping');
+                  }
+                  
+                  console.log('Extracted billing addresses:', billingAddresses);
+                  console.log('Extracted shipping addresses:', shippingAddresses);
+                  
+                  // Combine both types of addresses
+                  return [...billingAddresses, ...shippingAddresses];
+                } catch (e) {
+                  console.error('Error extracting nested addresses:', e);
+                }
+              }
+              
               // Try to convert object to array if needed
               if (Object.keys(response).length > 0) {
                 try {
-                  const addressArray = Object.values(response);
-                  if (Array.isArray(addressArray)) {
-                    console.log('Converted response object to array');
+                  // Filter out any non-object properties or array values that might be causing issues
+                  const validKeys = Object.keys(response).filter(key => 
+                    typeof response[key] === 'object' && 
+                    !Array.isArray(response[key]) && 
+                    response[key] !== null
+                  );
+                  
+                  if (validKeys.length > 0) {
+                    // Map valid keys to properly formatted address objects
+                    const addressArray = validKeys.map(key => {
+                      const addr = response[key];
+                      // Ensure it has at least an ID and is properly formed
+                      if (addr && typeof addr === 'object') {
+                        return {
+                          ...addr,
+                          id: key // Use the key as the id if not present
+                        };
+                      }
+                      return null;
+                    }).filter(addr => addr !== null);
+                    
+                    console.log('Converted response object to valid addresses:', addressArray);
                     return addressArray as CustomAddress[];
                   }
                 } catch (e) {
@@ -229,8 +278,80 @@ export class AddressService {
             return of([]);
           })
         );
+      }),
+      catchError(error => {
+        console.error('Error in fetchCustomAddresses flow:', error);
+        return of([]);
       })
     );
+  }
+  
+  /**
+   * Extract addresses from nested objects like the ones returned by the API
+   */
+  private extractNestedAddresses(addressObj: any, type: string): CustomAddress[] {
+    if (!addressObj || typeof addressObj !== 'object') {
+      return [];
+    }
+    
+    const addresses: CustomAddress[] = [];
+    
+    // Iterate through keys (a1, a2, etc.)
+    Object.keys(addressObj).forEach(key => {
+      if (addressObj[key] && typeof addressObj[key] === 'object') {
+        // Create a proper address object with ID
+        const address: CustomAddress = {
+          ...addressObj[key],
+          id: key,
+          type: type
+        };
+        addresses.push(address);
+      }
+    });
+    
+    return addresses;
+  }
+  
+  /**
+   * Get a set of demo addresses if API fails
+   */
+  private getDemoAddresses(): CustomAddress[] {
+    return [
+      {
+        id: 'demo1',
+        name: 'المنزل',
+        type: 'shipping',
+        is_default: true,
+        first_name: 'محمد',
+        last_name: 'عبدالله',
+        company: 'شركة درزن',
+        address_1: 'شارع الملك فهد',
+        address_2: 'برج المملكة',
+        city: 'حي الياسمين',
+        state: 'الرياض',
+        postcode: '12444',
+        country: 'SA',
+        email: 'user@example.com',
+        phone: '05xxxxxxxx'
+      },
+      {
+        id: 'demo2',
+        name: 'العمل',
+        type: 'shipping',
+        is_default: false,
+        first_name: 'محمد',
+        last_name: 'عبدالله',
+        company: 'شركة درزن',
+        address_1: 'طريق الملك عبدالله',
+        address_2: 'مركز الأعمال',
+        city: 'حي النرجس',
+        state: 'الرياض',
+        postcode: '12345',
+        country: 'SA',
+        email: 'user@example.com',
+        phone: '05xxxxxxxx'
+      }
+    ];
   }
 
   /**

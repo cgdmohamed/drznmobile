@@ -58,17 +58,17 @@
       <div *ngIf="savedAddresses && savedAddresses.length > 0" class="saved-addresses">
         <div class="address-scroll-container">
           <div class="address-card" *ngFor="let address of savedAddresses" 
-              [ngClass]="{'selected': selectedAddressId === address.id}"
-              (click)="selectAddress(address.id)">
-            <h3 class="address-name">{{ address.name || 'المنزل' }}</h3>
+              [ngClass]="{'selected': address && address.id && selectedAddressId === address.id}"
+              (click)="address && address.id && selectAddress(address.id)">
+            <h3 class="address-name">{{ address?.name || address?.address_nickname || 'المنزل' }}</h3>
             <p class="address-details">
-              {{ address.first_name }} {{ address.last_name }}<br>
-              {{ address.address_1 }}<br>
-              {{ address.city }} / {{ address.state }}<br>
-              {{ address.country || 'المملكة العربية السعودية' }}<br>
-              {{ address.phone }}
+              {{ address?.first_name || '' }} {{ address?.last_name || '' }}<br>
+              {{ address?.address_1 || '' }}<br>
+              {{ address?.city || '' }} / {{ address?.state || '' }}<br>
+              {{ address?.country || 'المملكة العربية السعودية' }}<br>
+              {{ address?.phone || '' }}
             </p>
-            <div class="address-email">{{ address.email }}</div>
+            <div class="address-email">{{ address?.email || '' }}</div>
           </div>
         </div>
       </div>

@@ -64,29 +64,87 @@ export class AddressHelper {
       switchMap(addressResponse => {
         const standardAddresses: (Address | CustomAddress)[] = [];
         
-        // Add billing address if it exists and has required fields
-        if (addressResponse.billing && 
-            addressResponse.billing.first_name && 
-            addressResponse.billing.address_1) {
-          standardAddresses.push({
-            ...addressResponse.billing,
-            id: 'billing',
-            type: 'billing',
-            is_default: true
-          });
+        // Process billing address - handle both direct billing object and nested objects
+        if (addressResponse && addressResponse.billing) {
+          if (typeof addressResponse.billing === 'object') {
+            // Check if billing is a simple address object
+            if ('first_name' in addressResponse.billing && 'address_1' in addressResponse.billing) {
+              standardAddresses.push({
+                ...addressResponse.billing,
+                id: 'billing',
+                type: 'billing',
+                is_default: true
+              });
+            } 
+            // Check if billing contains nested addresses (a1, a2, a3, etc.)
+            else if (Object.keys(addressResponse.billing).length > 0) {
+              let hasDefaultBilling = false;
+              let defaultBillingKey = '';
+              
+              // Check if there's a default billing address specified
+              if ('billing_default' in addressResponse && typeof addressResponse.billing_default === 'string') {
+                defaultBillingKey = addressResponse.billing_default;
+                hasDefaultBilling = true;
+              }
+              
+              // Process each nested billing address
+              Object.keys(addressResponse.billing).forEach(key => {
+                const nestedAddr = addressResponse.billing[key];
+                if (nestedAddr && typeof nestedAddr === 'object' && 
+                    'first_name' in nestedAddr && 'address_1' in nestedAddr) {
+                  standardAddresses.push({
+                    ...nestedAddr,
+                    id: key,
+                    type: 'billing',
+                    is_default: hasDefaultBilling && key === defaultBillingKey
+                  });
+                }
+              });
+            }
+          }
         }
         
-        // Add shipping address if it exists and has required fields
-        if (addressResponse.shipping && 
-            addressResponse.shipping.first_name && 
-            addressResponse.shipping.address_1) {
-          standardAddresses.push({
-            ...addressResponse.shipping,
-            id: 'shipping',
-            type: 'shipping',
-            is_default: false
-          });
+        // Process shipping address - handle both direct shipping object and nested objects
+        if (addressResponse && addressResponse.shipping) {
+          if (typeof addressResponse.shipping === 'object') {
+            // Check if shipping is a simple address object
+            if ('first_name' in addressResponse.shipping && 'address_1' in addressResponse.shipping) {
+              standardAddresses.push({
+                ...addressResponse.shipping,
+                id: 'shipping',
+                type: 'shipping',
+                is_default: false
+              });
+            } 
+            // Check if shipping contains nested addresses (a1, a2, a3, etc.)
+            else if (Object.keys(addressResponse.shipping).length > 0) {
+              let hasDefaultShipping = false;
+              let defaultShippingKey = '';
+              
+              // Check if there's a default shipping address specified
+              if ('shipping_default' in addressResponse && typeof addressResponse.shipping_default === 'string') {
+                defaultShippingKey = addressResponse.shipping_default;
+                hasDefaultShipping = true;
+              }
+              
+              // Process each nested shipping address
+              Object.keys(addressResponse.shipping).forEach(key => {
+                const nestedAddr = addressResponse.shipping[key];
+                if (nestedAddr && typeof nestedAddr === 'object' && 
+                    'first_name' in nestedAddr && 'address_1' in nestedAddr) {
+                  standardAddresses.push({
+                    ...nestedAddr,
+                    id: key,
+                    type: 'shipping',
+                    is_default: hasDefaultShipping && key === defaultShippingKey
+                  });
+                }
+              });
+            }
+          }
         }
+        
+        console.log('Processed standard addresses:', standardAddresses);
         
         // Check if we have a valid user with ID before fetching custom addresses
         return this.jwtAuthService.getUserAsObservable().pipe(
@@ -96,11 +154,23 @@ export class AddressHelper {
               return of(standardAddresses);
             }
             
-            // Get custom addresses
+            // Get custom addresses - these may already be included in the nested structure above
+            // but we'll fetch them separately to be sure
             return this.addressService.getCustomAddresses().pipe(
               map(customAddresses => {
-                // Combine standard and custom addresses
-                return [...standardAddresses, ...customAddresses];
+                // Filter out any null or invalid addresses before combining
+                const validCustomAddresses = customAddresses.filter(addr => 
+                  addr && typeof addr === 'object' && 'id' in addr && addr.id !== null && addr.id !== undefined
+                );
+                
+                console.log('Valid custom addresses:', validCustomAddresses);
+                
+                // Skip custom addresses that have the same ID as standard addresses
+                const standardIds = new Set(standardAddresses.map(addr => addr.id));
+                const uniqueCustomAddresses = validCustomAddresses.filter(addr => !standardIds.has(addr.id));
+                
+                // Combine standard and unique custom addresses
+                return [...standardAddresses, ...uniqueCustomAddresses];
               }),
               catchError(error => {
                 console.error('Error loading custom addresses:', error);
@@ -112,8 +182,10 @@ export class AddressHelper {
         );
       }),
       tap(allAddresses => {
-        // Update local cache
-        this.allAddresses = allAddresses;
+        // Update local cache with only valid addresses
+        this.allAddresses = allAddresses.filter(addr => 
+          addr && typeof addr === 'object' && 'id' in addr && addr.id !== null && addr.id !== undefined
+        );
         this.initialized = true;
       }),
       catchError(error => {
@@ -136,7 +208,8 @@ export class AddressHelper {
       // For custom addresses, check the local cache or fetch all
       if (this.initialized) {
         const address = this.allAddresses.find(addr => {
-          if ('id' in addr) {
+          // Ensure addr is not null and has an id property
+          if (addr && typeof addr === 'object' && 'id' in addr && addr.id !== null && addr.id !== undefined) {
             return addr.id === addressId;
           }
           return false;
@@ -147,7 +220,8 @@ export class AddressHelper {
         return this.getAllAddresses().pipe(
           map(addresses => {
             const address = addresses.find(addr => {
-              if ('id' in addr) {
+              // Ensure addr is not null and has an id property
+              if (addr && typeof addr === 'object' && 'id' in addr && addr.id !== null && addr.id !== undefined) {
                 return addr.id === addressId;
               }
               return false;
