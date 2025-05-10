@@ -181,6 +181,7 @@ ion-content {
     padding: 10px 0;
     border-bottom: 1px solid #f0f0f0;
     font-size: 14px;
+    position: relative;
     
     &:last-child {
       border-bottom: none;
@@ -196,6 +197,64 @@ ion-content {
       
       &.discount {
         color: var(--ion-color-success);
+      }
+    }
+    
+    &.tax-line {
+      position: relative;
+      
+      .tax-info {
+        position: relative;
+        margin-right: 8px;
+        cursor: pointer;
+        
+        ion-icon {
+          color: #777;
+          font-size: 18px;
+          position: absolute;
+          right: -24px;
+          top: 0;
+        }
+        
+        .tax-tooltip {
+          position: absolute;
+          bottom: 30px;
+          right: -40px;
+          width: 280px;
+          background: white;
+          border-radius: 6px;
+          padding: 12px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+          border: 1px solid #ddd;
+          font-size: 13px;
+          color: #555;
+          line-height: 1.5;
+          text-align: right;
+          z-index: 10;
+          opacity: 0;
+          visibility: hidden;
+          transition: all 0.2s ease;
+          transform: translateY(5px);
+          
+          &:before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            right: 45px;
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-right: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            transform: rotate(45deg);
+          }
+        }
+        
+        &:hover .tax-tooltip {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+        }
       }
     }
     

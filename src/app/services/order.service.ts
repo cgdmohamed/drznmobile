@@ -488,7 +488,15 @@ export class OrderService {
           date_paid: new Date().toISOString(),
           date_completed: '',
           cart_hash: '',
-          tax_lines: [],
+          tax_lines: [{
+            rate_code: 'SA-VAT-STANDARD',
+            rate_id: 1,
+            label: 'VAT',
+            compound: false,
+            tax_total: '15.00', // Fixed value for demo orders
+            shipping_tax_total: '0',
+            rate_percent: 15
+          }],
           shipping_lines: [{
             id: 1,
             method_title: 'Flat Rate',
@@ -499,7 +507,14 @@ export class OrderService {
             taxes: [],
             meta_data: []
           }],
-          fee_lines: [],
+          fee_lines: [{
+            name: 'ضريبة القيمة المضافة (15٪)',
+            total: '0', // Set to zero as tax is already included in tax_lines
+            tax_class: '',
+            tax_status: 'none',
+            amount: '0',
+            total_tax: '0'
+          }],
           coupon_lines: [],
           refunds: [],
           meta_data: orderData.meta_data || [],
@@ -551,13 +566,26 @@ export class OrderService {
             total: cart.shipping.toString()
           }
         ],
+        // Set tax_lines for proper VAT handling
+        tax_lines: [
+          {
+            rate_code: 'SA-VAT-STANDARD',
+            rate_id: 1,
+            label: 'VAT',
+            compound: false,
+            tax_total: cart.vat.toString(),
+            shipping_tax_total: '0',
+            rate_percent: 15
+          }
+        ],
+        // Include VAT as an informational fee line that doesn't add to the total
         fee_lines: [
           {
-            name: 'VAT (15%)',
-            total: cart.vat.toString(),
+            name: 'ضريبة القيمة المضافة (15٪)',
+            total: '0', // Set to zero as tax is already included in tax_lines
             tax_class: '',
-            tax_status: 'none', // Don't apply additional tax to this fee
-            amount: cart.vat.toString(),
+            tax_status: 'none',
+            amount: '0',
             total_tax: '0'
           }
         ],

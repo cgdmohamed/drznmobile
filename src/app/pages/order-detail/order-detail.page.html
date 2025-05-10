@@ -120,9 +120,15 @@
           <div class="summary-value">{{ order.shipping_total }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
         
-        <div class="summary-row">
-          <div class="summary-label">ضريبة القيمة المضافة</div>
+        <div class="summary-row tax-line">
+          <div class="summary-label">ضريبة القيمة المضافة (15%)</div>
           <div class="summary-value">{{ order.total_tax }} <app-currency-icon size="small"></app-currency-icon></div>
+          <div class="tax-info">
+            <ion-icon name="information-circle-outline"></ion-icon>
+            <div class="tax-tooltip">
+              تُطبق ضريبة القيمة المضافة بنسبة 15% على جميع المنتجات وفقًا لأنظمة الهيئة العامة للزكاة والدخل في المملكة العربية السعودية
+            </div>
+          </div>
         </div>
         
         <div class="summary-row total">
