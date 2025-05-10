@@ -70,9 +70,10 @@ export class JwtAuthService {
       console.log('JWT Auth: Using full API URL for mobile/production:', this.apiUrl);
     } else {
       // For web development, use relative URLs for proxy
-      const apiBase = environment.apiUrl.split('/wp-json')[0] || ''; // Get the base URL without wp-json
-      this.baseUrl = apiBase;
-      this.apiUrl = `${this.baseUrl}/wp-json/simple-jwt-login/v1`;
+      // We need to construct the URL differently since environment.apiUrl contains 'wp-json/wc/v3'
+      // We don't want to append to that path since it would create a double wp-json path
+      this.baseUrl = ''; // Empty base for relative URL
+      this.apiUrl = `/wp-json/simple-jwt-login/v1`; // Direct relative path to the JWT endpoint
       console.log('JWT Auth: Using relative API URL for web development:', this.apiUrl);
     }
     
@@ -726,7 +727,12 @@ export class JwtAuthService {
           const consumerSecret = environment.consumerSecret;
           
           // Use the WooCommerce REST API to fetch the user by email
-          return this.http.get<User>(`${environment.apiUrl}/customers?email=${email}&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`).pipe(
+          // Construct the URL carefully to avoid double wp-json segments
+          const apiBaseUrl = this.isMobile || this.isProduction 
+            ? `https://${environment.storeUrl}/wp-json/wc/v3` 
+            : `${environment.apiUrl}`;
+          
+          return this.http.get<User>(`${apiBaseUrl}/customers?email=${email}&consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`).pipe(
             map((customers: any) => {
               console.log('User profile response:', customers);
               
