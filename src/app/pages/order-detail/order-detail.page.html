@@ -60,8 +60,10 @@
         <p class="order-date">{{ getFormattedDate(order.date_created) }}</p>
       </div>
       <div class="order-status" [ngClass]="getOrderStatusClass(order.status)">
-        {{ getOrderStatusText(order.status) }}
+        <ion-icon [name]="getOrderStatusIcon(order.status)"></ion-icon>
+        <span class="status-text">{{ getOrderStatusText(order.status) }}</span>
       </div>
+      <p class="status-description">{{ getOrderStatusDescription(order.status) }}</p>
     </div>
     
     <!-- Shipping Information -->
@@ -154,7 +156,10 @@
       </div>
     </div>
     
-    <!-- Tracking Status -->
+    <!-- Order Timeline -->
+    <app-order-timeline *ngIf="order" [order]="order"></app-order-timeline>
+    
+    <!-- Live Tracking Status -->
     <div class="order-section tracking-section" *ngIf="isTracking">
       <h3>متابعة حالة الطلب</h3>
       <div class="tracking-info">

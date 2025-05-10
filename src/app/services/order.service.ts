@@ -11,6 +11,33 @@ import { AuthService } from './auth.service';
 import { NotificationService, NotificationData } from './notification.service';
 import { demoProducts } from '../demo/demo-products';
 
+// Order Status Types
+export type OrderStatus = 
+  'pending' | 
+  'processing' | 
+  'on-hold' | 
+  'completed' | 
+  'cancelled' | 
+  'refunded' | 
+  'failed' | 
+  'trash';
+
+export interface OrderStatusTransition {
+  from: OrderStatus;
+  to: OrderStatus;
+  description: string;
+  userInitiated: boolean;
+}
+
+export interface OrderStatusInfo {
+  status: OrderStatus;
+  label: string;
+  description: string;
+  color: string;
+  icon: string;
+  allowedTransitions: OrderStatus[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -21,6 +48,74 @@ export class OrderService {
   
   private _orders = new BehaviorSubject<Order[]>([]);
   private readonly ORDERS_STORAGE_KEY = 'user_orders';
+  
+  // Order status information map
+  private readonly orderStatusInfo: {[key in OrderStatus]: OrderStatusInfo} = {
+    'pending': {
+      status: 'pending',
+      label: 'قيد الانتظار',
+      description: 'تم استلام طلبك وهو في انتظار الموافقة',
+      color: 'warning',
+      icon: 'time-outline',
+      allowedTransitions: ['processing', 'on-hold', 'cancelled', 'failed']
+    },
+    'processing': {
+      status: 'processing',
+      label: 'قيد المعالجة',
+      description: 'طلبك قيد المعالجة',
+      color: 'primary',
+      icon: 'refresh-outline',
+      allowedTransitions: ['completed', 'on-hold', 'cancelled', 'failed']
+    },
+    'on-hold': {
+      status: 'on-hold',
+      label: 'معلق',
+      description: 'تم تعليق طلبك مؤقتًا',
+      color: 'medium',
+      icon: 'pause-outline',
+      allowedTransitions: ['processing', 'cancelled', 'failed']
+    },
+    'completed': {
+      status: 'completed',
+      label: 'مكتمل',
+      description: 'تم اكتمال طلبك بنجاح!',
+      color: 'success',
+      icon: 'checkmark-circle-outline',
+      allowedTransitions: ['refunded']
+    },
+    'cancelled': {
+      status: 'cancelled',
+      label: 'ملغي',
+      description: 'تم إلغاء الطلب',
+      color: 'danger',
+      icon: 'close-circle-outline',
+      allowedTransitions: []
+    },
+    'refunded': {
+      status: 'refunded',
+      label: 'مسترجع',
+      description: 'تم استرجاع مبلغ الطلب',
+      color: 'tertiary',
+      icon: 'refresh-circle-outline',
+      allowedTransitions: []
+    },
+    'failed': {
+      status: 'failed',
+      label: 'فشل',
+      description: 'فشل إتمام الطلب',
+      color: 'danger',
+      icon: 'alert-circle-outline',
+      allowedTransitions: ['pending', 'processing']
+    },
+    'trash': {
+      status: 'trash',
+      label: 'محذوف',
+      description: 'تم حذف الطلب',
+      color: 'dark',
+      icon: 'trash-outline',
+      allowedTransitions: []
+    }
+  };
   
   constructor(
     private http: HttpClient,
@@ -384,6 +479,70 @@ export class OrderService {
     });
     
     await alert.present();
+  }
+  
+  /**
+   * Get information about a specific order status
+   * @param status The order status
+   * @returns Status information object
+   */
+  getOrderStatusInfo(status: OrderStatus): OrderStatusInfo {
+    return this.orderStatusInfo[status] || this.orderStatusInfo.pending;
+  }
+  
+  /**
+   * Get all possible status transitions for a given status
+   * @param status The current order status
+   * @returns Array of allowed next statuses
+   */
+  getAllowedStatusTransitions(status: OrderStatus): OrderStatus[] {
+    return this.orderStatusInfo[status]?.allowedTransitions || [];
+  }
+  
+  /**
+   * Get the label text for a status
+   * @param status The order status
+   * @returns The localized label for the status
+   */
+  getStatusLabel(status: OrderStatus): string {
+    return this.orderStatusInfo[status]?.label || status;
+  }
+  
+  /**
+   * Get the color for a status
+   * @param status The order status
+   * @returns The color for the status
+   */
+  getStatusColor(status: OrderStatus): string {
+    return this.orderStatusInfo[status]?.color || 'medium';
+  }
+  
+  /**
+   * Get the icon for a status
+   * @param status The order status
+   * @returns The icon name for the status
+   */
+  getStatusIcon(status: OrderStatus): string {
+    return this.orderStatusInfo[status]?.icon || 'help-circle-outline';
+  }
+  
+  /**
+   * Check if an order is in a final status
+   * @param status The order status to check
+   * @returns True if the order is in a final status
+   */
+  isOrderStatusFinal(status: OrderStatus): boolean {
+    return ['completed', 'cancelled', 'refunded', 'failed', 'trash'].includes(status);
+  }
+  
+  /**
+   * Check if an order status can be updated to a new status
+   * @param currentStatus The current order status
+   * @param newStatus The potential new status
+   * @returns True if the status transition is allowed
+   */
+  isStatusTransitionAllowed(currentStatus: OrderStatus, newStatus: OrderStatus): boolean {
+    return this.getAllowedStatusTransitions(currentStatus).includes(newStatus);
   }
 
   /**

@@ -43,10 +43,21 @@ ion-content {
   
   .order-status {
     align-self: flex-start;
-    padding: 6px 12px;
+    padding: 8px 12px;
     border-radius: 6px;
     font-size: 14px;
     font-weight: 500;
+    display: flex;
+    align-items: center;
+    
+    ion-icon {
+      margin-left: 5px;
+      font-size: 18px;
+    }
+    
+    .status-text {
+      white-space: nowrap;
+    }
     
     &.success {
       background-color: rgba(45, 211, 111, 0.1);
@@ -72,6 +83,18 @@ ion-content {
       background-color: rgba(146, 148, 156, 0.1);
       color: var(--ion-color-medium);
     }
+    
+    &.primary {
+      background-color: rgba(236, 28, 36, 0.1);
+      color: var(--ion-color-primary);
+    }
+  }
+  
+  .status-description {
+    font-size: 13px;
+    color: #666;
+    margin: 8px 0 0;
+    line-height: 1.4;
   }
 }
 

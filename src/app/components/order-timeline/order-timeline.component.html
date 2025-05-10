@@ -1,0 +1,31 @@
+<div class="timeline-container">
+  <h3 class="timeline-title">تتبع حالة الطلب</h3>
+  
+  <div class="timeline">
+    <div class="timeline-item" *ngFor="let event of timelineEvents; let isLast = last" [ngClass]="{'last': isLast}">
+      <div class="timeline-icon" [ngClass]="event.color">
+        <ion-icon [name]="event.icon"></ion-icon>
+      </div>
+      
+      <div class="timeline-content">
+        <div class="timeline-header">
+          <h4 class="timeline-status">{{ event.statusText }}</h4>
+          <div class="timeline-date">{{ formatDate(event.date) }}</div>
+        </div>
+        
+        <div class="timeline-description">
+          {{ event.description }}
+        </div>
+      </div>
+      
+      <!-- Vertical line connecting to next item (not for the last item) -->
+      <div class="timeline-connector" *ngIf="!isLast"></div>
+    </div>
+    
+    <!-- Message when no events are available -->
+    <div class="timeline-empty" *ngIf="timelineEvents.length === 0">
+      <ion-icon name="hourglass-outline"></ion-icon>
+      <p>لا توجد معلومات متاحة لتتبع حالة الطلب</p>
+    </div>
+  </div>
+</div>

@@ -1,19 +1,27 @@
 import { Component, OnInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { OrderService } from '../../services/order.service';
+import { OrderService, OrderStatus } from '../../services/order.service';
 import { Order } from '../../interfaces/order.interface';
 import { IonicModule, LoadingController, ToastController, AlertController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CurrencyIconComponent } from '../../components/currency-icon/currency-icon.component';
+import { OrderTimelineComponent } from '../../components/order-timeline/order-timeline.component';
 
 @Component({
   selector: 'app-order-detail',
   templateUrl: './order-detail.page.html',
   styleUrls: ['./order-detail.page.scss'],
   standalone: true,
-  imports: [IonicModule, CommonModule, FormsModule, RouterLink, CurrencyIconComponent],
+  imports: [
+    IonicModule,
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    CurrencyIconComponent,
+    OrderTimelineComponent
+  ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class OrderDetailPage implements OnInit, OnDestroy {
@@ -156,24 +164,27 @@ export class OrderDetailPage implements OnInit, OnDestroy {
   }
 
   getOrderStatusClass(status: string): string {
-    switch (status) {
-      case 'completed':
-        return 'success';
-      case 'processing':
-      case 'pending':
-        return 'warning';
-      case 'on-hold':
-        return 'tertiary';
-      case 'cancelled':
-      case 'refunded':
-      case 'failed':
-        return 'danger';
-      default:
-        return 'medium';
-    }
+    return this.orderService.getStatusColor(status as OrderStatus);
   }
   
   getOrderStatusText(status: string): string {
+    return this.orderService.getStatusLabel(status as OrderStatus);
+  }
+  
+  getOrderStatusIcon(status: string): string {
+    return this.orderService.getStatusIcon(status as OrderStatus);
+  }
+  
+  isOrderStatusFinal(status: string): boolean {
+    return this.orderService.isOrderStatusFinal(status as OrderStatus);
+  }
+  
+  getOrderStatusDescription(status: string): string {
+    return this.orderService.getOrderStatusInfo(status as OrderStatus).description;
+  }
+  
+  // Used in templates for backward compatibility
+  _getOrderStatusText(status: string): string {
     switch (status) {
       case 'completed':
         return 'مكتمل';
