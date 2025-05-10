@@ -21,11 +21,10 @@ const routes: Routes = [
     FormsModule,
     IonicModule,
     RouterModule.forChild(routes),
-    OrderDetailPage // Import instead of declare for standalone components,
+    OrderDetailPage, // Import instead of declare for standalone components
     ComponentsModule,
-    CurrencyIconComponent,
-    OrderDetailPage // Import instead of declare for standalone components
-],
+    CurrencyIconComponent
+  ],
   // // declarations: [OrderDetailPage]
 })
 export class OrderDetailPageModule {}

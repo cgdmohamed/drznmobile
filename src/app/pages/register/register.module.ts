@@ -19,9 +19,8 @@ const routes: Routes = [
     ReactiveFormsModule,
     IonicModule,
     RouterModule.forChild(routes),
-    RegisterPage // Import instead of declare for standalone components,
     RegisterPage // Import instead of declare for standalone components
-],
+  ],
   // // // declarations: [RegisterPage]
 })
 export class RegisterPageModule {}
