@@ -1,199 +1,113 @@
-<ion-header class="ion-no-border">
+<ion-header>
   <ion-toolbar color="danger">
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/profile"></ion-back-button>
+      <ion-back-button defaultHref="/account"></ion-back-button>
     </ion-buttons>
-    <ion-title>عناويني</ion-title>
+    <ion-title>العناوين</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
-  <div class="address-container" *ngIf="!showAddressForm">
-    <div class="section-header">
-      <h3>عناوين الشحن</h3>
-      <ion-button fill="clear" size="small" (click)="openAddressForm('shipping')">
-        <ion-icon name="add-circle-outline" slot="start"></ion-icon>
-        إضافة عنوان
-      </ion-button>
-    </div>
-    
-    <div *ngIf="isLoading" class="skeleton-container">
-      <div class="section-header">
-        <div class="skeleton-title"></div>
-        <div class="skeleton-button"></div>
-      </div>
-      
-      <div class="skeleton-address-list">
-        <div class="skeleton-address">
-          <div class="skeleton-header">
-            <div class="skeleton-title-badge">
-              <div class="skeleton-name"></div>
-              <div class="skeleton-badge"></div>
-            </div>
-            <div class="skeleton-actions"></div>
-          </div>
-          <div class="skeleton-content">
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="addresses-list" *ngIf="!isLoading">
-      <!-- Shipping Addresses -->
-      <div class="address-list-container" *ngIf="addresses.filter(a => a.type === 'shipping').length > 0">
-        <div class="address-card" *ngFor="let address of addresses.filter(a => a.type === 'shipping')">
-          <div class="address-header">
-            <div class="address-title">
-              <h4>{{ address.name }}</h4>
-              <ion-badge color="success" *ngIf="address.is_default">افتراضي</ion-badge>
-            </div>
-            <div class="address-actions">
-              <ion-button fill="clear" size="small" (click)="editAddress(address)">
-                <ion-icon name="create-outline"></ion-icon>
-              </ion-button>
-              <ion-button fill="clear" size="small" (click)="deleteAddress(address)" [disabled]="address.is_default">
-                <ion-icon name="trash-outline" color="danger"></ion-icon>
-              </ion-button>
-            </div>
-          </div>
-          
-          <div class="address-content">
-            <p class="customer-name">{{ address.first_name }} {{ address.last_name }}</p>
-            <p>{{ address.address_1 }}</p>
-            <p *ngIf="address.address_2">{{ address.address_2 }}</p>
-            <p>{{ address.city }}، {{ address.state }}</p>
-            <p>{{ address.country }} {{ address.postcode }}</p>
-            <p *ngIf="address.phone">{{ address.phone }}</p>
-          </div>
-          
-          <div class="address-footer" *ngIf="!address.is_default">
-            <ion-button fill="clear" size="small" (click)="setDefaultAddress(address)">
-              تعيين كعنوان افتراضي
-            </ion-button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Empty State for Shipping -->
-      <div class="empty-state" *ngIf="addresses.filter(a => a.type === 'shipping').length === 0">
-        <ion-icon name="location-outline"></ion-icon>
-        <p>لا توجد عناوين شحن. أضف عنوانًا للشحن.</p>
-        <ion-button size="small" (click)="openAddressForm('shipping')">
-          <ion-icon name="add-circle-outline" slot="start"></ion-icon>
-          إضافة عنوان شحن
-        </ion-button>
-      </div>
-    </div>
-    
-    <div class="section-header">
-      <h3>عناوين الفواتير</h3>
-      <ion-button fill="clear" size="small" (click)="openAddressForm('billing')">
-        <ion-icon name="add-circle-outline" slot="start"></ion-icon>
-        إضافة عنوان
-      </ion-button>
-    </div>
-    
-    <div *ngIf="isLoading" class="skeleton-container">
-      <div class="skeleton-address-list">
-        <div class="skeleton-address">
-          <div class="skeleton-header">
-            <div class="skeleton-title-badge">
-              <div class="skeleton-name"></div>
-              <div class="skeleton-badge"></div>
-            </div>
-            <div class="skeleton-actions"></div>
-          </div>
-          <div class="skeleton-content">
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="addresses-list" *ngIf="!isLoading">
-      <!-- Billing Addresses -->
-      <div class="address-list-container" *ngIf="addresses.filter(a => a.type === 'billing').length > 0">
-        <div class="address-card" *ngFor="let address of addresses.filter(a => a.type === 'billing')">
-          <div class="address-header">
-            <div class="address-title">
-              <h4>{{ address.name }}</h4>
-              <ion-badge color="success" *ngIf="address.is_default">افتراضي</ion-badge>
-            </div>
-            <div class="address-actions">
-              <ion-button fill="clear" size="small" (click)="editAddress(address)">
-                <ion-icon name="create-outline"></ion-icon>
-              </ion-button>
-              <ion-button fill="clear" size="small" (click)="deleteAddress(address)" [disabled]="address.is_default">
-                <ion-icon name="trash-outline" color="danger"></ion-icon>
-              </ion-button>
-            </div>
-          </div>
-          
-          <div class="address-content">
-            <p class="customer-name">{{ address.first_name }} {{ address.last_name }}</p>
-            <p>{{ address.address_1 }}</p>
-            <p *ngIf="address.address_2">{{ address.address_2 }}</p>
-            <p>{{ address.city }}، {{ address.state }}</p>
-            <p>{{ address.country }} {{ address.postcode }}</p>
-            <p *ngIf="address.phone">{{ address.phone }}</p>
-            <p *ngIf="address.email">{{ address.email }}</p>
-          </div>
-          
-          <div class="address-footer" *ngIf="!address.is_default">
-            <ion-button fill="clear" size="small" (click)="setDefaultAddress(address)">
-              تعيين كعنوان افتراضي
-            </ion-button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Empty State for Billing -->
-      <div class="empty-state" *ngIf="addresses.filter(a => a.type === 'billing').length === 0">
-        <ion-icon name="card-outline"></ion-icon>
-        <p>لا توجد عناوين فواتير. أضف عنوان فواتير.</p>
-        <ion-button size="small" (click)="openAddressForm('billing')">
-          <ion-icon name="add-circle-outline" slot="start"></ion-icon>
-          إضافة عنوان فواتير
-        </ion-button>
-      </div>
-    </div>
+<ion-content class="ion-padding">
+  <!-- Refresher -->
+  <ion-refresher slot="fixed" (ionRefresh)="refreshAddresses($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Loading indicator -->
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner color="danger"></ion-spinner>
+    <p>جاري تحميل العناوين...</p>
   </div>
-  
-  <!-- Address Form -->
-  <div class="address-form-container" *ngIf="showAddressForm">
-    <div class="form-header">
-      <h3 *ngIf="!editingAddressId">إضافة عنوان {{ currentAddressType === 'shipping' ? 'شحن' : 'فواتير' }} جديد</h3>
-      <h3 *ngIf="editingAddressId">تعديل عنوان {{ currentAddressType === 'shipping' ? 'الشحن' : 'الفواتير' }}</h3>
-      <p>قم بإدخال تفاصيل العنوان الكاملة</p>
-    </div>
+
+  <!-- No addresses placeholder -->
+  <div *ngIf="!isLoading && addresses.length === 0" class="empty-state">
+    <ion-icon name="location-outline" color="medium"></ion-icon>
+    <h4>لا توجد عناوين محفوظة</h4>
+    <p>أضف عنوان شحن أو فواتير جديد</p>
+  </div>
+
+  <!-- List of addresses -->
+  <div *ngIf="!isLoading && addresses.length > 0 && !showAddressForm" class="addresses-list">
+    <h4>العناوين المحفوظة</h4>
+    
+    <ion-list>
+      <ion-item-sliding *ngFor="let address of addresses">
+        <ion-item lines="full">
+          <ion-label>
+            <div class="address-header">
+              <h2>{{ address.name || (address.type === 'shipping' ? 'عنوان الشحن' : 'عنوان الفواتير') }}</h2>
+              <ion-badge color="success" *ngIf="address.is_default">افتراضي</ion-badge>
+            </div>
+            <p>{{ address.first_name }} {{ address.last_name }}</p>
+            <p>{{ address.address_1 }}</p>
+            <p *ngIf="address.address_2">{{ address.address_2 }}</p>
+            <p>{{ address.city }}, {{ address.state }} {{ address.postcode }}</p>
+            <p *ngIf="address.type === 'billing' && address.email">البريد: {{ address.email }}</p>
+            <p *ngIf="address.type === 'billing' && address.phone">الهاتف: {{ address.phone }}</p>
+          </ion-label>
+        </ion-item>
+
+        <ion-item-options side="end">
+          <ion-item-option color="primary" (click)="editAddress(address)">
+            <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+          </ion-item-option>
+          <ion-item-option color="danger" (click)="deleteAddress(address)" *ngIf="!address.is_default">
+            <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+          </ion-item-option>
+          <ion-item-option color="success" (click)="setDefaultAddress(address)" *ngIf="!address.is_default">
+            <ion-icon slot="icon-only" name="checkmark-outline"></ion-icon>
+          </ion-item-option>
+        </ion-item-options>
+      </ion-item-sliding>
+    </ion-list>
+  </div>
+
+  <!-- FAB buttons for adding addresses -->
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed" *ngIf="!showAddressForm">
+    <ion-fab-button color="danger">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+    <ion-fab-list side="top">
+      <ion-fab-button color="primary" (click)="openAddressForm('shipping')">
+        <ion-icon name="boat-outline"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button color="tertiary" (click)="openAddressForm('billing')">
+        <ion-icon name="card-outline"></ion-icon>
+      </ion-fab-button>
+    </ion-fab-list>
+  </ion-fab>
+
+  <!-- Address form -->
+  <div *ngIf="showAddressForm" class="address-form">
+    <h4>{{ editingAddressId ? 'تعديل العنوان' : 'إضافة عنوان جديد' }}</h4>
+    <h6>{{ currentAddressType === 'shipping' ? 'عنوان الشحن' : 'عنوان الفواتير' }}</h6>
     
     <form [formGroup]="addressForm" (ngSubmit)="saveAddress()">
       <ion-item>
         <ion-label position="floating">اسم العنوان</ion-label>
         <ion-input type="text" formControlName="name"></ion-input>
       </ion-item>
-      <div class="validation-error" *ngIf="addressForm.get('name')?.invalid && (addressForm.get('name')?.touched || addressForm.get('name')?.dirty)">
+      <div class="validation-error" *ngIf="isFieldInvalid('name')">
         هذا الحقل مطلوب
       </div>
       
-      <ion-item>
-        <ion-label position="floating">الاسم الأول</ion-label>
-        <ion-input type="text" formControlName="first_name"></ion-input>
-      </ion-item>
-      <div class="validation-error" *ngIf="addressForm.get('first_name')?.invalid && (addressForm.get('first_name')?.touched || addressForm.get('first_name')?.dirty)">
+      <div class="name-row">
+        <ion-item class="half-width">
+          <ion-label position="floating">الاسم الأول</ion-label>
+          <ion-input type="text" formControlName="first_name"></ion-input>
+        </ion-item>
+        
+        <ion-item class="half-width">
+          <ion-label position="floating">الاسم الأخير</ion-label>
+          <ion-input type="text" formControlName="last_name"></ion-input>
+        </ion-item>
+      </div>
+      
+      <div class="validation-error" *ngIf="isFieldInvalid('first_name')">
         هذا الحقل مطلوب
       </div>
       
-      <ion-item>
-        <ion-label position="floating">الاسم الأخير</ion-label>
-        <ion-input type="text" formControlName="last_name"></ion-input>
-      </ion-item>
-      <div class="validation-error" *ngIf="addressForm.get('last_name')?.invalid && (addressForm.get('last_name')?.touched || addressForm.get('last_name')?.dirty)">
+      <div class="validation-error" *ngIf="isFieldInvalid('last_name')">
         هذا الحقل مطلوب
       </div>
       
@@ -206,12 +120,12 @@
         <ion-label position="floating">العنوان</ion-label>
         <ion-input type="text" formControlName="address_1"></ion-input>
       </ion-item>
-      <div class="validation-error" *ngIf="addressForm.get('address_1')?.invalid && (addressForm.get('address_1')?.touched || addressForm.get('address_1')?.dirty)">
+      <div class="validation-error" *ngIf="isFieldInvalid('address_1')">
         هذا الحقل مطلوب
       </div>
       
       <ion-item>
-        <ion-label position="floating">العنوان 2 (اختياري)</ion-label>
+        <ion-label position="floating">العنوان التفصيلي (اختياري)</ion-label>
         <ion-input type="text" formControlName="address_2"></ion-input>
       </ion-item>
       
@@ -219,7 +133,7 @@
         <ion-label position="floating">المدينة</ion-label>
         <ion-input type="text" formControlName="city"></ion-input>
       </ion-item>
-      <div class="validation-error" *ngIf="addressForm.get('city')?.invalid && (addressForm.get('city')?.touched || addressForm.get('city')?.dirty)">
+      <div class="validation-error" *ngIf="isFieldInvalid('city')">
         هذا الحقل مطلوب
       </div>
       
@@ -227,7 +141,7 @@
         <ion-label position="floating">المنطقة</ion-label>
         <ion-input type="text" formControlName="state"></ion-input>
       </ion-item>
-      <div class="validation-error" *ngIf="addressForm.get('state')?.invalid && (addressForm.get('state')?.touched || addressForm.get('state')?.dirty)">
+      <div class="validation-error" *ngIf="isFieldInvalid('state')">
         هذا الحقل مطلوب
       </div>
       
@@ -235,7 +149,7 @@
         <ion-label position="floating">الرمز البريدي</ion-label>
         <ion-input type="text" formControlName="postcode"></ion-input>
       </ion-item>
-      <div class="validation-error" *ngIf="addressForm.get('postcode')?.invalid && (addressForm.get('postcode')?.touched || addressForm.get('postcode')?.dirty)">
+      <div class="validation-error" *ngIf="isFieldInvalid('postcode')">
         هذا الحقل مطلوب
       </div>
       
@@ -251,7 +165,7 @@
           <ion-label position="floating">البريد الإلكتروني</ion-label>
           <ion-input type="email" formControlName="email"></ion-input>
         </ion-item>
-        <div class="validation-error" *ngIf="addressForm.get('email')?.invalid && (addressForm.get('email')?.touched || addressForm.get('email')?.dirty)">
+        <div class="validation-error" *ngIf="isFieldInvalid('email')">
           يرجى إدخال بريد إلكتروني صحيح
         </div>
         

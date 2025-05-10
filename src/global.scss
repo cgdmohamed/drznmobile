@@ -151,59 +151,50 @@ ion-progress-bar.animate {
   --ion-color-primary-tint: #eb475c;
 }
 
-/* Font Family (for Arabic support) */
-:root {
-  --ion-font-family: "Alexandria", sans-serif;
+/* Font styles are defined in theme/fonts.scss */
+
+/* Additional font overrides for specific components */
+ion-button {
+  font-family: 'Alexandria', 'Roboto', 'Helvetica Neue', sans-serif !important;
+  font-weight: 600 !important;
 }
 
-/* Alexandria Font - Regular (400) for Arabic */
-@font-face {
-  font-family: 'Alexandria';
-  font-style: normal;
-  font-weight: 400;
-  src: url('assets/fonts/alexandria-regular-arabic.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FBC1, U+FBD3-FD3D, U+FD50-FD8F, U+FD92-FDC7, U+FDF0-FDFB, U+FE70-FE74, U+FE76-FEFC;
-  font-display: swap;
+/* Filter buttons */
+.filter-button, 
+ion-button.filter-button, 
+ion-button.filter-button span,
+ion-button.filter-button ion-text,
+[data-text="فلترة"],
+button:contains("فلترة") {
+  font-family: 'Alexandria', 'Roboto', 'Helvetica Neue', sans-serif !important;
+  font-weight: 600 !important;
 }
 
-/* Alexandria Font - Regular (400) for Latin */
-@font-face {
-  font-family: 'Alexandria';
-  font-style: normal;
-  font-weight: 400;
-  src: url('assets/fonts/alexandria-regular-arabic.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-  font-display: swap;
+/* Add to cart buttons */
+.cart-button, 
+ion-button.cart-button, 
+ion-button.cart-button span, 
+ion-button.cart-button ion-text,
+[data-text="إضافة للسلة"],
+button:contains("إضافة للسلة") {
+  font-family: 'Alexandria', 'Roboto', 'Helvetica Neue', sans-serif !important;
+  font-weight: 600 !important;
 }
 
-/* Alexandria Font - Bold (700) for Arabic */
-@font-face {
-  font-family: 'Alexandria';
-  font-style: normal;
-  font-weight: 700;
-  src: url('assets/fonts/alexandria-bold-arabic.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FBC1, U+FBD3-FD3D, U+FD50-FD8F, U+FD92-FDC7, U+FDF0-FDFB, U+FE70-FE74, U+FE76-FEFC;
-  font-display: swap;
+/* Browser products text */
+.browse-products, [data-text="تصفح المنتجات"] {
+  font-family: 'Alexandria', 'Roboto', 'Helvetica Neue', sans-serif !important;
 }
 
-/* Alexandria Font - SemiBold (600) for Arabic */
-@font-face {
-  font-family: 'Alexandria';
-  font-style: normal;
-  font-weight: 600;
-  src: url('assets/fonts/alexandria-semibold-arabic.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FBC1, U+FBD3-FD3D, U+FD50-FD8F, U+FD92-FDC7, U+FDF0-FDFB, U+FE70-FE74, U+FE76-FEFC;
-  font-display: swap;
-}
-
-/* Alexandria Font - Bold (700) for Latin */
-@font-face {
-  font-family: 'Alexandria';
-  font-style: normal;
-  font-weight: 700;
-  src: url('assets/fonts/alexandria-bold-arabic.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-  font-display: swap;
+/* Category titles */
+.category-title, 
+.section-title, 
+.category-name, 
+ion-card-title, 
+h1, h2, h3, h4, h5, h6,
+.category-item ion-label {
+  font-family: 'Alexandria', 'Roboto', 'Helvetica Neue', sans-serif !important;
+  font-weight: 700 !important;
 }
 
 /* 

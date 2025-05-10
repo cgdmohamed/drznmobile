@@ -1,20 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background Rectangle -->
-  <rect width="600" height="600" fill="#f5f5f5"/>
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="400" fill="#f5f5f5"/>
   
-  <!-- Product Icon -->
-  <g transform="translate(300, 300)" fill="#cccccc">
+  <!-- Product icon -->
+  <g transform="translate(200, 170) scale(3)">
     <!-- Box outline -->
-    <rect x="-150" y="-150" width="300" height="300" rx="20" fill="#e0e0e0" stroke="#b0b0b0" stroke-width="8"/>
+    <rect x="-30" y="-30" width="60" height="60" rx="5" ry="5" fill="none" stroke="#cccccc" stroke-width="3"/>
     
-    <!-- Box top flaps -->
-    <path d="M-150,-150 L0,-220 L150,-150" fill="none" stroke="#b0b0b0" stroke-width="8" stroke-linejoin="round"/>
-    
-    <!-- Middle line -->
-    <line x1="0" y1="-150" x2="0" y2="150" stroke="#b0b0b0" stroke-width="8"/>
+    <!-- Box lid -->
+    <path d="M-30 -10 L0 -25 L30 -10 L30 -30 L-30 -30 Z" fill="#eeeeee" stroke="#cccccc" stroke-width="1"/>
   </g>
   
   <!-- Text -->
-  <text x="300" y="450" font-family="Arial, sans-serif" font-size="40" font-weight="bold" text-anchor="middle" fill="#888888">منتج</text>
+  <text x="200" y="280" fill="#999999" font-family="Arial, sans-serif" font-size="20" text-anchor="middle">صورة غير متوفرة</text>
 </svg>
