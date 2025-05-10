@@ -9,7 +9,7 @@ import { Product } from '../interfaces/product.interface';
 import { Category } from '../interfaces/category.interface';
 import { Order } from '../interfaces/order.interface';
 import { AuthService } from './auth.service';
-import { ToastController } from '@ionic/angular';
+import { ToastController, Platform } from '@ionic/angular';
 import { demoProducts } from '../demo/demo-products';
 import { demoCategories } from '../demo/demo-categories';
 
@@ -17,24 +17,39 @@ import { demoCategories } from '../demo/demo-categories';
   providedIn: 'root'
 })
 export class WoocommerceService {
-  // Use local proxy to prevent CORS issues
-  private apiUrl = environment.apiUrl;
+  // Dynamically determine the correct API URL based on platform
+  private apiUrl: string;
   private consumerKey = environment.consumerKey;
   private consumerSecret = environment.consumerSecret;
   
   // Use environment settings for demo mode
   private useDemo = environment.useDemoData;
+  private isProduction = environment.production;
+  private isMobile: boolean;
   
   constructor(
     private http: HttpClient,
     private authService: AuthService,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private platform: Platform
   ) {
+    // Detect if we're on a mobile device (Capacitor/Cordova)
+    this.isMobile = this.platform.is('hybrid') || this.platform.is('capacitor') || this.platform.is('cordova');
+    
+    // Use absolute URL for mobile apps, otherwise use the relative URL for web development
+    if (this.isMobile || this.isProduction) {
+      this.apiUrl = `https://${environment.storeUrl}/wp-json/wc/v3`;
+      console.log('WooCommerce service: Using full API URL for mobile/production:', this.apiUrl);
+    } else {
+      this.apiUrl = environment.apiUrl;
+      console.log('WooCommerce service: Using relative API URL for web development:', this.apiUrl);
+    }
+    
     console.log('WooCommerce service initialized');
-    console.log('API URL:', this.apiUrl);
+    console.log(`Running on ${this.isMobile ? 'MOBILE device' : 'WEB browser'}`);
     
     // In production builds, always use real data unless explicitly enabled
-    if (environment.production) {
+    if (this.isProduction) {
       this.useDemo = false;
       console.log('Production mode detected, forcing real API data (useDemo = false)');
     } else {

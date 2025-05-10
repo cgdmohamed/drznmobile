@@ -35,9 +35,13 @@ export class JwtAuthService {
   private AUTH_TOKEN_EXPIRY_KEY = 'jwt_token_expiry';
   private TOKEN_REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-  // Use proxy to avoid CORS issues
-  private baseUrl = environment.apiUrl.split('/wp-json')[0]; // Get the base URL without wp-json
-  private apiUrl = `${this.baseUrl}/wp-json/simple-jwt-login/v1`;
+  // Platform detection
+  private isMobile: boolean;
+  private isProduction = environment.production;
+  
+  // API URL configuration - will be set based on platform
+  private baseUrl: string;
+  private apiUrl: string; 
   private authCode = environment.authCode;
   
   // Token refresh timer
@@ -55,6 +59,23 @@ export class JwtAuthService {
     private platform: Platform,
     private router: Router
   ) {
+    // Detect if we're on a mobile device (Capacitor/Cordova)
+    this.isMobile = this.platform.is('hybrid') || this.platform.is('capacitor') || this.platform.is('cordova');
+    
+    // Set URLs based on platform
+    if (this.isMobile || this.isProduction) {
+      // For mobile devices, use full URL
+      this.baseUrl = `https://${environment.storeUrl}`;
+      this.apiUrl = `${this.baseUrl}/wp-json/simple-jwt-login/v1`;
+      console.log('JWT Auth: Using full API URL for mobile/production:', this.apiUrl);
+    } else {
+      // For web development, use relative URLs for proxy
+      const apiBase = environment.apiUrl.split('/wp-json')[0] || ''; // Get the base URL without wp-json
+      this.baseUrl = apiBase;
+      this.apiUrl = `${this.baseUrl}/wp-json/simple-jwt-login/v1`;
+      console.log('JWT Auth: Using relative API URL for web development:', this.apiUrl);
+    }
+    
     this.init();
   }
   

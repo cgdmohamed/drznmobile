@@ -7,12 +7,14 @@ import { Product } from '../interfaces/product.interface';
 import { Category } from '../interfaces/category.interface';
 import { environment } from '../../environments/environment';
 import { MockDataService } from './mock-data.service';
+import { Platform } from '@ionic/angular';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProductService {
-  private apiUrl = environment.apiUrl;
+  // Dynamically determine the correct API URL based on platform
+  private apiUrl: string;
   private consumerKey = environment.consumerKey;
   private consumerSecret = environment.consumerSecret;
   
@@ -22,12 +24,27 @@ export class ProductService {
   
   // Flag to indicate if we're in production mode
   private isProduction = environment.production;
+  private isMobile: boolean;
 
   constructor(
     private http: HttpClient,
-    private mockDataService: MockDataService
+    private mockDataService: MockDataService,
+    private platform: Platform
   ) {
+    // Detect if we're on a mobile device (Capacitor/Cordova)
+    this.isMobile = this.platform.is('hybrid') || this.platform.is('capacitor') || this.platform.is('cordova');
+    
+    // Use absolute URL for mobile apps, otherwise use the relative URL for web development
+    if (this.isMobile || this.isProduction) {
+      this.apiUrl = `https://${environment.storeUrl}/wp-json/wc/v3`;
+      console.log('Using full API URL for mobile/production:', this.apiUrl);
+    } else {
+      this.apiUrl = environment.apiUrl;
+      console.log('Using relative API URL for web development:', this.apiUrl);
+    }
+    
     console.log(`ProductService initialized in ${this.isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
+    console.log(`Running on ${this.isMobile ? 'MOBILE device' : 'WEB browser'}`);
     console.log(`ProductService useDemoData setting: ${environment.useDemoData}`);
     
     if (this.isProduction && environment.useDemoData) {

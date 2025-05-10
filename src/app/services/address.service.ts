@@ -5,6 +5,7 @@ import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { Address, AddressResponse } from '../interfaces/address.interface';
 import { environment } from '../../environments/environment';
 import { JwtAuthService } from './jwt-auth.service';
+import { Platform } from '@ionic/angular';
 
 /**
  * Interface for custom addresses (already included in the Address interface)
@@ -15,8 +16,13 @@ export type CustomAddress = Address;
   providedIn: 'root'
 })
 export class AddressService {
-  private apiUrl = environment.apiUrl;
+  // Dynamically determine the correct API URL based on platform
+  private apiUrl: string;
   private apiPrefix = '/wp-json/wc/v3';
+  
+  // Platform detection
+  private isMobile: boolean;
+  private isProduction = environment.production;
   
   // Cache for addresses
   private _addresses: AddressResponse | null = null;
@@ -24,8 +30,21 @@ export class AddressService {
   
   constructor(
     private http: HttpClient,
-    private jwtAuthService: JwtAuthService
+    private jwtAuthService: JwtAuthService,
+    private platform: Platform
   ) {
+    // Detect if we're on a mobile device (Capacitor/Cordova)
+    this.isMobile = this.platform.is('hybrid') || this.platform.is('capacitor') || this.platform.is('cordova');
+    
+    // Use absolute URL for mobile apps, otherwise use the relative URL for web development
+    if (this.isMobile || this.isProduction) {
+      this.apiUrl = `https://${environment.storeUrl}/wp-json/wc/v3`;
+      console.log('AddressService: Using full API URL for mobile/production:', this.apiUrl);
+    } else {
+      this.apiUrl = environment.apiUrl;
+      console.log('AddressService: Using relative API URL for web development:', this.apiUrl);
+    }
+    
     // Load addresses on service initialization
     this.loadAddresses();
   }
@@ -104,8 +123,17 @@ export class AddressService {
           return throwError(() => new Error('User not authenticated'));
         }
         
-        // According to your Postman collection, use this URL format
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses`;
+        // Construct URL based on platform (mobile or web)
+        let url: string;
+        if (this.isMobile || this.isProduction) {
+          // Use absolute URL for mobile/production
+          url = `https://${environment.storeUrl}/wp-json/wc/v3/customers/${user.id}/addresses`;
+          console.log('AddressService: Using absolute URL for mobile/production:', url);
+        } else {
+          // Use relative URL for web development
+          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses`;
+          console.log('AddressService: Using relative URL for web development:', url);
+        }
         console.log('Fetching addresses from URL:', url);
         
         return this.http.get<AddressResponse>(url).pipe(
@@ -143,8 +171,17 @@ export class AddressService {
           return throwError(() => new Error('User not authenticated'));
         }
         
-        // According to your Postman collection, use this URL format for custom addresses
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses`;
+        // Construct URL based on platform (mobile or web)
+        let url: string;
+        if (this.isMobile || this.isProduction) {
+          // Use absolute URL for mobile/production
+          url = `https://${environment.storeUrl}/wp-json/wc/v3/customers/${user.id}/addresses`;
+          console.log('AddressService: Using absolute URL for mobile/production custom addresses:', url);
+        } else {
+          // Use relative URL for web development
+          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses`;
+          console.log('AddressService: Using relative URL for web development custom addresses:', url);
+        }
         console.log('Fetching custom addresses from URL:', url);
         
         return this.http.get<CustomAddress[]>(url).pipe(
@@ -178,7 +215,17 @@ export class AddressService {
           return throwError(() => new Error('User not authenticated'));
         }
         
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${type}`;
+        // Construct URL based on platform (mobile or web)
+        let url: string;
+        if (this.isMobile || this.isProduction) {
+          // Use absolute URL for mobile/production
+          url = `https://${environment.storeUrl}/wp-json/wc/v3/customers/${user.id}/addresses/${type}`;
+          console.log(`AddressService: Using absolute URL for mobile/production ${type} address:`, url);
+        } else {
+          // Use relative URL for web development
+          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${type}`;
+          console.log(`AddressService: Using relative URL for web development ${type} address:`, url);
+        }
         console.log(`Fetching ${type} address from URL:`, url);
         
         return this.http.get<Address>(url).pipe(
@@ -212,7 +259,17 @@ export class AddressService {
           return throwError(() => new Error('User not authenticated'));
         }
         
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${type}`;
+        // Construct URL based on platform (mobile or web)
+        let url: string;
+        if (this.isMobile || this.isProduction) {
+          // Use absolute URL for mobile/production
+          url = `https://${environment.storeUrl}/wp-json/wc/v3/customers/${user.id}/addresses/${type}`;
+          console.log(`AddressService: Using absolute URL for mobile/production ${type} address update:`, url);
+        } else {
+          // Use relative URL for web development
+          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${type}`;
+          console.log(`AddressService: Using relative URL for web development ${type} address update:`, url);
+        }
         console.log(`Updating ${type} address at URL:`, url);
         
         return this.http.post<any>(url, address).pipe(
@@ -246,7 +303,17 @@ export class AddressService {
           return throwError(() => new Error('User not authenticated'));
         }
         
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${addressId}`;
+        // Construct URL based on platform (mobile or web)
+        let url: string;
+        if (this.isMobile || this.isProduction) {
+          // Use absolute URL for mobile/production
+          url = `https://${environment.storeUrl}/wp-json/wc/v3/customers/${user.id}/addresses/${addressId}`;
+          console.log('AddressService: Using absolute URL for mobile/production custom address update:', url);
+        } else {
+          // Use relative URL for web development
+          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${addressId}`;
+          console.log('AddressService: Using relative URL for web development custom address update:', url);
+        }
         console.log(`Updating custom address at URL:`, url);
         
         return this.http.put<any>(url, address).pipe(
@@ -283,7 +350,18 @@ export class AddressService {
         }
         
         const type = address.type;
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${type}`;
+        
+        // Construct URL based on platform (mobile or web)
+        let url: string;
+        if (this.isMobile || this.isProduction) {
+          // Use absolute URL for mobile/production
+          url = `https://${environment.storeUrl}/wp-json/wc/v3/customers/${user.id}/addresses/${type}`;
+          console.log(`AddressService: Using absolute URL for mobile/production adding ${type} address:`, url);
+        } else {
+          // Use relative URL for web development
+          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${type}`;
+          console.log(`AddressService: Using relative URL for web development adding ${type} address:`, url);
+        }
         console.log(`Adding ${type} address at URL:`, url);
         
         return this.http.post<any>(url, address).pipe(
@@ -318,7 +396,17 @@ export class AddressService {
           return throwError(() => new Error('User not authenticated'));
         }
         
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses`;
+        // Construct URL based on platform (mobile or web)
+        let url: string;
+        if (this.isMobile || this.isProduction) {
+          // Use absolute URL for mobile/production
+          url = `https://${environment.storeUrl}/wp-json/wc/v3/customers/${user.id}/addresses`;
+          console.log('AddressService: Using absolute URL for mobile/production custom address creation:', url);
+        } else {
+          // Use relative URL for web development
+          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses`;
+          console.log('AddressService: Using relative URL for web development custom address creation:', url);
+        }
         console.log(`Adding custom address at URL:`, url);
         
         return this.http.post<any>(url, address).pipe(
@@ -350,7 +438,17 @@ export class AddressService {
           return throwError(() => new Error('User not authenticated'));
         }
         
-        const url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${addressId}`;
+        // Construct URL based on platform (mobile or web)
+        let url: string;
+        if (this.isMobile || this.isProduction) {
+          // Use absolute URL for mobile/production
+          url = `https://${environment.storeUrl}/wp-json/wc/v3/customers/${user.id}/addresses/${addressId}`;
+          console.log('AddressService: Using absolute URL for mobile/production deleting custom address:', url);
+        } else {
+          // Use relative URL for web development
+          url = `${this.apiUrl}${this.apiPrefix}/customers/${user.id}/addresses/${addressId}`;
+          console.log('AddressService: Using relative URL for web development deleting custom address:', url);
+        }
         console.log(`Deleting custom address at URL:`, url);
         
         return this.http.delete<any>(url).pipe(

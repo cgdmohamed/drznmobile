@@ -9,15 +9,22 @@ import {
 import { Observable, throwError, BehaviorSubject, from } from 'rxjs';
 import { catchError, filter, take, switchMap } from 'rxjs/operators';
 import { JwtAuthService } from '../services/jwt-auth.service';
+import { Platform } from '@ionic/angular';
 import { environment } from '../../environments/environment';
 
 @Injectable()
 export class TokenInterceptor implements HttpInterceptor {
   private apiUrl = environment.apiUrl;
+  private storeUrl = environment.storeUrl;
   private isRefreshing = false;
   private refreshTokenSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+  private isMobile: boolean;
 
-  constructor(private jwtAuthService: JwtAuthService) {}
+  constructor(private jwtAuthService: JwtAuthService, private platform: Platform) {
+    // Detect if we're on a mobile device or in production mode
+    this.isMobile = this.platform.is('hybrid') || this.platform.is('capacitor') || this.platform.is('cordova');
+    console.log(`TokenInterceptor initialized. Mobile: ${this.isMobile}, Production: ${environment.production}`);
+  }
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     // Skip JWT token for WooCommerce endpoints that use consumer key/secret auth
@@ -25,8 +32,11 @@ export class TokenInterceptor implements HttpInterceptor {
       return next.handle(request);
     }
     
-    // Only intercept requests to our API that don't have consumer key auth
-    if (request.url.startsWith(this.apiUrl)) {
+    // Check if the request is to our API (handle both relative and absolute URLs)
+    const isApiRequest = request.url.includes('/wp-json/') || 
+                         request.url.includes(`${environment.storeUrl}/wp-json/`);
+    
+    if (isApiRequest && !request.url.includes('consumer_key=')) {
       return from(this.jwtAuthService.getToken()).pipe(
         switchMap(token => {
           if (token) {
