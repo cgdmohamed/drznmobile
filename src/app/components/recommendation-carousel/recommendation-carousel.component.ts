@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
@@ -10,7 +10,9 @@ import { Product } from '../../interfaces/product.interface';
   selector: 'app-recommendation-carousel',
   templateUrl: './recommendation-carousel.component.html',
   styleUrls: ['./recommendation-carousel.component.scss'],
-  standalone: false
+  standalone: true,
+  imports: [CommonModule, IonicModule],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class RecommendationCarouselComponent implements OnInit {
   @Input() title: string = 'منتجات مقترحة لك';

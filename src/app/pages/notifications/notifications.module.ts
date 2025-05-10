@@ -16,6 +16,6 @@ import { ComponentsModule } from '../../components/components.module';
     ComponentsModule,
     NotificationsPage // Import instead of declare for standalone components
 ],
-  // // declarations: [NotificationsPage]
+  // // // declarations: [NotificationsPage]
 })
 export class NotificationsPageModule {}

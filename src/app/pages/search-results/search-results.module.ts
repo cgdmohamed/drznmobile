@@ -20,8 +20,9 @@ const routes: Routes = [
     IonicModule,
     ComponentsModule,
     RouterModule.forChild(routes),
+    SearchResultsPage // Import instead of declare for standalone components,
     SearchResultsPage // Import instead of declare for standalone components
 ],
-  // declarations: [SearchResultsPage]
+  // // declarations: [SearchResultsPage]
 })
 export class SearchResultsPageModule {}

@@ -37,7 +37,7 @@
   <div>
     <!-- Hero banner with skeleton loading -->
     <div *ngIf="isLoading">
-      <app-skeleton type="banner" count="1"></app-skeleton>
+      <app-skeleton type="banner" [count]="1"></app-skeleton>
     </div>
     <swiper-container *ngIf="!isLoading" class="banner-slides" 
                       pagination="true" 
@@ -99,7 +99,7 @@
     
     <!-- Product Card Skeleton Loading -->
     <div *ngIf="isLoading">
-      <app-skeleton type="card" count="2"></app-skeleton>
+      <app-skeleton type="card" [count]="2"></app-skeleton>
     </div>
     
     <!-- Grid layout for products -->
@@ -145,7 +145,7 @@
     
     <!-- Product Card Skeleton Loading -->
     <div *ngIf="isLoading">
-      <app-skeleton type="card" count="2"></app-skeleton>
+      <app-skeleton type="card" [count]="2"></app-skeleton>
     </div>
     
     <!-- Grid layout for products -->
@@ -186,7 +186,7 @@
     
     <!-- Product Card Skeleton Loading -->
     <div *ngIf="isLoading">
-      <app-skeleton type="card" count="2"></app-skeleton>
+      <app-skeleton type="card" [count]="2"></app-skeleton>
     </div>
     
     <!-- Grid layout for products -->

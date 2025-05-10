@@ -25,7 +25,6 @@ import { CurrencyIconComponent } from './currency-icon/currency-icon.component';
     PaymentFormComponent,
     TabsComponent,
     SkeletonComponent,
-    RecommendationCarouselComponent,
     PageTransitionComponent,
     CachedImageComponent
   ],
@@ -36,7 +35,8 @@ import { CurrencyIconComponent } from './currency-icon/currency-icon.component';
     FormsModule,
     ReactiveFormsModule,
     CustomIconComponent,
-    CurrencyIconComponent
+    CurrencyIconComponent,
+    RecommendationCarouselComponent
   ],
   exports: [
     ProductCardComponent,

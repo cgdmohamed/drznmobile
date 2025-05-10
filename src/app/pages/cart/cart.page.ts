@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { AlertController, LoadingController, ToastController } from '@ionic/angular';
+import { AlertController, LoadingController, ToastController, IonicModule } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { CartService } from '../../services/cart.service';
 import { AuthService } from '../../services/auth.service';
@@ -9,11 +9,16 @@ import { ProductService } from '../../services/product.service';
 import { Cart, CartItem } from '../../interfaces/cart.interface';
 import { Product } from '../../interfaces/product.interface';
 import { CurrencyIconComponent } from '../../components/currency-icon/currency-icon.component';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-cart',
   templateUrl: './cart.page.html',
   styleUrls: ['./cart.page.scss'],
+  standalone: true,
+  imports: [CommonModule, IonicModule, FormsModule, RouterModule, CurrencyIconComponent]
 })
 export class CartPage implements OnInit, OnDestroy {
   cart: Cart;

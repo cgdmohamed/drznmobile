@@ -21,6 +21,6 @@ const routes: Routes = [
     RouterModule.forChild(routes),
     CurrencyIconComponent
   ],
-  declarations: [CartPage]
+  // declarations: [CartPage]
 })
 export class CartPageModule {}

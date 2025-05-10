@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { LoadingController, ToastController, AlertController, NavController } from '@ionic/angular';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { LoadingController, ToastController, AlertController, NavController, IonicModule } from '@ionic/angular';
 import { AuthService } from 'src/app/services/auth.service';
 import { AddressService, CustomAddress } from 'src/app/services/address.service';
 import { JwtAuthService } from 'src/app/services/jwt-auth.service';
@@ -9,11 +9,15 @@ import { Address } from 'src/app/interfaces/address.interface';
 import { Subscription, forkJoin, Observable, of } from 'rxjs';
 import { catchError, finalize, switchMap, tap } from 'rxjs/operators';
 import { AddressHelper } from 'src/app/helpers/address-helper';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-addresses',
   templateUrl: './addresses.page.html',
-  styleUrls: ['./addresses.page.scss']
+  styleUrls: ['./addresses.page.scss'],
+  standalone: true,
+  imports: [CommonModule, IonicModule, FormsModule, ReactiveFormsModule, RouterModule]
 })
 export class AddressesPage implements OnInit, OnDestroy {
   addresses: Address[] = [];
