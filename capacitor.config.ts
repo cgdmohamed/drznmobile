@@ -4,6 +4,9 @@ const config: CapacitorConfig = {
   appId: 'com.drzn.sa',
   appName: 'درزن',
   webDir: 'www',
+  // For production builds, comment out the server section
+  // to ensure the app uses bundled files instead of remote resources
+  /* 
   server: {
     androidScheme: 'https',
     cleartext: true,
@@ -19,6 +22,18 @@ const config: CapacitorConfig = {
       'https://*.replit.app',
       'https://*.drzn.sa',
       'https://app.drzn.sa'
+    ]
+  },
+  */
+  
+  // Only keep this allowNavigation section for API calls
+  server: {
+    androidScheme: 'https',
+    cleartext: true,
+    allowNavigation: [
+      'app.drzn.sa',
+      '*.drzn.sa',
+      'drzn.sa'
     ]
   },
   plugins: {
