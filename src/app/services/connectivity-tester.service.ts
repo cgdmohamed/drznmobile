@@ -32,65 +32,97 @@ export class ConnectivityTesterService {
       'User-Agent': 'DRZN-App/1.0 Ionic-Angular',
       'X-App-Platform': this.isMobile ? 'mobile' : 'web',
       'X-App-Mode': this.isProduction ? 'production' : 'development',
-      'X-Connectivity-Test': 'true'
+      'X-Connectivity-Test': 'true',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
     });
 
     let url: string;
 
     if (this.isMobile || this.isProduction) {
-      // Use absolute URL for mobile
-      url = `https://${environment.storeUrl}/${environment.apiUrl}/system_status`;
+      // Use absolute URL for mobile - use products endpoint instead of system_status
+      // Products endpoint is more likely to be properly configured for CORS
+      url = `https://${environment.storeUrl}/${environment.apiUrl}/products`;
     } else {
       // Use relative URL for web development
-      url = `/${environment.apiUrl}/system_status`;
+      url = `/${environment.apiUrl}/products`;
     }
 
-    // Add the authentication parameters
-    url += `?consumer_key=${environment.consumerKey}&consumer_secret=${environment.consumerSecret}`;
+    // Add the authentication parameters and limit to 1 product
+    url += `?consumer_key=${environment.consumerKey}&consumer_secret=${environment.consumerSecret}&per_page=1`;
     
     console.log(`Testing connectivity to WooCommerce API: ${url}`);
     
-    return this.http.get(url, { headers })
-      .pipe(
-        timeout(10000), // 10 second timeout
-        tap(response => {
-          console.log('WooCommerce connectivity test successful:', response);
-        }),
-        map(() => ({ success: true, message: 'Successfully connected to WooCommerce API' })),
-        catchError(error => {
-          console.error('WooCommerce connectivity test failed:', error);
+    return this.http.get(url, { 
+      headers,
+      params: {
+        // Add timestamp to prevent caching
+        _ts: Date.now().toString()
+      }
+    })
+    .pipe(
+      timeout(10000), // 10 second timeout
+      tap(response => {
+        console.log('WooCommerce connectivity test successful:', response);
+      }),
+      map(() => ({ success: true, message: 'Successfully connected to WooCommerce API' })),
+      catchError(error => {
+        // If we get a 401 or 403, that still means the API is reachable
+        // It's just an authentication issue
+        if (error.status === 401 || error.status === 403) {
+          console.log('Got authentication error from API, but server is reachable');
           return of({ 
-            success: false, 
-            message: `Failed to connect to WooCommerce API: ${error.message}`,
-            status: error.status,
-            error: error
+            success: true, 
+            message: 'WooCommerce API is reachable but returned an authentication error. Check your API keys.'
           });
-        })
-      );
+        }
+        
+        console.error('WooCommerce connectivity test failed:', error);
+        return of({ 
+          success: false, 
+          message: `Failed to connect to WooCommerce API: ${error.message}`,
+          status: error.status,
+          error: error
+        });
+      })
+    );
   }
 
   /**
    * Test general network connectivity
    */
   testGeneralConnectivity(): Observable<any> {
-    // Test using a reliable endpoint
-    const url = 'https://www.google.com';
+    // Use our own domain to avoid CORS issues
+    const domain = environment.storeUrl;
+    const url = `https://${domain}/favicon.ico`;
     
-    console.log(`Testing general connectivity to: ${url}`);
+    console.log(`Testing general connectivity to our own domain: ${url}`);
     
-    return this.http.get(url, { responseType: 'text' })
-      .pipe(
-        timeout(5000), // 5 second timeout
-        map(() => ({ success: true, message: 'Internet connection is available' })),
-        catchError(error => {
-          console.error('General connectivity test failed:', error);
-          return of({ 
-            success: false, 
-            message: `Internet connection test failed: ${error.message}`,
-            error: error
-          });
-        })
-      );
+    return this.http.get(url, { 
+      responseType: 'blob',
+      headers: new HttpHeaders({
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      })
+    })
+    .pipe(
+      timeout(5000), // 5 second timeout
+      map(() => ({ success: true, message: 'Internet connection is available' })),
+      catchError(error => {
+        // If we get a 404 but can reach the server, that's still a success for connectivity test
+        if (error.status === 404) {
+          console.log('Got 404 for favicon but server is reachable, considering connectivity successful');
+          return of({ success: true, message: 'Internet connection is available (resource not found but server reachable)' });
+        }
+        
+        console.error('General connectivity test failed:', error);
+        return of({ 
+          success: false, 
+          message: `Internet connection test failed: ${error.message}`,
+          error: error
+        });
+      })
+    );
   }
 
   /**
@@ -98,23 +130,38 @@ export class ConnectivityTesterService {
    */
   testDomainResolution(): Observable<any> {
     const domain = environment.storeUrl;
+    // Use a HEAD request to the root to check if domain is accessible
     const url = `https://${domain}`;
     
     console.log(`Testing domain resolution for: ${url}`);
     
-    return this.http.get(url, { responseType: 'text' })
-      .pipe(
-        timeout(5000),
-        map(() => ({ success: true, message: `Domain ${domain} is accessible` })),
-        catchError(error => {
-          console.error(`Domain resolution test failed for ${domain}:`, error);
-          return of({ 
-            success: false, 
-            message: `Failed to resolve domain ${domain}: ${error.message}`,
-            error: error
-          });
-        })
-      );
+    // Use a HEAD request to avoid CORS issues with content
+    return this.http.head(url, { 
+      headers: new HttpHeaders({
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }),
+      observe: 'response'
+    })
+    .pipe(
+      timeout(5000),
+      map(() => ({ success: true, message: `Domain ${domain} is accessible` })),
+      catchError(error => {
+        // Check if we got a response with status code
+        // Any response with status code means we successfully resolved the domain
+        if (error.status && error.status > 0) {
+          console.log(`Got status ${error.status} from domain, considering domain resolution successful`);
+          return of({ success: true, message: `Domain ${domain} is accessible (status: ${error.status})` });
+        }
+        
+        console.error(`Domain resolution test failed for ${domain}:`, error);
+        return of({ 
+          success: false, 
+          message: `Failed to resolve domain ${domain}: ${error.message}`,
+          error: error
+        });
+      })
+    );
   }
 
   /**
