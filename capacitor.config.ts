@@ -7,7 +7,19 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     cleartext: true,
-    hostname: 'app.drzn.sa'
+    hostname: 'app.drzn.sa',
+    allowNavigation: [
+      'app.drzn.sa',
+      '*.drzn.sa',
+      'drzn.sa',
+      'localhost',
+      '*.replit.dev',
+      '*.replit.app',
+      'https://*.replit.dev',
+      'https://*.replit.app',
+      'https://*.drzn.sa',
+      'https://app.drzn.sa'
+    ]
   },
   plugins: {
     SplashScreen: {

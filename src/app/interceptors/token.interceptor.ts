@@ -27,32 +27,58 @@ export class TokenInterceptor implements HttpInterceptor {
   }
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    // Add helpful debug headers to all requests
+    request = request.clone({
+      setHeaders: {
+        'X-App-Platform': this.isMobile ? 'mobile' : 'web',
+        'X-App-Mode': environment.production ? 'production' : 'development',
+        'X-App-Version': '1.0.0'
+      }
+    });
+
+    // Skip JWT token for OPTIONS requests (CORS preflight)
+    if (request.method === 'OPTIONS') {
+      console.log('TokenInterceptor: Skipping JWT for OPTIONS request', request.url);
+      return next.handle(request);
+    }
+
     // Skip JWT token for WooCommerce endpoints that use consumer key/secret auth
     if (request.url.includes('consumer_key=') && request.url.includes('consumer_secret=')) {
+      console.log('TokenInterceptor: Skipping JWT for WooCommerce request with consumer credentials', request.url);
       return next.handle(request);
     }
     
     // Check if the request is to our API (handle both relative and absolute URLs)
     const isApiRequest = request.url.includes('/wp-json/') || 
                          request.url.includes(`${environment.storeUrl}/wp-json/`) ||
-                         request.url.includes(`https://${environment.storeUrl}/wp-json/`);
+                         request.url.includes(`https://${environment.storeUrl}/wp-json/`) ||
+                         request.url.includes('wp-json');
     
     if (isApiRequest && !request.url.includes('consumer_key=')) {
+      console.log('TokenInterceptor: Adding JWT token to API request', request.url);
       return from(this.jwtAuthService.getToken()).pipe(
         switchMap(token => {
           if (token) {
             // Clone the request and add the authorization header
             request = this.addToken(request, token as string);
+            console.log('TokenInterceptor: JWT token added successfully');
+          } else {
+            console.log('TokenInterceptor: No JWT token available to add');
           }
           
           return next.handle(request).pipe(
             catchError(error => {
-              if (error instanceof HttpErrorResponse && error.status === 401) {
-                // Handle token refresh and unauthorized errors
-                return this.handle401Error(request, next);
+              if (error instanceof HttpErrorResponse) {
+                console.error(`TokenInterceptor: HTTP error ${error.status} for ${request.url}`, error);
+                
+                if (error.status === 401) {
+                  // Handle token refresh and unauthorized errors
+                  return this.handle401Error(request, next);
+                }
               } else {
-                return throwError(() => error);
+                console.error('TokenInterceptor: Non-HTTP error', error);
               }
+              return throwError(() => error);
             })
           );
         })

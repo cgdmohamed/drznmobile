@@ -9,7 +9,7 @@ export const environment = {
   // WordPress URL (without https://)
   wordpressUrl: 'https://app.drzn.sa',
   // WooCommerce API - using proxy to avoid CORS issues
-  apiUrl: '/wp-json/wc/v3', // Using relative path for proxy through Angular dev server
+  apiUrl: 'wp-json/wc/v3', // Using relative path for proxy through Angular dev server (no leading slash)
   consumerKey: 'ck_6255526889b609ea53066560b71fdc41da7b866f',
   consumerSecret: 'cs_bf2088d5f696a0b9f364d6090c48e9b4343c11a3',
   // Payment gateway

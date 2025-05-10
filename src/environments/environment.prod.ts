@@ -4,7 +4,7 @@ export const environment = {
   // WordPress URL for API endpoints
   wordpressUrl: 'https://app.drzn.sa',
   // WooCommerce API - For mobile devices, we'll construct the full URL in the services
-  apiUrl: "/wp-json/wc/v3", // Service will construct full URL when needed
+  apiUrl: "wp-json/wc/v3", // Service will construct full URL when needed, no leading slash
   consumerKey: "ck_6255526889b609ea53066560b71fdc41da7b866f",
   consumerSecret: "cs_bf2088d5f696a0b9f364d6090c48e9b4343c11a3",
   // Payment gateway

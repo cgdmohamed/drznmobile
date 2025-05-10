@@ -24,11 +24,27 @@ public class MainActivity extends BridgeActivity {
         // Allow mixed content (http resources on https pages)
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         
+        // Support for application caching
+        settings.setAppCacheEnabled(true);
+        
+        // Set cache mode
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        
+        // Enable database storage
+        settings.setDatabaseEnabled(true);
+        
+        // Enable offline load
+        settings.setAllowContentAccess(true);
+        
         // Allow cross-origin requests from file:// URLs
         settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowUniversalAccessFromFileURLs(true);
         
         // Enable remote debugging
         WebView.setWebContentsDebuggingEnabled(true);
+        
+        // Additional settings for better performance
+        settings.setBlockNetworkImage(false);
+        settings.setLoadsImagesAutomatically(true);
     }
 }

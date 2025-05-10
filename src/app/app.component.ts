@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
-import { Platform, MenuController, ToastController } from "@ionic/angular";
+import { Platform, MenuController, ToastController, AlertController } from "@ionic/angular";
 import { Storage } from "@ionic/storage-angular";
 import { Subscription } from "rxjs";
 import { Router, NavigationEnd } from "@angular/router";
@@ -11,6 +11,7 @@ import { NotificationService } from "./services/notification.service";
 import { ThemeService } from "./services/theme.service";
 import { SplashScreenService } from "./services/splash-screen.service";
 import { WishlistService } from "./services/wishlist.service";
+import { ConnectivityTesterService } from "./services/connectivity-tester.service";
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { environment } from "../environments/environment";
 
@@ -39,7 +40,9 @@ export class AppComponent implements OnInit, OnDestroy {
     private splashScreenService: SplashScreenService,
     private menuController: MenuController,
     private toastController: ToastController,
-    private router: Router
+    private router: Router,
+    private connectivityTester: ConnectivityTesterService,
+    private alertController: AlertController
   ) {
     // Initialize storage first
     this.storage.create().then(() => {
@@ -88,6 +91,9 @@ export class AppComponent implements OnInit, OnDestroy {
         document.documentElement.dir = config.isRTL ? "rtl" : "ltr";
       },
     );
+    
+    // Test API connectivity if on mobile platform
+    this.testApiConnectivity();
 
     // Show splash screen
     this.splashScreenService.init();
@@ -228,5 +234,52 @@ export class AppComponent implements OnInit, OnDestroy {
     });
 
     await toast.present();
+  }
+  
+  /**
+   * Test API connectivity and show alert if there are issues
+   */
+  async testApiConnectivity() {
+    console.log('Testing API connectivity...');
+    
+    this.connectivityTester.runAllTests().subscribe(
+      async (result) => {
+        console.log('Connectivity test results:', result);
+        
+        if (!result.overallSuccess) {
+          // Only show alert in mobile environments
+          if (this.platform.is('capacitor') || this.platform.is('cordova') || this.platform.is('hybrid')) {
+            const alert = await this.alertController.create({
+              header: 'Connection Issue',
+              subHeader: 'Network Connectivity Problem',
+              message: `We're having trouble connecting to our servers. 
+                     ${result.message}
+                     
+                     Please check your internet connection and try again.`,
+              buttons: ['OK']
+            });
+            await alert.present();
+          } else {
+            console.warn('Connectivity test failed, but suppressing alert in browser environment:', result.message);
+          }
+        } else {
+          console.log('All connectivity tests passed successfully.');
+        }
+      },
+      async (error) => {
+        console.error('Error running connectivity tests:', error);
+        
+        // Only show alert in mobile environments
+        if (this.platform.is('capacitor') || this.platform.is('cordova') || this.platform.is('hybrid')) {
+          const alert = await this.alertController.create({
+            header: 'Connection Issue',
+            subHeader: 'Network Test Failed',
+            message: `An error occurred while testing connectivity: ${error.message}`,
+            buttons: ['OK']
+          });
+          await alert.present();
+        }
+      }
+    );
   }
 }

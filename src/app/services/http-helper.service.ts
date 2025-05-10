@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { Platform } from '@ionic/angular';
 import { environment } from '../../environments/environment';
 
@@ -34,14 +35,14 @@ export class HttpHelperService {
     // Set base URLs
     if (this.isMobile || this.isProduction) {
       // Use absolute URLs for mobile/production
-      this.baseWoocommerceUrl = `https://${environment.storeUrl}/wp-json/wc/v3`;
+      this.baseWoocommerceUrl = `https://${environment.storeUrl}/${environment.apiUrl}`;
       this.baseJwtUrl = `https://${environment.storeUrl}/wp-json/simple-jwt-login/v1`;
-      console.log('HttpHelper: Using absolute URLs for mobile/production');
+      console.log('HttpHelper: Using absolute URLs for mobile/production:', this.baseWoocommerceUrl);
     } else {
       // Use relative URLs for web development (proxied)
-      this.baseWoocommerceUrl = environment.apiUrl;
-      this.baseJwtUrl = '/wp-json/simple-jwt-login/v1';
-      console.log('HttpHelper: Using relative URLs for web development');
+      this.baseWoocommerceUrl = `/${environment.apiUrl}`;
+      this.baseJwtUrl = `/wp-json/simple-jwt-login/v1`;
+      console.log('HttpHelper: Using relative URLs for web development:', this.baseWoocommerceUrl);
     }
   }
   
@@ -84,8 +85,40 @@ export class HttpHelperService {
     const url = this.getWooCommerceUrl(endpoint);
     const httpParams = this.createWooCommerceParams(params);
     
+    // Add custom headers for debugging
+    const headers = new HttpHeaders({
+      'User-Agent': 'DRZN-App/1.0 Ionic-Angular',
+      'X-App-Platform': this.isMobile ? 'mobile' : 'web',
+      'X-App-Mode': this.isProduction ? 'production' : 'development'
+    });
+    
     console.log(`Making GET request to WooCommerce endpoint: ${url}`);
-    return this.http.get<T>(url, { params: httpParams });
+    console.log('Request params:', JSON.stringify(params));
+    
+    return this.http.get<T>(url, { 
+      params: httpParams,
+      headers: headers
+    }).pipe(
+      catchError(error => {
+        // Log detailed error information
+        console.error(`Error in request to ${url}:`, {
+          status: error.status,
+          statusText: error.statusText,
+          error: JSON.stringify(error.error),
+          message: error.message,
+          name: error.name,
+          url: error.url
+        });
+        
+        // Additionally log the stack trace if available
+        if (error.stack) {
+          console.error(`Error stack trace for ${url}:`, error.stack);
+        }
+        
+        // Forward the error to be handled by the caller
+        return throwError(() => error);
+      })
+    );
   }
   
   /**
@@ -95,8 +128,33 @@ export class HttpHelperService {
     const url = this.getWooCommerceUrl(endpoint);
     const httpParams = this.createWooCommerceParams(params);
     
+    // Add custom headers for debugging
+    const headers = new HttpHeaders({
+      'User-Agent': 'DRZN-App/1.0 Ionic-Angular',
+      'X-App-Platform': this.isMobile ? 'mobile' : 'web',
+      'X-App-Mode': this.isProduction ? 'production' : 'development'
+    });
+    
     console.log(`Making POST request to WooCommerce endpoint: ${url}`);
-    return this.http.post<T>(url, body, { params: httpParams });
+    console.log('Request body:', JSON.stringify(body));
+    console.log('Request params:', JSON.stringify(params));
+    
+    return this.http.post<T>(url, body, { 
+      params: httpParams,
+      headers: headers 
+    }).pipe(
+      catchError(error => {
+        console.error(`Error in POST request to ${url}:`, {
+          status: error.status,
+          statusText: error.statusText,
+          error: JSON.stringify(error.error),
+          message: error.message,
+          name: error.name,
+          url: error.url
+        });
+        return throwError(() => error);
+      })
+    );
   }
   
   /**
@@ -106,8 +164,33 @@ export class HttpHelperService {
     const url = this.getWooCommerceUrl(endpoint);
     const httpParams = this.createWooCommerceParams(params);
     
+    // Add custom headers for debugging
+    const headers = new HttpHeaders({
+      'User-Agent': 'DRZN-App/1.0 Ionic-Angular',
+      'X-App-Platform': this.isMobile ? 'mobile' : 'web',
+      'X-App-Mode': this.isProduction ? 'production' : 'development'
+    });
+    
     console.log(`Making PUT request to WooCommerce endpoint: ${url}`);
-    return this.http.put<T>(url, body, { params: httpParams });
+    console.log('Request body:', JSON.stringify(body));
+    console.log('Request params:', JSON.stringify(params));
+    
+    return this.http.put<T>(url, body, { 
+      params: httpParams,
+      headers: headers
+    }).pipe(
+      catchError(error => {
+        console.error(`Error in PUT request to ${url}:`, {
+          status: error.status,
+          statusText: error.statusText,
+          error: JSON.stringify(error.error),
+          message: error.message,
+          name: error.name,
+          url: error.url
+        });
+        return throwError(() => error);
+      })
+    );
   }
   
   /**
@@ -117,8 +200,32 @@ export class HttpHelperService {
     const url = this.getWooCommerceUrl(endpoint);
     const httpParams = this.createWooCommerceParams(params);
     
+    // Add custom headers for debugging
+    const headers = new HttpHeaders({
+      'User-Agent': 'DRZN-App/1.0 Ionic-Angular',
+      'X-App-Platform': this.isMobile ? 'mobile' : 'web',
+      'X-App-Mode': this.isProduction ? 'production' : 'development'
+    });
+    
     console.log(`Making DELETE request to WooCommerce endpoint: ${url}`);
-    return this.http.delete<T>(url, { params: httpParams });
+    console.log('Request params:', JSON.stringify(params));
+    
+    return this.http.delete<T>(url, { 
+      params: httpParams,
+      headers: headers
+    }).pipe(
+      catchError(error => {
+        console.error(`Error in DELETE request to ${url}:`, {
+          status: error.status,
+          statusText: error.statusText,
+          error: JSON.stringify(error.error),
+          message: error.message,
+          name: error.name,
+          url: error.url
+        });
+        return throwError(() => error);
+      })
+    );
   }
   
   /**
@@ -126,8 +233,29 @@ export class HttpHelperService {
    */
   getFromJwt<T>(endpoint: string): Observable<T> {
     const url = this.getJwtUrl(endpoint);
+    
+    // Add custom headers for debugging
+    const headers = new HttpHeaders({
+      'User-Agent': 'DRZN-App/1.0 Ionic-Angular',
+      'X-App-Platform': this.isMobile ? 'mobile' : 'web',
+      'X-App-Mode': this.isProduction ? 'production' : 'development'
+    });
+    
     console.log(`Making GET request to JWT endpoint: ${url}`);
-    return this.http.get<T>(url);
+    
+    return this.http.get<T>(url, { headers }).pipe(
+      catchError(error => {
+        console.error(`Error in GET request to JWT endpoint ${url}:`, {
+          status: error.status,
+          statusText: error.statusText,
+          error: JSON.stringify(error.error),
+          message: error.message,
+          name: error.name,
+          url: error.url
+        });
+        return throwError(() => error);
+      })
+    );
   }
   
   /**
@@ -135,7 +263,29 @@ export class HttpHelperService {
    */
   postToJwt<T>(endpoint: string, body: any): Observable<T> {
     const url = this.getJwtUrl(endpoint);
+    
+    // Add custom headers for debugging
+    const headers = new HttpHeaders({
+      'User-Agent': 'DRZN-App/1.0 Ionic-Angular',
+      'X-App-Platform': this.isMobile ? 'mobile' : 'web',
+      'X-App-Mode': this.isProduction ? 'production' : 'development'
+    });
+    
     console.log(`Making POST request to JWT endpoint: ${url}`);
-    return this.http.post<T>(url, body);
+    console.log('Request body:', JSON.stringify(body));
+    
+    return this.http.post<T>(url, body, { headers }).pipe(
+      catchError(error => {
+        console.error(`Error in POST request to JWT endpoint ${url}:`, {
+          status: error.status,
+          statusText: error.statusText,
+          error: JSON.stringify(error.error),
+          message: error.message,
+          name: error.name,
+          url: error.url
+        });
+        return throwError(() => error);
+      })
+    );
   }
 }
