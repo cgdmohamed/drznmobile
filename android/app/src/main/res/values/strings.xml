@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">DRZN Shopping</string>
-    <string name="title_activity_main">DRZN Shopping</string>
+    <string name="app_name">درزن</string>
+    <string name="title_activity_main">درزن</string>
     <string name="package_name">com.drzn.app</string>
     <string name="custom_url_scheme">com.drzn.app</string>
 </resources>
