@@ -7,6 +7,11 @@ import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import { EnvironmentService } from './environment.service';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { 
+  OneSignalDevice, 
+  OneSignalNotification, 
+  OneSignalOpenedNotification 
+} from '../interfaces/onesignal.interface';
 
 declare let OneSignal: any;
 
@@ -128,27 +133,64 @@ export class NotificationService {
     }
     
     try {
-      // Initialize OneSignal SDK
+      console.log('Initializing OneSignal with App ID:', this.environmentService.oneSignalAppId);
+      
+      // Initialize OneSignal SDK with updated options
       OneSignal.init({
         appId: this.environmentService.oneSignalAppId,
         notifyButton: {
-          enable: false
+          enable: false // We'll handle this through our own UI
         },
         allowLocalhostAsSecureOrigin: true, // For testing in development
+        promptOptions: {
+          slidedown: {
+            prompts: [
+              {
+                type: "push", // current types are "push" & "category"
+                autoPrompt: true,
+                text: {
+                  actionMessage: "نود إرسال إشعارات لك عن الطلبات والعروض الخاصة.",
+                  acceptButton: "السماح",
+                  cancelButton: "لا، شكراً"
+                },
+                delay: {
+                  timeDelay: 10,
+                  pageViews: 2
+                }
+              }
+            ]
+          }
+        }
       });
       
-      // Prompt for notification permission
-      OneSignal.promptForPushNotificationsWithUserResponse(function(accepted: boolean) {
+      // Log initialization success
+      console.log('OneSignal initialized successfully');
+      
+      // Handle user permission response
+      OneSignal.promptForPushNotificationsWithUserResponse((accepted: boolean) => {
         console.log("User accepted notifications: " + accepted);
+        if (accepted) {
+          console.log('User has accepted notifications, getting device state');
+          this.getDeviceState();
+        }
       });
       
       // Set up notification event handlers
       this.setupNotificationHandlers();
       
-      // Get device state and save player ID
+      // Get device state and save player ID even if not prompted yet
       this.getDeviceState();
     } catch (error) {
       console.error('Error initializing OneSignal:', error);
+      // Fallback to simpler initialization if needed
+      try {
+        console.log('Trying fallback OneSignal initialization');
+        OneSignal.init(this.environmentService.oneSignalAppId);
+        this.setupNotificationHandlers();
+        this.getDeviceState();
+      } catch (fallbackError) {
+        console.error('Fallback OneSignal initialization also failed:', fallbackError);
+      }
     }
   }
   
@@ -156,43 +198,101 @@ export class NotificationService {
    * Set up OneSignal notification handlers
    */
   private setupNotificationHandlers() {
-    // When notification received while app is open
-    OneSignal.on('notificationDisplay', (event: any) => {
-      console.log('Notification received in-app:', event);
-      this.storeNotification(this.parseNotificationData(event));
-      this.updateNotificationCount();
-      this.showNotificationToast(event.title, event.body);
+    console.log('Setting up OneSignal notification handlers');
+    
+    // When notification received while app is open (foreground notification)
+    OneSignal.on('notificationDisplay', (event: OneSignalNotification) => {
+      console.log('Notification received in-app (foreground):', event);
+      try {
+        // Parse and store the notification
+        const notificationData = this.parseNotificationData(event);
+        this.storeNotification(notificationData);
+        this.updateNotificationCount();
+        
+        // Show toast notification to the user
+        this.showNotificationToast(
+          event.title || 'New Notification', 
+          event.body || 'You have received a new notification'
+        );
+      } catch (error) {
+        console.error('Error handling foreground notification:', error);
+      }
     });
     
-    // When notification is tapped by user
-    OneSignal.on('notificationOpen', (openedEvent: any) => {
-      console.log('Notification opened:', openedEvent);
+    // When notification is tapped by user (opened from notification center)
+    OneSignal.on('notificationOpen', (openedEvent: OneSignalOpenedNotification) => {
+      console.log('Notification opened by user:', openedEvent);
       
-      const notificationData = this.parseNotificationData(openedEvent.notification);
-      
-      // Store the notification if not already stored
-      this.storeNotification(notificationData);
-      
-      // Handle notification action/navigation
-      this.handleNotificationAction(notificationData);
+      try {
+        // Parse and get the notification data
+        const notificationData = this.parseNotificationData(openedEvent.notification);
+        
+        // Store the notification if not already stored
+        this.storeNotification(notificationData);
+        
+        // Handle notification action/navigation
+        this.handleNotificationAction(notificationData);
+      } catch (error) {
+        console.error('Error handling opened notification:', error);
+      }
     });
     
     // When notification permissions change
     OneSignal.on('permissionChange', (permissionChange: boolean) => {
       console.log('Notification permission changed:', permissionChange);
+      
+      if (permissionChange) {
+        // Permission granted, can register device with backend
+        this.getDeviceState();
+      }
     });
+    
+    // Add error handler to log any OneSignal errors
+    OneSignal.on('error', (error: any) => {
+      console.error('OneSignal error occurred:', error);
+    });
+    
+    console.log('OneSignal notification handlers set up successfully');
   }
   
   /**
    * Get OneSignal device state and update player ID
    */
   private async getDeviceState() {
+    if (typeof OneSignal === 'undefined') {
+      console.warn('Cannot get device state: OneSignal is not defined');
+      return;
+    }
+    
     try {
-      const deviceState = await OneSignal.getDeviceState();
+      console.log('Getting OneSignal device state...');
+      const deviceState: OneSignalDevice = await OneSignal.getDeviceState();
       console.log('OneSignal Device State:', deviceState);
       
-      if (deviceState && deviceState.userId && deviceState.userId !== this.playerId) {
-        this.savePlayerId(deviceState.userId);
+      if (deviceState) {
+        // Display device state for debugging
+        console.log(`OneSignal Device Details:
+          - Player ID: ${deviceState.userId || 'Not set'}
+          - Push Token: ${deviceState.pushToken ? 'Set' : 'Not set'}
+          - Subscribed: ${deviceState.isSubscribed}
+          - Push Disabled: ${deviceState.isPushDisabled}
+          - Has Permission: ${deviceState.hasNotificationPermission}
+        `);
+        
+        // Save Player ID if it exists and is different from current
+        if (deviceState.userId && deviceState.userId !== this.playerId) {
+          console.log(`Saving new player ID: ${deviceState.userId}`);
+          await this.savePlayerId(deviceState.userId);
+        } else if (!deviceState.userId) {
+          console.warn('No OneSignal player ID available yet');
+        }
+        
+        // If user denied permission, log it
+        if (!deviceState.hasNotificationPermission) {
+          console.warn('User has denied notification permission');
+        }
+      } else {
+        console.warn('No OneSignal device state available');
       }
     } catch (error) {
       console.error('Error getting OneSignal device state:', error);
@@ -204,13 +304,31 @@ export class NotificationService {
    * @param id OneSignal Player ID
    */
   private async savePlayerId(id: string) {
-    this.playerId = id;
-    await this.storage.set(this.PLAYER_ID_STORAGE_KEY, id);
+    if (!id) {
+      console.error('Cannot save empty player ID');
+      return;
+    }
     
-    // Register device for logged in user
-    const userId = this.authService.userValue?.id;
-    if (userId) {
-      this.registerDeviceForUser(userId, id);
+    try {
+      console.log(`Saving player ID: ${id}`);
+      
+      // Update local playerId
+      this.playerId = id;
+      
+      // Save to storage
+      await this.storage.set(this.PLAYER_ID_STORAGE_KEY, id);
+      console.log('Player ID saved to storage');
+      
+      // Register device for logged in user
+      const userId = this.authService.userValue?.id;
+      if (userId) {
+        console.log(`Registering device for user ID: ${userId}`);
+        this.registerDeviceForUser(userId, id);
+      } else {
+        console.log('No user ID available, skipping device registration with backend');
+      }
+    } catch (error) {
+      console.error('Error saving player ID:', error);
     }
   }
 
@@ -218,58 +336,102 @@ export class NotificationService {
    * Register device for user with server
    * @param userId User ID
    * @param deviceId OneSignal Device ID
+   * @returns Observable of the registration HTTP request
    */
   registerDeviceForUser(userId: number | undefined, deviceId: string) {
-    if (!userId) return;
+    if (!userId || !deviceId) {
+      console.error('Cannot register device: Missing user ID or device ID');
+      return;
+    }
     
-    const registerEndpoint = '/wp-json/darzn/v1/devices';
+    console.log(`Registering device ${deviceId} for user ${userId}`);
     
-    // In a real implementation, this would send to your server
+    // Determine platform
+    let platform = 'web';
+    if (this.platform.is('ios')) {
+      platform = 'ios';
+    } else if (this.platform.is('android')) {
+      platform = 'android';
+    }
+    
+    // Prepare device data
     const deviceData = {
       user_id: userId,
       player_id: deviceId,
-      platform: this.platform.is('ios') ? 'ios' : 'android',
-      status: 'active'
+      platform: platform,
+      status: 'active',
+      app_version: '1.0', // Should be dynamically determined in a real app
+      device_model: this.platform.is('mobileweb') ? 'Web Browser' : navigator.userAgent
     };
     
-    // For demo, we'll just log it
-    console.log(`Registering device ${deviceId} for user ${userId}`, deviceData);
+    // Get API URL based on platform
+    const baseUrl = this.environmentService.getBaseUrl();
+    const registerEndpoint = `${baseUrl}/wp-json/darzn/v1/devices`;
     
-    // In production, we would call the API endpoint
+    // Log what we would send
+    console.log(`Would register device with endpoint: ${registerEndpoint}`, deviceData);
+    
+    // Uncomment the following line to enable actual API call in production
     // return this.http.post(registerEndpoint, deviceData);
+    
+    // TODO: Enable the actual API call when the backend is ready
+    // For now, we'll just simulate a successful registration in dev mode
+    return Promise.resolve({ success: true, message: 'Device registered successfully (simulated)' });
   }
 
   /**
    * Unregister device when user logs out
    */
   async unregisterDevice() {
-    if (!this.playerId) return;
+    if (!this.playerId) {
+      console.log('No player ID to unregister');
+      return;
+    }
     
-    // Log for demo
     console.log(`Unregistering device ${this.playerId}`);
     
-    // In production, call the API to deactivate the device
-    // const deactivateEndpoint = `/wp-json/darzn/v1/devices/${this.playerId}`;
-    // this.http.put(deactivateEndpoint, { status: 'inactive' });
+    // Get API URL based on platform
+    const baseUrl = this.environmentService.getBaseUrl();
+    const deactivateEndpoint = `${baseUrl}/wp-json/darzn/v1/devices/${this.playerId}`;
     
-    // Clear player ID from storage
-    this.playerId = '';
-    await this.storage.remove(this.PLAYER_ID_STORAGE_KEY);
+    // Log what we would send
+    console.log(`Would deactivate device with endpoint: ${deactivateEndpoint}`);
     
-    // If on a real device, try to remove all notifications and unsubscribe
+    // Uncomment the following line to enable actual API call in production
+    // await this.http.put(deactivateEndpoint, { status: 'inactive' }).toPromise();
+    
+    // Clear OneSignal notifications and unsubscribe if possible
     if (typeof OneSignal !== 'undefined') {
       try {
-        // Clear notifications
+        console.log('Clearing OneSignal notifications');
+        
+        // Remove all visible notifications
         OneSignal.clearOneSignalNotifications();
         
-        // Unsubscribe user
+        // Get the current device state
         const deviceState = await OneSignal.getDeviceState();
+        
+        // If subscribed, unsubscribe
         if (deviceState && deviceState.isSubscribed) {
+          console.log('Unsubscribing from push notifications');
           OneSignal.setSubscription(false);
         }
+        
+        // Optionally, disable all future notifications
+        // WARNING: This will prevent future re-subscription without reinstalling the app
+        // OneSignal.disablePush(true);
       } catch (error) {
-        console.error('Error unregistering device:', error);
+        console.error('Error clearing OneSignal notifications:', error);
       }
+    }
+    
+    // Clear player ID from storage
+    try {
+      this.playerId = '';
+      await this.storage.remove(this.PLAYER_ID_STORAGE_KEY);
+      console.log('Player ID removed from storage');
+    } catch (storageError) {
+      console.error('Error removing player ID from storage:', storageError);
     }
   }
   

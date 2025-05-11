@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
+import { Platform } from '@ionic/angular';
 
 @Injectable({
   providedIn: 'root'
@@ -9,7 +10,7 @@ export class EnvironmentService {
   private _taqnyatApiKey: string;
   private _oneSignalAppId: string;
   
-  constructor() {
+  constructor(private platform: Platform) {
     // Initialize from environment.ts
     this.loadEnvironmentVariables();
   }
@@ -38,6 +39,22 @@ export class EnvironmentService {
    */
   get oneSignalAppId(): string {
     return this._oneSignalAppId;
+  }
+  
+  /**
+   * Get the base URL for API requests based on platform
+   * This handles the difference in URL construction between web and mobile
+   */
+  getBaseUrl(): string {
+    const isMobile = this.platform.is('capacitor') || this.platform.is('cordova');
+    
+    // If on mobile, we need to use the full URL
+    if (isMobile) {
+      return `https://${environment.storeUrl}`;
+    }
+    
+    // For web development, we can use a relative URL (Angular will proxy it)
+    return '';
   }
   
   /**
