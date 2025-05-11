@@ -21,6 +21,7 @@ export class AccountPage implements OnInit, OnDestroy {
   darkMode: boolean = false;
   textSize: string = 'medium';
   isLoading = true;
+  isAdmin = false;
   private userSubscription: Subscription;
   private themeSubscription: Subscription;
 
@@ -54,6 +55,7 @@ export class AccountPage implements OnInit, OnDestroy {
         this.user = jwtUser;
         console.log('Account page - Using JWT user:', jwtUser.id);
         this.loadUserOrders(jwtUser.id);
+        this.checkAdminStatus(jwtUser);
       } else {
         // Fallback to regular auth service if no JWT user
         console.log('Account page - No JWT user, checking regular auth');
@@ -63,6 +65,7 @@ export class AccountPage implements OnInit, OnDestroy {
           this.user = regularUser;
           console.log('Account page - Using regular auth user:', regularUser.id);
           this.loadUserOrders(regularUser.id);
+          this.checkAdminStatus(regularUser);
         } else {
           console.log('Account page - No authenticated user found');
           this.recentOrders = [];
@@ -76,6 +79,19 @@ export class AccountPage implements OnInit, OnDestroy {
     });
     
     this.textSize = this.themeService.getTextSize();
+  }
+  
+  /**
+   * Check if user has admin role
+   */
+  checkAdminStatus(user: User) {
+    // Check for administrator or shop_manager role
+    if (user && user.role) {
+      this.isAdmin = user.role === 'administrator' || user.role === 'shop_manager';
+      console.log(`Account page - Admin status: ${this.isAdmin}`);
+    } else {
+      this.isAdmin = false;
+    }
   }
 
   ngOnDestroy() {

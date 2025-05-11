@@ -101,6 +101,53 @@ export class NotificationService {
     // Initialize OneSignal
     this.oneSignalInit();
   }
+  
+  /**
+   * Check if OneSignal is available and initialized
+   */
+  isOneSignalAvailable(): boolean {
+    return (this.platform.is('capacitor') || this.platform.is('cordova')) && 
+           typeof OneSignal !== 'undefined' &&
+           this.environmentService.isOneSignalConfigured();
+  }
+  
+  /**
+   * Show a local notification on the device
+   * This simulates a push notification for testing purposes
+   */
+  async showLocalNotification(title: string, message: string, data?: any): Promise<void> {
+    // On a real device with OneSignal
+    if (this.isOneSignalAvailable()) {
+      try {
+        console.log('Showing local notification via OneSignal');
+        await OneSignal.postNotification({
+          title: title,
+          body: message,
+          data: data || {}
+        });
+        return;
+      } catch (error) {
+        console.error('Error showing OneSignal notification:', error);
+        // Fall back to toast notification
+      }
+    }
+    
+    // Fall back to a toast notification if OneSignal is not available
+    console.log('Showing notification via toast (simulation)');
+    await this.showNotificationToast(title, message);
+    
+    // Also store the notification in our local system
+    const notificationData: NotificationData = {
+      id: Date.now().toString(),
+      title: title,
+      body: message,
+      additionalData: data,
+      isRead: false,
+      receivedAt: new Date()
+    };
+    
+    this.storeNotification(notificationData);
+  }
 
   /**
    * Get notifications as an observable

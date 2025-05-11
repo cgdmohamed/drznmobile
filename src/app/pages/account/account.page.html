@@ -70,6 +70,12 @@
             <ion-icon name="settings-outline" slot="start"></ion-icon>
             <ion-label>الإعدادات والإشعارات</ion-label>
           </ion-item>
+          
+          <!-- Admin Access Only -->
+          <ion-item *ngIf="isAdmin" routerLink="/admin/notifications">
+            <ion-icon name="notifications-outline" slot="start"></ion-icon>
+            <ion-label>إدارة الإشعارات</ion-label>
+          </ion-item>
         </ion-list>
       </div>
 

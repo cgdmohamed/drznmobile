@@ -104,6 +104,15 @@ const routes: Routes = [
     loadChildren: () => import('./pages/settings/settings.module').then(m => m.SettingsPageModule)
   },
   {
+    path: 'admin/notifications',
+    loadChildren: () => import('./pages/admin/admin-notifications/admin-notifications.module').then(m => m.AdminNotificationsPageModule),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'notification-demo',
+    loadChildren: () => import('./pages/notification-demo/notification-demo.module').then(m => m.NotificationDemoPageModule)
+  },
+  {
     path: '**',
     redirectTo: 'home'
   }
