@@ -65,23 +65,45 @@
       <app-skeleton type="category" [count]="12"></app-skeleton>
     </div>
     
-    <!-- Horizontal scrollable categories with swiper -->
+    <!-- Two-row horizontal scrollable categories -->
     <div *ngIf="!isLoading" class="categories-slider-container">
-      <swiper-container 
-        class="categories-slider"
-        slides-per-view="4.5"
-        space-between="10"
-        free-mode="true"
-        css-mode="true">
-        <swiper-slide *ngFor="let category of categories | slice:0:20" class="category-slide">
-          <div class="category-circle" [routerLink]="['/category', category.id]">
-            <div class="category-image">
-              <img [src]="getProductImageUrl(category.image)" [alt]="category.name" (error)="handleImageError($event)">
+      <!-- First row of categories -->
+      <div class="categories-row">
+        <swiper-container 
+          class="categories-slider"
+          slides-per-view="4.5"
+          space-between="10"
+          free-mode="true"
+          css-mode="true">
+          <swiper-slide *ngFor="let category of categories | slice:0:10" class="category-slide">
+            <div class="category-circle" [routerLink]="['/category', category.id]">
+              <div class="category-image">
+                <img [src]="getProductImageUrl(category.image)" [alt]="category.name" (error)="handleImageError($event)">
+              </div>
             </div>
-          </div>
-          <div class="category-name">{{ category.name }}</div>
-        </swiper-slide>
-      </swiper-container>
+            <div class="category-name">{{ category.name }}</div>
+          </swiper-slide>
+        </swiper-container>
+      </div>
+      
+      <!-- Second row of categories -->
+      <div class="categories-row">
+        <swiper-container 
+          class="categories-slider"
+          slides-per-view="4.5"
+          space-between="10"
+          free-mode="true"
+          css-mode="true">
+          <swiper-slide *ngFor="let category of categories | slice:10:20" class="category-slide">
+            <div class="category-circle" [routerLink]="['/category', category.id]">
+              <div class="category-image">
+                <img [src]="getProductImageUrl(category.image)" [alt]="category.name" (error)="handleImageError($event)">
+              </div>
+            </div>
+            <div class="category-name">{{ category.name }}</div>
+          </swiper-slide>
+        </swiper-container>
+      </div>
     </div>
 
     <!-- Personalized Recommendations -->
