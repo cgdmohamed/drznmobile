@@ -160,7 +160,8 @@ export class AppComponent implements OnInit, OnDestroy {
         notifyButton: {
           enable: false,
         },
-        allowLocalhostAsSecureOrigin: true
+        allowLocalhostAsSecureOrigin: true,
+        androidChannelId: null // Let OneSignal use default channel
       });
       
       // Prompt user for notification permission

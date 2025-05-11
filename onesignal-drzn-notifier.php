@@ -444,7 +444,6 @@ function send_onesignal_notification($params) {
         'data' => array(
             'type' => $params['type']
         ),
-        'android_channel_id' => 'drzn_app_channel',
         'android_accent_color' => 'EC1C24'  // DRZN red color in hex
     );
     

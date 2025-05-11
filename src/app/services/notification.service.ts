@@ -228,6 +228,7 @@ export class NotificationService {
           enable: false // We'll handle this through our own UI
         },
         allowLocalhostAsSecureOrigin: true, // For testing in development
+        androidChannelId: null, // Let OneSignal use default channel
         promptOptions: {
           slidedown: {
             prompts: [
@@ -271,7 +272,10 @@ export class NotificationService {
       // Fallback to simpler initialization if needed
       try {
         console.log('Trying fallback OneSignal initialization');
-        OneSignal.init(this.environmentService.oneSignalAppId);
+        OneSignal.init({
+          appId: this.environmentService.oneSignalAppId,
+          androidChannelId: null // Let OneSignal use default channel
+        });
         this.setupNotificationHandlers();
         this.getDeviceState();
       } catch (fallbackError) {
