@@ -977,7 +977,7 @@ export class OrderService {
       }
     };
     
-    if (this.isMobile) {
+    if (isMobile) {
       // For mobile devices, use absolute URL with consumer keys in URL (avoid CORS issues)
       url = `https://${environment.storeUrl}/wp-json/wc/v3/orders?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}`;
       // On mobile, we include consumer keys in both URL and params to ensure tokenInterceptor ignores this request 
