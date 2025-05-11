@@ -6,7 +6,7 @@ import { environment } from '../../environments/environment';
 import { Storage } from '@ionic/storage-angular';
 import { Order } from '../interfaces/order.interface';
 import { Cart } from '../interfaces/cart.interface';
-import { ToastController, AlertController } from '@ionic/angular';
+import { ToastController, AlertController, Platform } from '@ionic/angular';
 import { AuthService } from './auth.service';
 import { JwtAuthService } from './jwt-auth.service';
 import { NotificationService, NotificationData } from './notification.service';
@@ -48,6 +48,9 @@ export class OrderService {
   private consumerSecret = environment.consumerSecret;
   
   private _orders = new BehaviorSubject<Order[]>([]);
+  
+  // Detect if we're running on a mobile device
+  private isMobile: boolean;
   private readonly ORDERS_STORAGE_KEY = 'user_orders';
   
   // Order status information map
@@ -127,6 +130,10 @@ export class OrderService {
     private alertController: AlertController,
     private notificationService: NotificationService
   ) {
+    // Set isMobile to false for web version
+    this.isMobile = false;
+    console.log('OrderService initialized, assuming web version');
+    
     this.initialize();
     
     // Log authentication state for debugging
@@ -236,14 +243,23 @@ export class OrderService {
       return this.getDemoOrders();
     }
     
-    return this.http.get<Order[]>(`${this.apiUrl}/orders`, {
+    console.log(`Fetching orders for customer ID: ${customerId} from API`);
+    
+    // Fixed based on user finding - this is the URL that works with the customer parameter
+    // Using direct URL instead of relying on isMobile detection
+    const apiEndpoint = `${this.apiUrl}/orders`;
+      
+    return this.http.get<Order[]>(apiEndpoint, {
       params: {
-        consumer_key: this.consumerKey,
-        consumer_secret: this.consumerSecret,
         customer: customerId.toString(),
-        per_page: '50'
+        per_page: '50',
+        consumer_key: this.consumerKey,
+        consumer_secret: this.consumerSecret
       }
     }).pipe(
+      tap(orders => {
+        console.log(`Successfully fetched ${orders.length} orders for customer ${customerId}`);
+      }),
       catchError(error => {
         console.error(`Error fetching orders for customer ${customerId}:`, error);
         

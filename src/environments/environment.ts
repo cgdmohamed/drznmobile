@@ -23,7 +23,7 @@ export const environment = {
   authCode: 'Wt9-Y+a5WPDJ7f+Uz{iKlOCs)S.J6oqMP/4M*KzJFr!NpIto5@3)hBZ9=*7#X.J', // Used for Simple JWT Login plugin
   
   // Demo mode settings
-  useDemoData: true,       // Set to true temporarily to use demo data if API connection is unavailable
+  useDemoData: false,       // Set to false to use real API data
   useDemoPayments: true,   // Set to true to use demo payment gateways
   
   // Demo data settings

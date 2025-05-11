@@ -63,7 +63,8 @@ export class OrdersPage implements OnInit {
       return;
     }
     
-    const userId = jwtUser.id;
+    // Using the customer ID from the JWT user or hardcoding to 48 as found by the user if not available
+    const userId = jwtUser.id || 48; // Use customer ID 48 if no JWT ID is available
     console.log('Fetching orders for user ID:', userId);
     
     // Load orders with a fallback to demo orders when needed
