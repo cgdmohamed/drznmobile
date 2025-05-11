@@ -122,6 +122,45 @@ export class NotificationService {
   getCurrentUnreadCount(): number {
     return this._notifications.value.filter(n => !n.isRead).length;
   }
+  
+  /**
+   * Get the current OneSignal player ID
+   * @returns Promise that resolves to the current player ID or empty string
+   */
+  async getPlayerId(): Promise<string> {
+    // If we already have a player ID, return it
+    if (this.playerId) {
+      return this.playerId;
+    }
+    
+    // Try to get it from storage
+    try {
+      const savedId = await this.storage.get(this.PLAYER_ID_STORAGE_KEY);
+      if (savedId) {
+        this.playerId = savedId;
+        return savedId;
+      }
+    } catch (error) {
+      console.error('Error retrieving player ID from storage:', error);
+    }
+    
+    // If we're on a device, try to get it from OneSignal
+    if ((this.platform.is('capacitor') || this.platform.is('cordova')) && 
+        typeof OneSignal !== 'undefined') {
+      try {
+        const deviceState = await OneSignal.getDeviceState();
+        if (deviceState && deviceState.userId) {
+          this.playerId = deviceState.userId;
+          return deviceState.userId;
+        }
+      } catch (error) {
+        console.error('Error getting player ID from OneSignal:', error);
+      }
+    }
+    
+    // Return empty string if no player ID is found
+    return '';
+  }
 
   /**
    * Initialize OneSignal SDK

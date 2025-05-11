@@ -50,6 +50,11 @@ const routes: Routes = [
     loadChildren: () => import('./pages/categories/categories.module').then(m => m.CategoriesPageModule)
   },
   {
+    path: 'settings',
+    loadChildren: () => import('./pages/settings/settings.module').then(m => m.SettingsPageModule),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'wishlist',
     loadChildren: () => import('./pages/wishlist/wishlist.module').then(m => m.WishlistPageModule)
   },
@@ -93,6 +98,10 @@ const routes: Routes = [
   {
     path: 'notifications',
     loadChildren: () => import('./pages/notifications/notifications.module').then(m => m.NotificationsPageModule)
+  },
+  {
+    path: 'settings',
+    loadChildren: () => import('./pages/settings/settings.module').then(m => m.SettingsPageModule)
   },
   {
     path: '**',
