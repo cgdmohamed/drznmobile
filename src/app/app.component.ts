@@ -15,6 +15,13 @@ import { ConnectivityTesterService } from "./services/connectivity-tester.servic
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { environment } from "../environments/environment";
 
+// Define window with OneSignal for TypeScript
+declare global {
+  interface Window {
+    OneSignal?: any;
+  }
+}
+
 @Component({
   selector: "app-root",
   templateUrl: "app.component.html",
@@ -132,6 +139,59 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Initialize OneSignal for push notifications
+   */
+  private initializeOneSignal() {
+    // Make sure we have the secret key
+    const appId = environment.oneSignalAppId || '';
+    
+    if (!window.OneSignal || !appId) {
+      console.warn('OneSignal not available or app ID missing');
+      return;
+    }
+    
+    try {
+      console.log('Initializing OneSignal with app ID:', appId);
+      
+      // Set app ID
+      window.OneSignal.init({
+        appId: appId,
+        notifyButton: {
+          enable: false,
+        },
+        allowLocalhostAsSecureOrigin: true
+      });
+      
+      // Prompt user for notification permission
+      window.OneSignal.showSlidedownPrompt();
+      
+      // Handle notification open events
+      window.OneSignal.setNotificationOpenedHandler((jsonData: any) => {
+        console.log('Notification opened:', jsonData);
+        
+        // Navigate to notifications page or specific content based on data
+        if (jsonData.notification && jsonData.notification.additionalData) {
+          const data = jsonData.notification.additionalData;
+          
+          // Handle different notification types (order updates, etc)
+          if (data.orderId) {
+            this.router.navigate(['/tabs/orders', data.orderId]);
+          } else if (data.type === 'promotion') {
+            this.router.navigate(['/tabs/home']);
+          } else {
+            // Default to notifications list
+            this.router.navigate(['/tabs/notifications']);
+          }
+        }
+      });
+      
+      console.log('OneSignal initialized successfully');
+    } catch (error) {
+      console.error('Error initializing OneSignal:', error);
+    }
+  }
+
   initializeApp() {
     // Log environment details again to ensure it's captured
     console.log(`[initializeApp] App running in ${environment.production ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
@@ -145,6 +205,9 @@ export class AppComponent implements OnInit, OnDestroy {
             await StatusBar.setBackgroundColor({ color: '#ec1c24' }); // Set red color matching the theme
             await StatusBar.setStyle({ style: Style.Light }); // Light text for dark background
             await StatusBar.setOverlaysWebView({ overlay: false }); // Don't overlay the webview
+            
+            // Initialize OneSignal for push notifications on native platforms
+            this.initializeOneSignal();
           } catch (err) {
             console.error('Error configuring status bar:', err);
           }

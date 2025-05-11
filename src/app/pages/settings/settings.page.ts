@@ -21,6 +21,8 @@ const OneSignal = typeof window !== 'undefined' ? window.OneSignal : undefined;
 
 @Component({
   selector: 'app-settings',
+  standalone: true,
+  imports: [IonicModule, CommonModule, FormsModule, RouterModule, ComponentsModule],
   template: `
     <ion-header>
       <ion-toolbar color="primary">
@@ -150,16 +152,7 @@ const OneSignal = typeof window !== 'undefined' ? window.OneSignal : undefined;
       --handle-background: #ffffff;
       --handle-background-checked: #ffffff;
     }
-  `],
-  standalone: true,
-  imports: [
-    IonicModule,
-    CommonModule,
-    FormsModule,
-    RouterModule,
-    ComponentsModule,
-    NotificationSettingsComponent
-  ]
+  `]
 })
 export class SettingsPage implements OnInit {
   isLoggedIn: boolean = false;
@@ -205,15 +198,36 @@ export class SettingsPage implements OnInit {
    */
   private async loadNotificationSettings() {
     try {
-      // Get player ID from notification service
-      this.playerId = await this.notificationService.getPlayerId();
+      // In development/browser, we can simulate a playerId from localStorage
+      let storedPlayerId = localStorage.getItem('simulated_player_id');
+      let storedStatus = localStorage.getItem('simulated_notification_status');
       
-      // If we have a player ID, notifications are likely enabled
-      this.notificationsEnabled = !!this.playerId;
+      if (window.OneSignal) {
+        // Get player ID from notification service for real devices
+        this.playerId = await this.notificationService.getPlayerId();
+      } else if (storedPlayerId && storedStatus === 'enabled') {
+        // Use stored simulation values in development
+        this.playerId = storedPlayerId;
+        this.notificationsEnabled = true;
+      } else {
+        // Default to disabled with no ID
+        this.playerId = '';
+        this.notificationsEnabled = false;
+      }
+      
+      // Also load category preferences if available
+      const orderPref = localStorage.getItem('order_notifications');
+      const promoPref = localStorage.getItem('promotion_notifications');
+      
+      this.orderNotificationsEnabled = orderPref !== 'disabled';
+      this.promotionNotificationsEnabled = promoPref !== 'disabled';
       
       console.log('Loaded notification settings, player ID:', this.playerId);
     } catch (error) {
       console.error('Error loading notification settings:', error);
+      // Default to disabled if there's an error
+      this.playerId = '';
+      this.notificationsEnabled = false;
     }
   }
   
@@ -259,12 +273,29 @@ export class SettingsPage implements OnInit {
       return;
     }
     
+    // In browser/development environment, simulate notification status
     if (!window.OneSignal) {
-      await this.presentAlert(
-        'غير متاح',
-        'ميزة الإشعارات متاحة فقط على الأجهزة الحقيقية'
-      );
-      this.notificationsEnabled = false;
+      console.log('OneSignal not available, simulating notification preferences in development environment');
+      if (enabled) {
+        this.playerId = 'simulated-' + Math.random().toString(36).substring(2, 10);
+        this.notificationsEnabled = true;
+        
+        // Save to localStorage to persist across sessions
+        localStorage.setItem('simulated_player_id', this.playerId);
+        localStorage.setItem('simulated_notification_status', 'enabled');
+        
+        await this.presentAlert(
+          'وضع المحاكاة',
+          'تم تفعيل الإشعارات في وضع المحاكاة. رمز الجهاز المحاكى: ' + this.playerId
+        );
+      } else {
+        this.playerId = '';
+        this.notificationsEnabled = false;
+        
+        // Remove from localStorage
+        localStorage.removeItem('simulated_player_id');
+        localStorage.setItem('simulated_notification_status', 'disabled');
+      }
       return;
     }
     
@@ -368,6 +399,14 @@ export class SettingsPage implements OnInit {
       } catch (error) {
         console.error('Error updating notification categories:', error);
       }
+    } else {
+      // For development environment, just log the preferences
+      console.log('Development mode: Would have set notification categories to:',
+        {
+          order_notifications: this.orderNotificationsEnabled ? 'enabled' : 'disabled',
+          promotion_notifications: this.promotionNotificationsEnabled ? 'enabled' : 'disabled'
+        }
+      );
     }
   }
   
@@ -382,9 +421,11 @@ export class SettingsPage implements OnInit {
     console.log('Refreshing notification token');
     
     if (!window.OneSignal) {
+      // For development/browser environment, generate a new simulated ID
+      this.playerId = 'simulated-' + Math.random().toString(36).substring(2, 10);
       await this.presentAlert(
-        'غير متاح',
-        'ميزة تحديث رمز الإشعارات متاحة فقط على الأجهزة الحقيقية'
+        'تم التحديث',
+        'تم تحديث رمز الإشعارات في وضع المحاكاة: ' + this.playerId
       );
       return;
     }
