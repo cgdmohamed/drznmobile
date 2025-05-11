@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "resources": "capacitor-assets generate --iconBackgroundColor=#ec1c24 --splashBackgroundColor=#ec1c24 --splashBackgroundColor=#ec1c24"
+    "resources": "capacitor-assets generate --iconBackgroundColor=#ec1c24 --splashBackgroundColor=#ec1c24 --splashBackgroundColor=#ec1c24",
+    "build": "BUILD_ENV=${BUILD_ENV:-local} ng build --configuration=$BUILD_ENV"
   },
   "keywords": [],
   "author": "",
