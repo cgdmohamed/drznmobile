@@ -92,11 +92,11 @@
             <h4 class="product-name">{{ item.name }}</h4>
             <div class="product-meta">
               <span class="product-quantity">{{ item.quantity }} × </span>
-              <span class="product-price">{{ item.price }} <app-currency-icon size="small"></app-currency-icon></span>
+              <span class="product-price">{{ parseFloat(item.price).toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
             </div>
             <div class="product-total">
               <span>الإجمالي: </span>
-              <span class="product-total-price">{{ item.total }} <app-currency-icon size="small"></app-currency-icon></span>
+              <span class="product-total-price">{{ parseFloat(item.total).toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></span>
             </div>
           </div>
         </div>
@@ -109,22 +109,22 @@
       <div class="order-summary">
         <div class="summary-row">
           <div class="summary-label">المجموع الفرعي</div>
-          <div class="summary-value">{{ parseFloat(order.total) - parseFloat(order.shipping_total) - parseFloat(order.total_tax) + parseFloat(order.discount_total) }} <app-currency-icon size="small"></app-currency-icon></div>
+          <div class="summary-value">{{ (parseFloat(order.total) - parseFloat(order.shipping_total) - parseFloat(order.total_tax) + parseFloat(order.discount_total)).toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
         
         <div class="summary-row" *ngIf="parseFloat(order.discount_total) > 0">
           <div class="summary-label">الخصم</div>
-          <div class="summary-value discount">- {{ order.discount_total }} <app-currency-icon size="small"></app-currency-icon></div>
+          <div class="summary-value discount">- {{ parseFloat(order.discount_total).toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
         
         <div class="summary-row">
           <div class="summary-label">الشحن</div>
-          <div class="summary-value">{{ order.shipping_total }} <app-currency-icon size="small"></app-currency-icon></div>
+          <div class="summary-value">{{ parseFloat(order.shipping_total).toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
         
         <div class="summary-row tax-line">
           <div class="summary-label">ضريبة القيمة المضافة (15%)</div>
-          <div class="summary-value">{{ order.total_tax }} <app-currency-icon size="small"></app-currency-icon></div>
+          <div class="summary-value">{{ parseFloat(order.total_tax).toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></div>
           <div class="tax-info">
             <ion-icon name="information-circle-outline"></ion-icon>
             <div class="tax-tooltip">
@@ -135,7 +135,7 @@
         
         <div class="summary-row total">
           <div class="summary-label">الإجمالي</div>
-          <div class="summary-value">{{ order.total }} <app-currency-icon size="small"></app-currency-icon></div>
+          <div class="summary-value">{{ parseFloat(order.total).toFixed(2) }} <app-currency-icon size="small"></app-currency-icon></div>
         </div>
       </div>
     </div>
