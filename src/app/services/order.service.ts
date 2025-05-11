@@ -245,33 +245,59 @@ export class OrderService {
     
     console.log(`Fetching orders for customer ID: ${customerId} from API`);
     
-    // Fixed based on user finding - this is the URL that works with the customer parameter
-    // Using direct URL instead of relying on isMobile detection
-    const apiEndpoint = `${this.apiUrl}/orders`;
+    // Determine if we're on a mobile device
+    const isMobile = this.authService.isMobilePlatform();
+    
+    if (isMobile) {
+      // For mobile devices, use absolute URL with consumer keys in URL (avoid CORS issues)
+      const mobileUrl = `https://${environment.storeUrl}/wp-json/wc/v3/orders?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&customer=${customerId}&per_page=50`;
+      console.log('Using mobile-specific URL for orders:', mobileUrl);
       
-    return this.http.get<Order[]>(apiEndpoint, {
-      params: {
-        customer: customerId.toString(),
-        per_page: '50',
-        consumer_key: this.consumerKey,
-        consumer_secret: this.consumerSecret
-      }
-    }).pipe(
-      tap(orders => {
-        console.log(`Successfully fetched ${orders.length} orders for customer ${customerId}`);
-      }),
-      catchError(error => {
-        console.error(`Error fetching orders for customer ${customerId}:`, error);
-        
-        // If API call fails and demo mode is enabled, return demo orders
-        if (environment.useDemoData) {
-          console.log('Falling back to demo orders after API error');
-          return this.getDemoOrders();
+      return this.http.get<Order[]>(mobileUrl).pipe(
+        tap(orders => {
+          console.log(`Successfully fetched ${orders.length} orders for customer ${customerId}`);
+        }),
+        catchError(error => {
+          console.error(`Error fetching orders for customer ${customerId}:`, error);
+          
+          // If API call fails and demo mode is enabled, return demo orders
+          if (environment.useDemoData) {
+            console.log('Falling back to demo orders after API error');
+            return this.getDemoOrders();
+          }
+          
+          return of([]);
+        })
+      );
+    } else {
+      // For web development, use relative URL with consumer keys in params
+      const webUrl = `${this.apiUrl}/orders`;
+      console.log('Using web URL for orders:', webUrl);
+      
+      return this.http.get<Order[]>(webUrl, {
+        params: {
+          customer: customerId.toString(),
+          per_page: '50',
+          consumer_key: this.consumerKey,
+          consumer_secret: this.consumerSecret
         }
-        
-        return of([]);
-      })
-    );
+      }).pipe(
+        tap(orders => {
+          console.log(`Successfully fetched ${orders.length} orders for customer ${customerId}`);
+        }),
+        catchError(error => {
+          console.error(`Error fetching orders for customer ${customerId}:`, error);
+          
+          // If API call fails and demo mode is enabled, return demo orders
+          if (environment.useDemoData) {
+            console.log('Falling back to demo orders after API error');
+            return this.getDemoOrders();
+          }
+          
+          return of([]);
+        })
+      );
+    }
   }
   
   /**
@@ -459,18 +485,42 @@ export class OrderService {
       return of(cachedOrder);
     }
     
-    // Otherwise fetch from API
-    return this.http.get<Order>(`${this.apiUrl}/orders/${orderId}`, {
+    // Determine if we're on a mobile device
+    const isMobile = this.authService.isMobilePlatform();
+    
+    let url: string;
+    let requestOptions: any = {
       params: {
         consumer_key: this.consumerKey,
         consumer_secret: this.consumerSecret
       }
-    }).pipe(
-      catchError(error => {
-        console.error(`Error fetching order ${orderId}:`, error);
-        return throwError(() => new Error('Failed to fetch order details'));
-      })
-    );
+    };
+    
+    if (isMobile) {
+      // For mobile devices, use absolute URL with consumer keys in URL (avoid CORS issues)
+      url = `https://${environment.storeUrl}/wp-json/wc/v3/orders/${orderId}?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}`;
+      console.log('Using mobile-specific URL for order details:', url);
+      // On mobile with query params already in URL, no need for extra request options
+      return this.http.get<Order>(url).pipe(
+        catchError(error => {
+          console.error(`Error fetching order ${orderId}:`, error);
+          return throwError(() => new Error('Failed to fetch order details'));
+        })
+      );
+    } else {
+      // For web development, use relative URL with consumer keys in params
+      url = `${this.apiUrl}/orders/${orderId}`;
+      console.log('Using web URL for order details:', url);
+      
+      // Use type assertion to ensure correct return type
+      return this.http.get<Order>(url, requestOptions).pipe(
+        map((response: any) => response as Order),
+        catchError(error => {
+          console.error(`Error fetching order ${orderId}:`, error);
+          return throwError(() => new Error('Failed to fetch order details'));
+        })
+      );
+    }
   }
   
   /**
@@ -487,7 +537,7 @@ export class OrderService {
     let lastKnownStatus: string | null = null;
     
     // Calculate how many attempts we'll make based on interval and max duration
-    const maxAttempts = (maxDurationMinutes * 60) / intervalSeconds;
+    const maxAttempts = Math.floor((maxDurationMinutes * 60) / intervalSeconds);
     let attemptCount = 0;
     
     // Create a timer that emits at the specified interval
@@ -503,13 +553,13 @@ export class OrderService {
         return this.getOrder(orderId).pipe(
           catchError(error => {
             console.error(`Error tracking order ${orderId}:`, error);
-            return of(null as any);  // Continue tracking despite errors
+            return of(null as unknown as Order);  // Continue tracking despite errors
           })
         );
       }),
       
       // Filter out null results and only emit when we have an order
-      map(order => {
+      map((order: Order | null) => {
         if (!order) {
           throw new Error(`Failed to fetch order ${orderId}`);
         }
@@ -517,7 +567,7 @@ export class OrderService {
       }),
       
       // Check if status changed and send notification if it did
-      tap(order => {
+      tap((order: Order) => {
         const currentStatus = order.status;
         
         // If this is the first check, just record the status
@@ -548,7 +598,7 @@ export class OrderService {
       }),
       
       // Stop tracking if order reaches a final status
-      tap(order => {
+      tap((order: Order) => {
         const finalStatuses = ['completed', 'cancelled', 'refunded', 'failed', 'trash'];
         if (finalStatuses.includes(order.status)) {
           console.log(`Order ${orderId} reached final status: ${order.status}. Stopping tracking.`);
@@ -559,7 +609,7 @@ export class OrderService {
       catchError(error => {
         // If it's our "final status" error, complete cleanly
         if (error.message === 'Order reached final status') {
-          return of(null as any);
+          return of(null as unknown as Order);
         }
         
         // Otherwise, propagate the error
