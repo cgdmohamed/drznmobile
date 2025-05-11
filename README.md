@@ -7,15 +7,17 @@ An advanced mobile e-commerce application tailored for the Middle Eastern market
 - **Middle Eastern Focus**: Fully designed for Arabic users with RTL support
 - **WooCommerce Integration**: Connects to a WooCommerce backend API for product management
 - **Mobile-first Design**: Responsive UI optimized for mobile devices
+- **Enhanced Category Navigation**: Two-row horizontal scrolling with support for up to 20 categories
 - **Payment Integrations**: 
   - Moyasar payment gateway
-  - Apple Pay for iOS devices
+  - STCPay for mobile payments
   - Cash on Delivery (COD)
 - **OTP Verification**: User authentication via Taqnyat SMS service
 - **Push Notifications**: Integration with OneSignal for push notifications
 - **Enhanced UI/UX**: Smooth transitions, micro-animations, and elegant form handling
 - **Product Recommendations**: AI-based personalized product recommendation system
 - **Multi-address Support**: Multiple saved addresses for shipping/billing
+- **Order Tracking**: Real-time order status tracking and history
 
 ## Technology Stack
 
@@ -102,13 +104,13 @@ The application requires the following API keys:
 ## Features Implemented
 
 - [x] Product browsing & searching
-- [x] Category navigation
-- [x] Cart management
+- [x] Enhanced category navigation with two-row horizontal scrolling
+- [x] Cart management with tax calculation
 - [x] User authentication (login/registration)
 - [x] OTP verification with Taqnyat
 - [x] Checkout process
 - [x] Payment methods integration (Moyasar, STCPay)
-- [x] Order tracking
+- [x] Order tracking and history
 - [x] User profile management
 - [x] Multiple address management
 - [x] Product recommendations
@@ -117,6 +119,7 @@ The application requires the following API keys:
 - [x] Product attributes and variations
 - [x] RTL support for Arabic language
 - [x] Demo/fallback products when API is unavailable
+- [x] Cross-platform compatibility (web, Android)
 
 ## OTP Verification System
 
@@ -129,18 +132,38 @@ The app uses Taqnyat SMS service for OTP (One-Time Password) verification. The i
 - Error handling for various API response formats
 - OTP verification during checkout for guest users
 
+## Recent Improvements
+
+- [x] Enhanced category display with two-row horizontal scrolling
+- [x] Fixed order history display on mobile devices
+- [x] Fixed URL construction issues for WooCommerce API endpoints on mobile
+- [x] Resolved TypeScript errors in order tracking functionality
+- [x] Fixed splash screen resource conflicts
+- [x] Implemented consistent tax calculation throughout the app
+
 ## Pending Tasks
 
 - [ ] Fix component declaration issues in Angular modules
-- [ ] Resolve TypeScript errors in templates
 - [ ] Complete Android build and publishing process
 - [ ] Implement OneSignal push notifications
 - [ ] Add Apple Pay support for iOS
 - [ ] Optimize performance for product loading
-- [ ] Implement proper error handling for WooCommerce API
-- [ ] Update styling for better RTL support
 - [ ] Improve offline experience
 - [ ] Add unit and integration tests
+
+## Changelog
+
+For a complete list of changes and version history, please see the [CHANGELOG.md](./CHANGELOG.md) file.
+
+## Mobile Device Troubleshooting
+
+Common issues and solutions for mobile platform deployment:
+
+1. **API Connectivity Issues**: On mobile devices, ensure absolute URLs are used for API endpoints instead of relative paths
+2. **WooCommerce API Authentication**: For mobile builds, consumer keys should be included directly in the URL
+3. **Splash Screen Conflicts**: Avoid duplicate splash screen resources in Android builds
+4. **Order History Not Displaying**: Check URL construction in network requests for proper formatting
+5. **Android Build Failures**: Make sure all TypeScript errors are resolved before attempting a production build
 
 ## Contributing
 
