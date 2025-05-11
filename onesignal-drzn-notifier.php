@@ -19,6 +19,12 @@ class OneSignal_DRZN_Notifier {
     public function __construct() {
         // Register REST API endpoints
         add_action('rest_api_init', array($this, 'register_rest_routes'));
+        
+        // Add admin menu
+        add_action('admin_menu', array($this, 'add_admin_menu'));
+        
+        // Add WooCommerce order status hooks
+        add_action('woocommerce_order_status_changed', array($this, 'handle_order_status_change'), 10, 4);
     }
 
     /**
@@ -187,6 +193,191 @@ class OneSignal_DRZN_Notifier {
         }
     }
     
+    /**
+     * Add admin menu page for notifications
+     */
+    public function add_admin_menu() {
+        add_menu_page(
+            'DRZN Notifications',
+            'DRZN Notifications',
+            'manage_options',
+            'drzn-notifications',
+            array($this, 'render_admin_page'),
+            'dashicons-megaphone',
+            30
+        );
+    }
+
+    /**
+     * Render admin page for notifications
+     */
+    public function render_admin_page() {
+        // Check if form was submitted
+        if (isset($_POST['drzn_notification_submit']) && check_admin_referer('drzn_notification_nonce')) {
+            $title = sanitize_text_field($_POST['notification_title']);
+            $message = sanitize_textarea_field($_POST['notification_message']);
+            $type = sanitize_text_field($_POST['notification_type']);
+            $url = esc_url_raw($_POST['notification_url']);
+            
+            // Send notification
+            $notification = array(
+                'app_id' => getenv('ONESIGNAL_APP_ID'),
+                'headings' => array('en' => $title),
+                'contents' => array('en' => $message),
+                'data' => array(
+                    'type' => $type
+                ),
+                'android_channel_id' => 'drzn_app_channel',
+                'android_accent_color' => 'EC1C24'
+            );
+            
+            // Add URL if provided
+            if (!empty($url)) {
+                $notification['data']['url'] = $url;
+            }
+            
+            // Add segment targeting based on type
+            if ($type === 'promotion') {
+                // Target users who enabled promotion notifications
+                $notification['filters'] = array(
+                    array('field' => 'tag', 'key' => 'promotion_notifications', 'relation' => '=', 'value' => 'enabled')
+                );
+            } else {
+                // Target all subscribed users
+                $notification['included_segments'] = array('Subscribed Users');
+            }
+            
+            // Send to OneSignal
+            $response = $this->send_onesignal_notification($notification);
+            
+            if (isset($response['id'])) {
+                echo '<div class="notice notice-success is-dismissible"><p>Notification sent successfully to ' . 
+                    esc_html($response['recipients']) . ' recipients.</p></div>';
+            } else {
+                echo '<div class="notice notice-error is-dismissible"><p>Error sending notification: ' . 
+                    esc_html(isset($response['errors']) ? $response['errors'][0] : 'Unknown error') . '</p></div>';
+            }
+        }
+        
+        // Display form
+        ?>
+        <div class="wrap">
+            <h1>DRZN Notifications</h1>
+            <p>Send push notifications to app users</p>
+            
+            <form method="post" action="">
+                <?php wp_nonce_field('drzn_notification_nonce'); ?>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row"><label for="notification_title">Notification Title</label></th>
+                        <td><input name="notification_title" type="text" id="notification_title" class="regular-text" required></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="notification_message">Notification Message</label></th>
+                        <td><textarea name="notification_message" id="notification_message" class="large-text" rows="5" required></textarea></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="notification_type">Notification Type</label></th>
+                        <td>
+                            <select name="notification_type" id="notification_type">
+                                <option value="all">All Users</option>
+                                <option value="promotion">Promotion Only</option>
+                                <option value="order">Order Updates</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="notification_url">URL (Optional)</label></th>
+                        <td><input name="notification_url" type="url" id="notification_url" class="regular-text"></td>
+                    </tr>
+                </table>
+                
+                <p class="submit">
+                    <input type="submit" name="drzn_notification_submit" id="drzn_notification_submit" class="button button-primary" value="Send Notification">
+                </p>
+            </form>
+        </div>
+        <?php
+    }
+
+    /**
+     * Handle order status changes
+     *
+     * @param int $order_id The order ID
+     * @param string $from_status The old status
+     * @param string $to_status The new status
+     * @param object $order The order object
+     */
+    public function handle_order_status_change($order_id, $from_status, $to_status, $order) {
+        // Don't send for admin-triggered events if we're in admin dashboard
+        if (is_admin() && !wp_doing_ajax()) {
+            return;
+        }
+        
+        // Get customer ID
+        $customer_id = $order->get_customer_id();
+        if (!$customer_id) {
+            return;
+        }
+        
+        // Get notification settings
+        $status_title = '';
+        $status_message = '';
+        
+        switch ($to_status) {
+            case 'processing':
+                $status_title = 'طلبك قيد التجهيز';
+                $status_message = "طلبك رقم #$order_id قيد التجهيز. سنرسل لك إشعارًا عندما يتم شحن طلبك.";
+                break;
+            case 'completed':
+                $status_title = 'طلبك مكتمل';
+                $status_message = "طلبك رقم #$order_id مكتمل. شكرًا لتسوقك معنا!";
+                break;
+            case 'on-hold':
+                $status_title = 'طلبك معلق';
+                $status_message = "طلبك رقم #$order_id معلق حاليًا. سيتم الاتصال بك قريبًا.";
+                break;
+            case 'cancelled':
+                $status_title = 'طلبك ملغي';
+                $status_message = "للأسف، تم إلغاء طلبك رقم #$order_id. يرجى الاتصال بخدمة العملاء للمزيد من المعلومات.";
+                break;
+            default:
+                $status_title = 'تحديث الطلب';
+                $status_message = "تم تحديث حالة طلبك رقم #$order_id إلى $to_status.";
+                break;
+        }
+        
+        // Don't continue if no title/message
+        if (empty($status_title) || empty($status_message)) {
+            return;
+        }
+        
+        // Get OneSignal player ID from user meta
+        $user_id = $customer_id;
+        $player_id = get_user_meta($user_id, 'onesignal_player_id', true);
+        
+        if (empty($player_id)) {
+            return;
+        }
+        
+        // Prepare notification
+        $notification = array(
+            'app_id' => getenv('ONESIGNAL_APP_ID'),
+            'headings' => array('en' => $status_title),
+            'contents' => array('en' => $status_message),
+            'include_external_user_ids' => array($player_id),
+            'data' => array(
+                'type' => 'order',
+                'order_id' => $order_id
+            ),
+            'android_channel_id' => 'drzn_order_channel',
+            'android_accent_color' => 'EC1C24'
+        );
+        
+        // Send notification
+        $this->send_onesignal_notification($notification);
+    }
+
     /**
      * Send notification to OneSignal API
      *
