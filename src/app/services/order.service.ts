@@ -206,63 +206,26 @@ export class OrderService {
       );
     }
     
-    // Determine if we're on a mobile device
-    const isMobile = this.authService.isMobilePlatform();
-    
-    if (isMobile) {
-      // For mobile devices, use absolute URL with consumer keys in URL
-      const apiUrl = `https://${environment.storeUrl}/wp-json/wc/v3/orders?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&customer=${userId}&per_page=50`;
-      console.log('Using mobile absolute URL for fetchOrders:', apiUrl);
-      
-      return this.http.get<Order[]>(apiUrl).pipe(
-        tap((orders: Order[]) => {
-          console.log(`Successfully fetched ${orders.length} orders`);
-          this._orders.next(orders);
-          this.saveOrders(orders);
-        }),
-        catchError(error => {
-          console.error('Error fetching orders:', error);
-          
-          // If API call fails and demo mode is enabled, return demo orders
-          if (environment.useDemoData) {
-            console.log('Falling back to demo orders after API error');
-            return this.getDemoOrders();
-          }
-          
-          return of(this.ordersValue);
-        })
-      );
-    } else {
-      // For web development, use relative URL with consumer keys in params
-      const apiUrl = `${this.apiUrl}/orders`;
-      console.log('Using web relative URL for fetchOrders:', apiUrl);
-      
-      return this.http.get<Order[]>(apiUrl, {
-        params: {
-          consumer_key: this.consumerKey,
-          consumer_secret: this.consumerSecret,
-          customer: userId ? userId.toString() : '',
-          per_page: '50'
+    return this.http.get<Order[]>(`${this.apiUrl}/orders`, {
+      params: {
+        consumer_key: this.consumerKey,
+        consumer_secret: this.consumerSecret,
+        customer: userId ? userId.toString() : '',
+        per_page: '50'
+      }
+    }).pipe(
+      tap(orders => {
+        this._orders.next(orders);
+        this.saveOrders(orders);
+      }),
+      catchError(error => {
+        console.error('Error fetching orders:', error);
+        
+        // If API call fails and demo mode is enabled, return demo orders
+        if (environment.useDemoData) {
+          console.log('Falling back to demo orders after API error');
+          return this.getDemoOrders();
         }
-      }).pipe(
-        tap((orders: Order[]) => {
-          console.log(`Successfully fetched ${orders.length} orders`);
-          this._orders.next(orders);
-          this.saveOrders(orders);
-        }),
-        catchError(error => {
-          console.error('Error fetching orders:', error);
-          
-          // If API call fails and demo mode is enabled, return demo orders
-          if (environment.useDemoData) {
-            console.log('Falling back to demo orders after API error');
-            return this.getDemoOrders();
-          }
-          
-          return of(this.ordersValue);
-        })
-      );
-    }
         
         return of(this.ordersValue);
       })
@@ -282,61 +245,33 @@ export class OrderService {
     
     console.log(`Fetching orders for customer ID: ${customerId} from API`);
     
-    // Determine if we're on a mobile device
-    const isMobile = this.authService.isMobilePlatform();
-    
-    let apiUrl: string;
-    
-    if (isMobile) {
-      // For mobile devices, use absolute URL with consumer keys in URL
-      apiUrl = `https://${environment.storeUrl}/wp-json/wc/v3/orders?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}&customer=${customerId}&per_page=50`;
-      console.log('Using mobile absolute URL for orders:', apiUrl);
+    // Fixed based on user finding - this is the URL that works with the customer parameter
+    // Using direct URL instead of relying on isMobile detection
+    const apiEndpoint = `${this.apiUrl}/orders`;
       
-      return this.http.get<Order[]>(apiUrl).pipe(
-        tap((orders: Order[]) => {
-          console.log(`Successfully fetched ${orders.length} orders for customer ${customerId}`);
-        }),
-        catchError(error => {
-          console.error(`Error fetching orders for customer ${customerId}:`, error);
-          
-          // If API call fails and demo mode is enabled, return demo orders
-          if (environment.useDemoData) {
-            console.log('Falling back to demo orders after API error');
-            return this.getDemoOrders();
-          }
-          
-          return of([]);
-        })
-      );
-    } else {
-      // For web development, use relative URL with consumer keys in params
-      apiUrl = `${this.apiUrl}/orders`;
-      console.log('Using web relative URL for orders:', apiUrl);
-      
-      return this.http.get<Order[]>(apiUrl, {
-        params: {
-          customer: customerId.toString(),
-          per_page: '50',
-          consumer_key: this.consumerKey,
-          consumer_secret: this.consumerSecret
+    return this.http.get<Order[]>(apiEndpoint, {
+      params: {
+        customer: customerId.toString(),
+        per_page: '50',
+        consumer_key: this.consumerKey,
+        consumer_secret: this.consumerSecret
+      }
+    }).pipe(
+      tap(orders => {
+        console.log(`Successfully fetched ${orders.length} orders for customer ${customerId}`);
+      }),
+      catchError(error => {
+        console.error(`Error fetching orders for customer ${customerId}:`, error);
+        
+        // If API call fails and demo mode is enabled, return demo orders
+        if (environment.useDemoData) {
+          console.log('Falling back to demo orders after API error');
+          return this.getDemoOrders();
         }
-      }).pipe(
-        tap((orders: Order[]) => {
-          console.log(`Successfully fetched ${orders.length} orders for customer ${customerId}`);
-        }),
-        catchError(error => {
-          console.error(`Error fetching orders for customer ${customerId}:`, error);
-          
-          // If API call fails and demo mode is enabled, return demo orders
-          if (environment.useDemoData) {
-            console.log('Falling back to demo orders after API error');
-            return this.getDemoOrders();
-          }
-          
-          return of([]);
-        })
-      );
-    }
+        
+        return of([]);
+      })
+    );
   }
   
   /**
