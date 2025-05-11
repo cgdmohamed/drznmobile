@@ -916,7 +916,7 @@ export class OrderService {
         billing: billingDetails,
         shipping: shippingDetails || billingDetails,
         line_items: lineItems,
-        customer_id: this.authService.isLoggedIn ? this.authService.userValue?.id : 0,
+        customer_id: this.jwtAuthService.isAuthenticated ? this.jwtAuthService.currentUserValue?.id : 48, // Using customer ID 48 as fallback based on user finding
         customer_note: '',
         shipping_lines: [
           {
@@ -977,7 +977,7 @@ export class OrderService {
       }
     };
     
-    if (isMobile) {
+    if (this.isMobile) {
       // For mobile devices, use absolute URL with consumer keys in URL (avoid CORS issues)
       url = `https://${environment.storeUrl}/wp-json/wc/v3/orders?consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}`;
       // On mobile, we include consumer keys in both URL and params to ensure tokenInterceptor ignores this request 
